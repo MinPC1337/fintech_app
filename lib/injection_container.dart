@@ -8,6 +8,7 @@ import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/domain/usecases/login_usecase.dart';
 import 'features/auth/domain/usecases/register_usecase.dart';
 import 'features/auth/domain/usecases/update_profile_usecase.dart';
+import 'features/auth/domain/usecases/reset_password_usecase.dart';
 import 'features/auth/presentation/cubit/auth_cubit.dart';
 
 final sl = GetIt.instance; // sl: Service Locator
@@ -27,6 +28,7 @@ Future<void> init() async {
       loginUseCase: sl(),
       registerUseCase: sl(),
       updateProfileUseCase: sl(),
+      resetPasswordUseCase: sl(),
     ),
   );
 
@@ -34,6 +36,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => LoginUseCase(sl()));
   sl.registerLazySingleton(() => RegisterUseCase(sl()));
   sl.registerLazySingleton(() => UpdateProfileUseCase(sl()));
+  sl.registerLazySingleton(() => ResetPasswordUseCase(sl()));
 
   // Repositories
   sl.registerLazySingleton<AuthRepository>(

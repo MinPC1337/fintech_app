@@ -23,6 +23,16 @@ class LoginPage extends StatelessWidget {
               const SnackBar(content: Text('Đăng nhập thành công')),
             );
           // TODO: Navigate to Home
+        } else if (state is AuthPasswordResetSent) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Email khôi phục mật khẩu đã được gửi. Hãy kiểm tra hộp thư!',
+                ),
+              ),
+            );
         } else if (state is AuthError) {
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
@@ -86,7 +96,7 @@ class LoginPage extends StatelessWidget {
                       const SizedBox(height: 24),
 
                       // Utilities
-                      _buildUtilities(),
+                      _buildUtilities(context),
                       const SizedBox(height: 32),
 
                       // Call-to-Action
@@ -166,17 +176,92 @@ class LoginPage extends StatelessWidget {
     );
   }
 
-  Widget _buildUtilities() {
+  Widget _buildUtilities(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           TextButton(
-            onPressed: () {},
+            onPressed: () => _showForgotPasswordDialog(context),
             child: Text(
               "Quên mật khẩu?",
               style: TextStyle(color: kTextSecondary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showForgotPasswordDialog(BuildContext context) {
+    // Dùng chung email từ form nếu người dùng đã nhập
+    final TextEditingController resetEmailController = TextEditingController(
+      text: emailController.text,
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: kBgColor,
+        elevation: 20,
+        shadowColor: kCyan.withValues(alpha: 0.4),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: kCyan.withValues(alpha: 0.2)),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.lock_reset_outlined, color: kCyan),
+            SizedBox(width: 12),
+            Text(
+              'Khôi phục mật khẩu',
+              style: TextStyle(
+                color: kTextPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Nhập email của bạn để nhận liên kết khôi phục mật khẩu.',
+              style: TextStyle(color: kTextSecondary, height: 1.5),
+            ),
+            const SizedBox(height: 20),
+            _GlassmorphicTextField(
+              controller: resetEmailController,
+              hintText: 'Email',
+              icon: Icons.email_outlined,
+              focusColor: kCyan,
+              keyboardType: TextInputType.emailAddress,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: kTextSecondary),
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text(
+              'HỦY',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: kCyan),
+            onPressed: () {
+              final email = resetEmailController.text.trim();
+              if (email.isNotEmpty) {
+                context.read<AuthCubit>().resetPassword(email);
+                Navigator.of(ctx).pop();
+              }
+            },
+            child: const Text(
+              'GỬI',
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
         ],

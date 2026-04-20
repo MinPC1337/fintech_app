@@ -30,6 +30,8 @@ class AuthVerificationRequired extends AuthState {
   List<Object?> get props => [user];
 }
 
+class AuthPasswordResetSent extends AuthState {}
+
 class AuthError extends AuthState {
   final String message;
 

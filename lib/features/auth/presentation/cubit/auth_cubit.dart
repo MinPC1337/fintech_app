@@ -2,17 +2,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
 import '../../domain/usecases/update_profile_usecase.dart';
+import '../../domain/usecases/reset_password_usecase.dart';
 import 'auth_state.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   final LoginUseCase loginUseCase;
   final RegisterUseCase registerUseCase;
   final UpdateProfileUseCase updateProfileUseCase;
+  final ResetPasswordUseCase resetPasswordUseCase;
 
   AuthCubit({
     required this.loginUseCase,
     required this.registerUseCase,
     required this.updateProfileUseCase,
+    required this.resetPasswordUseCase,
   }) : super(AuthInitial());
 
   Future<void> login(String email, String password) async {
@@ -55,6 +58,17 @@ class AuthCubit extends Cubit<AuthState> {
     result.fold(
       (failure) => emit(AuthError(message: failure.message)),
       (user) => emit(AuthSuccess(user: user)),
+    );
+  }
+
+  Future<void> resetPassword(String email) async {
+    emit(AuthLoading());
+    final result = await resetPasswordUseCase(
+      ResetPasswordParams(email: email),
+    );
+    result.fold(
+      (failure) => emit(AuthError(message: failure.message)),
+      (_) => emit(AuthPasswordResetSent()),
     );
   }
 }

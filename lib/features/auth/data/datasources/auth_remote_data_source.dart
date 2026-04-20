@@ -12,6 +12,7 @@ abstract class AuthRemoteDataSource {
     String avatarUrl,
     String fcmToken,
   );
+  Future<void> resetPassword(String email);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -121,6 +122,20 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return UserModel.fromJson(doc.data()!);
     } catch (e) {
       throw const ServerFailure('Update profile failed');
+    }
+  }
+
+  @override
+  Future<void> resetPassword(String email) async {
+    try {
+      await firebaseAuth.sendPasswordResetEmail(email: email);
+    } on firebase.FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        throw const ValidationFailure('Không tìm thấy tài khoản với email này');
+      }
+      throw ServerFailure(e.message ?? 'Lỗi Firebase không xác định');
+    } catch (e) {
+      throw const ServerFailure('Gửi email khôi phục thất bại');
     }
   }
 }

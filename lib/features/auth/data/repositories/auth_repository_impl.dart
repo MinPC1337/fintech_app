@@ -11,38 +11,75 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<Either<Failure, User>> login({required String email, required String password}) async {
+  Future<Either<Failure, User>> login({
+    required String email,
+    required String password,
+  }) async {
     try {
       final user = await remoteDataSource.login(email, password);
       return Right(user);
     } on Failure catch (e) {
       return Left(e);
     } catch (e) {
-      return const Left(ServerFailure('An unexpected error occurred during login.'));
+      return const Left(
+        ServerFailure('An unexpected error occurred during login.'),
+      );
     }
   }
 
   @override
-  Future<Either<Failure, User>> register({required String email, required String password, required String fullName}) async {
+  Future<Either<Failure, User>> register({
+    required String email,
+    required String password,
+    required String fullName,
+  }) async {
     try {
       final user = await remoteDataSource.register(email, password, fullName);
       return Right(user);
     } on Failure catch (e) {
       return Left(e);
     } catch (e) {
-      return const Left(ServerFailure('An unexpected error occurred during registration.'));
+      return const Left(
+        ServerFailure('An unexpected error occurred during registration.'),
+      );
     }
   }
 
   @override
-  Future<Either<Failure, User>> updateProfile({required String uid, required String fullName, required String avatarUrl, required String fcmToken}) async {
+  Future<Either<Failure, User>> updateProfile({
+    required String uid,
+    required String fullName,
+    required String avatarUrl,
+    required String fcmToken,
+  }) async {
     try {
-      final user = await remoteDataSource.updateProfile(uid, fullName, avatarUrl, fcmToken);
+      final user = await remoteDataSource.updateProfile(
+        uid,
+        fullName,
+        avatarUrl,
+        fcmToken,
+      );
       return Right(user);
     } on Failure catch (e) {
       return Left(e);
     } catch (e) {
-      return const Left(ServerFailure('An unexpected error occurred during profile update.'));
+      return const Left(
+        ServerFailure('An unexpected error occurred during profile update.'),
+      );
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> resetPassword({required String email}) async {
+    try {
+      await remoteDataSource.resetPassword(email);
+      return const Right(null);
+    } on Failure catch (e) {
+      return Left(e);
+    } catch (e) {
+      return const Left(
+        ServerFailure('An unexpected error occurred during password reset.'),
+      );
     }
   }
 }
