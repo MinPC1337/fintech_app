@@ -102,6 +102,13 @@ class RegisterPage extends StatelessWidget {
                                     hintText: 'Họ và tên',
                                     icon: Icons.person_outline,
                                     focusColor: kCyan,
+                                    validator: (value) {
+                                      if (value == null ||
+                                          value.trim().isEmpty) {
+                                        return 'Vui lòng nhập họ và tên';
+                                      }
+                                      return null;
+                                    },
                                   ),
                                   const SizedBox(height: 20),
                                   _GlassmorphicTextField(
@@ -110,6 +117,19 @@ class RegisterPage extends StatelessWidget {
                                     icon: Icons.email_outlined,
                                     focusColor: kCyan,
                                     keyboardType: TextInputType.emailAddress,
+                                    validator: (value) {
+                                      if (value == null ||
+                                          value.trim().isEmpty) {
+                                        return 'Vui lòng nhập email';
+                                      }
+                                      final emailRegex = RegExp(
+                                        r'^[^@]+@[^@]+\.[^@]+',
+                                      );
+                                      if (!emailRegex.hasMatch(value)) {
+                                        return 'Email không hợp lệ';
+                                      }
+                                      return null;
+                                    },
                                   ),
                                   const SizedBox(height: 20),
                                   _GlassmorphicTextField(
@@ -118,6 +138,16 @@ class RegisterPage extends StatelessWidget {
                                     icon: Icons.lock_outline,
                                     focusColor: kPurple,
                                     obscureText: true,
+                                    validator: (value) {
+                                      if (value == null ||
+                                          value.trim().isEmpty) {
+                                        return 'Vui lòng nhập mật khẩu';
+                                      }
+                                      if (value.length < 8) {
+                                        return 'Mật khẩu tối thiểu 8 ký tự';
+                                      }
+                                      return null;
+                                    },
                                   ),
                                   const SizedBox(height: 20),
                                   _GlassmorphicTextField(
@@ -127,6 +157,9 @@ class RegisterPage extends StatelessWidget {
                                     focusColor: kCyan,
                                     obscureText: true,
                                     validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Vui lòng xác nhận mật khẩu';
+                                      }
                                       if (value != passwordController.text) {
                                         return 'Mật khẩu chưa khớp';
                                       }

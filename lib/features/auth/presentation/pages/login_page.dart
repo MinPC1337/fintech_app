@@ -12,6 +12,7 @@ class LoginPage extends StatelessWidget {
 
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
@@ -85,20 +86,39 @@ class LoginPage extends StatelessWidget {
                       const SizedBox(height: 48),
 
                       // Form Controls
-                      _GlassmorphicTextField(
-                        controller: emailController,
-                        hintText: 'Email',
-                        icon: Icons.email_outlined,
-                        focusColor: kCyan,
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 20),
-                      _GlassmorphicTextField(
-                        controller: passwordController,
-                        hintText: 'Mật khẩu',
-                        icon: Icons.lock_outline,
-                        focusColor: kPurple,
-                        obscureText: true,
+                      Form(
+                        key: _formKey,
+                        child: Column(
+                          children: [
+                            _GlassmorphicTextField(
+                              controller: emailController,
+                              hintText: 'Email',
+                              icon: Icons.email_outlined,
+                              focusColor: kCyan,
+                              keyboardType: TextInputType.emailAddress,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Vui lòng nhập email';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 20),
+                            _GlassmorphicTextField(
+                              controller: passwordController,
+                              hintText: 'Mật khẩu',
+                              icon: Icons.lock_outline,
+                              focusColor: kPurple,
+                              obscureText: true,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Vui lòng nhập mật khẩu';
+                                }
+                                return null;
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 24),
 
@@ -291,10 +311,12 @@ class LoginPage extends StatelessWidget {
       ),
       child: ElevatedButton(
         onPressed: () {
-          context.read<AuthCubit>().login(
-            emailController.text.trim(),
-            passwordController.text.trim(),
-          );
+          if (_formKey.currentState?.validate() ?? false) {
+            context.read<AuthCubit>().login(
+              emailController.text.trim(),
+              passwordController.text.trim(),
+            );
+          }
         },
         style: ElevatedButton.styleFrom(
           minimumSize: const Size(double.infinity, 56),
@@ -345,6 +367,7 @@ class _GlassmorphicTextField extends StatefulWidget {
   final Color focusColor;
   final bool obscureText;
   final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
 
   const _GlassmorphicTextField({
     required this.controller,
@@ -353,6 +376,7 @@ class _GlassmorphicTextField extends StatefulWidget {
     required this.focusColor,
     this.obscureText = false,
     this.keyboardType,
+    this.validator,
   });
 
   @override
@@ -403,8 +427,15 @@ class _GlassmorphicTextFieldState extends State<_GlassmorphicTextField> {
             obscureText: _isObscured,
             keyboardType: widget.keyboardType,
             style: const TextStyle(color: kTextPrimary),
+            validator: widget.validator,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
             decoration: InputDecoration(
               border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 16,
+                horizontal: 12,
+              ),
+              errorStyle: const TextStyle(color: kRose),
               hintText: widget.hintText,
               hintStyle: TextStyle(color: kTextSecondary),
               prefixIcon: Icon(
