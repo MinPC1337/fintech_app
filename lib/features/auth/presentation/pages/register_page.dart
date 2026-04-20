@@ -328,10 +328,12 @@ class _GlassmorphicTextField extends StatefulWidget {
 class _GlassmorphicTextFieldState extends State<_GlassmorphicTextField> {
   final FocusNode _focusNode = FocusNode();
   bool _isFocused = false;
+  late bool _isObscured;
 
   @override
   void initState() {
     super.initState();
+    _isObscured = widget.obscureText;
     _focusNode.addListener(() {
       setState(() {
         _isFocused = _focusNode.hasFocus;
@@ -364,7 +366,7 @@ class _GlassmorphicTextFieldState extends State<_GlassmorphicTextField> {
           child: TextFormField(
             controller: widget.controller,
             focusNode: _focusNode,
-            obscureText: widget.obscureText,
+            obscureText: _isObscured,
             keyboardType: widget.keyboardType,
             style: const TextStyle(color: kTextPrimary),
             validator: widget.validator,
@@ -382,6 +384,21 @@ class _GlassmorphicTextFieldState extends State<_GlassmorphicTextField> {
                 widget.icon,
                 color: _isFocused ? widget.focusColor : kTextSecondary,
               ),
+              suffixIcon: widget.obscureText
+                  ? IconButton(
+                      icon: Icon(
+                        _isObscured
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                        color: kTextSecondary,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isObscured = !_isObscured;
+                        });
+                      },
+                    )
+                  : null,
             ),
           ),
         ),
