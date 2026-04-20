@@ -5,6 +5,7 @@ import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import 'register_page.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/dialog_utils.dart';
 
 class LoginPage extends StatelessWidget {
   LoginPage({super.key});
@@ -17,26 +18,32 @@ class LoginPage extends StatelessWidget {
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthSuccess) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              const SnackBar(content: Text('Đăng nhập thành công')),
-            );
-          // TODO: Navigate to Home
+          showNotificationDialog(
+            context,
+            'Thành công',
+            'Đăng nhập thành công',
+            kEmerald,
+            Icons.check_circle_outline,
+            onOkPressed: () {
+              // TODO: Navigate to Home
+            },
+          );
         } else if (state is AuthPasswordResetSent) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Email khôi phục mật khẩu đã được gửi. Hãy kiểm tra hộp thư!',
-                ),
-              ),
-            );
+          showNotificationDialog(
+            context,
+            'Đã gửi Email',
+            'Email khôi phục mật khẩu đã được gửi. Hãy kiểm tra hộp thư!',
+            kCyan,
+            Icons.mark_email_read_outlined,
+          );
         } else if (state is AuthError) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: Text('Lỗi: ${state.message}')));
+          showNotificationDialog(
+            context,
+            'Lỗi',
+            state.message,
+            kRose,
+            Icons.error_outline,
+          );
         }
       },
       child: Scaffold(

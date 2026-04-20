@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/dialog_utils.dart';
 
 class RegisterPage extends StatelessWidget {
   RegisterPage({super.key});
@@ -22,55 +23,26 @@ class RegisterPage extends StatelessWidget {
         if (state is AuthVerificationRequired) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (context.mounted) {
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (ctx) => AlertDialog(
-                  backgroundColor: kBgColor,
-                  elevation: 20,
-                  shadowColor: kCyan.withValues(alpha: 0.4),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    side: BorderSide(color: kCyan.withValues(alpha: 0.2)),
-                  ),
-                  title: const Row(
-                    children: [
-                      Icon(Icons.mark_email_unread_outlined, color: kCyan),
-                      SizedBox(width: 12),
-                      Text(
-                        'Xác thực Email',
-                        style: TextStyle(
-                          color: kTextPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  content: Text(
-                    'Đăng ký thành công! Một email xác thực đã được gửi đến ${state.user.email}. Vui lòng kiểm tra hộp thư của bạn để hoàn tất.',
-                    style: TextStyle(color: kTextSecondary, height: 1.5),
-                  ),
-                  actions: [
-                    TextButton(
-                      style: TextButton.styleFrom(foregroundColor: kCyan),
-                      onPressed: () {
-                        Navigator.of(ctx).pop();
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text(
-                        'OK, ĐÃ HIỂU',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
+              showNotificationDialog(
+                context,
+                'Xác thực Email',
+                'Đăng ký thành công! Một email xác thực đã được gửi đến ${state.user.email}. Vui lòng kiểm tra hộp thư của bạn để hoàn tất.',
+                kEmerald,
+                Icons.mark_email_unread_outlined,
+                onOkPressed: () {
+                  Navigator.of(context).pop();
+                },
               );
             }
           });
         } else if (state is AuthError) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: Text('Lỗi: ${state.message}')));
+          showNotificationDialog(
+            context,
+            'Lỗi',
+            state.message,
+            kRose,
+            Icons.error_outline,
+          );
         }
       },
       child: Scaffold(
@@ -152,7 +124,7 @@ class RegisterPage extends StatelessWidget {
                                     controller: confirmPasswordController,
                                     hintText: 'Xác nhận mật khẩu',
                                     icon: Icons.shield_outlined,
-                                    focusColor: kRose,
+                                    focusColor: kCyan,
                                     obscureText: true,
                                     validator: (value) {
                                       if (value != passwordController.text) {
