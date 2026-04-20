@@ -1,0 +1,16 @@
+1. Màu nền (Deep Space Backgrounds)
+Nền chính ngoài cùng: #020305 (Đen vũ trụ cực sâu)
+Nền ứng dụng (Phone Shell): #05070a (Màu đen có chút xanh thẳm)
+Đường viền giả lập viền điện thoại: #13151a
+2. Màu nhấn Neon (Cyber-Organic Accents)
+Cyan (Xanh lơ mờ ảo): Chủ yếu dùng dải màu #22d3ee (Cyan-400) đến #06b6d4 (Cyan-500). Đây là màu chủ đạo cho các nút bấm, viền nổi bật.
+Purple (Tím lượng tử): Dùng dải màu #c084fc (Purple-400) đến #a855f7 (Purple-500) và #9333ea (Purple-600). Màu này tạo cảm giác tương lai và công nghệ cao, kết hợp với Cyan tạo ra lõi chất lỏng (Financial Soul).
+Emerald (Xanh lục bảo - Thu nhập/Tích cực): Dải #34d399 (Emerald-400) đến #10b981 (Emerald-500).
+Rose/Red (Đỏ hồng - Chi tiêu/Cảnh báo): Dải #fb7185 (Rose-400) đến #f43f5e (Rose-500).
+3. Glassmorphism (Kính mờ)
+Các thẻ card (panel) sử dụng màu nền trắng cực mỏng: rgba(255, 255, 255, 0.03) (hoặc Tailwind bg-white/5).
+Hiệu ứng mờ nền phía sau: backdrop-filter: blur(20px).
+Viền sáng viền kính: border: 1px solid rgba(255, 255, 255, 0.05).
+4. Chữ (Typography)
+Văn bản chính: #ffffff (Trắng tinh, Opacity 100%).
+Văn bản phụ (Subtitle/Tiêu đề nhỏ): rgba(255, 255, 255, 0.4) đến 0.6 (Trắng mờ 40% - 60%).

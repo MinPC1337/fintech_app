@@ -1,8 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import 'register_page.dart';
+import '../../../../core/theme/app_colors.dart';
 
 class LoginPage extends StatelessWidget {
   LoginPage({super.key});
@@ -12,66 +14,312 @@ class LoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Đăng nhập')),
-      body: BlocConsumer<AuthCubit, AuthState>(
-        listener: (context, state) {
-          if (state is AuthSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
+    return BlocListener<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state is AuthSuccess) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
               const SnackBar(content: Text('Đăng nhập thành công')),
             );
-            // Navigate to Home
-          } else if (state is AuthError) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text('Lỗi: ${state.message}')));
-          }
-          ;
-        },
-        builder: (context, state) {
-          if (state is AuthLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextField(
-                  controller: emailController,
-                  decoration: const InputDecoration(labelText: 'Email'),
-                  keyboardType: TextInputType.emailAddress,
+          // TODO: Navigate to Home
+        } else if (state is AuthError) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(SnackBar(content: Text('Lỗi: ${state.message}')));
+        }
+      },
+      child: Scaffold(
+        backgroundColor: kBgColor,
+        body: Stack(
+          children: [
+            // Atmosphere & Decor
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.1,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  width: 250,
+                  height: 250,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: kCyan.withValues(alpha: 0.4),
+                        blurRadius: 80.0,
+                        spreadRadius: 20.0,
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: passwordController,
-                  decoration: const InputDecoration(labelText: 'Mật khẩu'),
-                  obscureText: true,
-                ),
-                const SizedBox(height: 32),
-                ElevatedButton(
-                  onPressed: () {
-                    context.read<AuthCubit>().login(
-                      emailController.text.trim(),
-                      passwordController.text.trim(),
-                    );
-                  },
-                  child: const Text('Đăng nhập'),
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => RegisterPage()),
-                    );
-                  },
-                  child: const Text('Chưa có tài khoản? Đăng ký ngay'),
-                ),
-              ],
+              ),
             ),
+            // Main Content
+            SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Branding
+                      _buildBranding(),
+                      const SizedBox(height: 48),
+
+                      // Form Controls
+                      _GlassmorphicTextField(
+                        controller: emailController,
+                        hintText: 'Email',
+                        icon: Icons.email_outlined,
+                        focusColor: kCyan,
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 20),
+                      _GlassmorphicTextField(
+                        controller: passwordController,
+                        hintText: 'Mật khẩu',
+                        icon: Icons.lock_outline,
+                        focusColor: kPurple,
+                        obscureText: true,
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Utilities
+                      _buildUtilities(),
+                      const SizedBox(height: 32),
+
+                      // Call-to-Action
+                      _buildCtaButton(context),
+                      const SizedBox(height: 48),
+
+                      // Alternative Authentication
+                      _buildAlternativeAuth(context),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Loading Indicator
+            BlocBuilder<AuthCubit, AuthState>(
+              builder: (context, state) {
+                if (state is AuthLoading) {
+                  return Container(
+                    color: kBgColor.withValues(alpha: 0.7),
+                    child: const Center(child: CircularProgressIndicator()),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBranding() {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: const LinearGradient(colors: [kCyan, kPurple]),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: kBgColor,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Icon(Icons.wallet_outlined, color: kCyan, size: 40),
+          ),
+        ),
+        const SizedBox(height: 24),
+        ShaderMask(
+          blendMode: BlendMode.srcIn,
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [kCyan, kPurple],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+          child: const Text(
+            "FINTECH",
+            style: TextStyle(
+              fontSize: 40,
+              fontWeight: FontWeight.bold,
+              color: kTextPrimary,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          "HỆ THỐNG QUẢN LÝ TÀI CHÍNH",
+          style: TextStyle(
+            color: kTextSecondary,
+            letterSpacing: 4,
+            fontWeight: FontWeight.w300,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUtilities() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          TextButton(
+            onPressed: () {},
+            child: Text(
+              "Quên mật khẩu?",
+              style: TextStyle(color: kTextSecondary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCtaButton(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(colors: [kCyan, kPurple]),
+        boxShadow: [
+          BoxShadow(
+            color: kPurple.withValues(alpha: 0.5),
+            blurRadius: 20,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: () {
+          context.read<AuthCubit>().login(
+            emailController.text.trim(),
+            passwordController.text.trim(),
           );
         },
+        style: ElevatedButton.styleFrom(
+          minimumSize: const Size(double.infinity, 56),
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: const Text(
+          'ĐĂNG NHẬP',
+          style: TextStyle(
+            color: kTextPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAlternativeAuth(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text("Chưa có tài khoản? ", style: TextStyle(color: kTextSecondary)),
+        TextButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => RegisterPage()),
+            );
+          },
+          child: const Text(
+            "Đăng ký ngay",
+            style: TextStyle(color: kCyan, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GlassmorphicTextField extends StatefulWidget {
+  final TextEditingController controller;
+  final String hintText;
+  final IconData icon;
+  final Color focusColor;
+  final bool obscureText;
+  final TextInputType? keyboardType;
+
+  const _GlassmorphicTextField({
+    required this.controller,
+    required this.hintText,
+    required this.icon,
+    required this.focusColor,
+    this.obscureText = false,
+    this.keyboardType,
+  });
+
+  @override
+  State<_GlassmorphicTextField> createState() => _GlassmorphicTextFieldState();
+}
+
+class _GlassmorphicTextFieldState extends State<_GlassmorphicTextField> {
+  final FocusNode _focusNode = FocusNode();
+  bool _isFocused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(() {
+      setState(() {
+        _isFocused = _focusNode.hasFocus;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: kGlassBg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: _isFocused ? widget.focusColor : kGlassBorder,
+              width: 1.5,
+            ),
+          ),
+          child: TextFormField(
+            controller: widget.controller,
+            focusNode: _focusNode,
+            obscureText: widget.obscureText,
+            keyboardType: widget.keyboardType,
+            style: const TextStyle(color: kTextPrimary),
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              hintText: widget.hintText,
+              hintStyle: TextStyle(color: kTextSecondary),
+              prefixIcon: Icon(
+                widget.icon,
+                color: _isFocused ? widget.focusColor : kTextSecondary,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
