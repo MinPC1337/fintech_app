@@ -1,0 +1,60 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../domain/usecases/login_usecase.dart';
+import '../../domain/usecases/register_usecase.dart';
+import '../../domain/usecases/update_profile_usecase.dart';
+import 'auth_state.dart';
+
+class AuthCubit extends Cubit<AuthState> {
+  final LoginUseCase loginUseCase;
+  final RegisterUseCase registerUseCase;
+  final UpdateProfileUseCase updateProfileUseCase;
+
+  AuthCubit({
+    required this.loginUseCase,
+    required this.registerUseCase,
+    required this.updateProfileUseCase,
+  }) : super(AuthInitial());
+
+  Future<void> login(String email, String password) async {
+    emit(AuthLoading());
+    final result = await loginUseCase(
+      LoginParams(email: email, password: password),
+    );
+    result.fold(
+      (failure) => emit(AuthError(message: failure.message)),
+      (user) => emit(AuthSuccess(user: user)),
+    );
+  }
+
+  Future<void> register(String email, String password, String fullName) async {
+    emit(AuthLoading());
+    final result = await registerUseCase(
+      RegisterParams(email: email, password: password, fullName: fullName),
+    );
+    result.fold(
+      (failure) => emit(AuthError(message: failure.message)),
+      (user) => emit(AuthVerificationRequired(user: user)),
+    );
+  }
+
+  Future<void> updateProfile(
+    String uid,
+    String fullName,
+    String avatarUrl,
+    String fcmToken,
+  ) async {
+    emit(AuthLoading());
+    final result = await updateProfileUseCase(
+      UpdateProfileParams(
+        uid: uid,
+        fullName: fullName,
+        avatarUrl: avatarUrl,
+        fcmToken: fcmToken,
+      ),
+    );
+    result.fold(
+      (failure) => emit(AuthError(message: failure.message)),
+      (user) => emit(AuthSuccess(user: user)),
+    );
+  }
+}

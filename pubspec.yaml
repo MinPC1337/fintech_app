@@ -40,6 +40,9 @@ dependencies:
   equatable: ^2.0.8
   dartz: ^0.10.1
   dio: ^5.9.2
+  firebase_core: ^4.7.0
+  firebase_auth: ^6.4.0
+  cloud_firestore: ^6.3.0
 
 dev_dependencies:
   flutter_test:
@@ -92,4 +95,4 @@ flutter:
   #         weight: 700
   #
   # For details regarding fonts from package dependencies,
-  # see https://flutter.dev/to/font-from-package
+  # see https://flutter.
