@@ -170,7 +170,11 @@ class LoginPage extends StatelessWidget {
               color: kBgColor,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Icon(Icons.wallet_outlined, color: kCyan, size: 40),
+            child: Image.asset(
+              'assets/Futuristic Pro.png',
+              width: 48,
+              height: 48,
+            ),
           ),
         ),
         const SizedBox(height: 24),
@@ -182,9 +186,9 @@ class LoginPage extends StatelessWidget {
             end: Alignment.bottomRight,
           ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
           child: const Text(
-            "FINTECH",
+            "SMART FINANCE",
             style: TextStyle(
-              fontSize: 40,
+              fontSize: 32,
               fontWeight: FontWeight.bold,
               color: kTextPrimary,
             ),
