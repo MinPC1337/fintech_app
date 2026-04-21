@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
 import '../../domain/usecases/update_profile_usecase.dart';
@@ -70,5 +71,15 @@ class AuthCubit extends Cubit<AuthState> {
       (failure) => emit(AuthError(message: failure.message)),
       (_) => emit(AuthPasswordResetSent()),
     );
+  }
+
+  Future<void> logout() async {
+    emit(AuthLoading());
+    try {
+      await FirebaseAuth.instance.signOut();
+      emit(AuthInitial());
+    } catch (e) {
+      emit(AuthError(message: 'Đăng xuất thất bại: ${e.toString()}'));
+    }
   }
 }

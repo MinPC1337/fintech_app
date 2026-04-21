@@ -89,6 +89,17 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           .doc(userModel.uid)
           .set(userModel.toJson());
 
+      // Tạo "Ví cá nhân" mặc định cho user
+      final walletRef = firestore.collection('wallets').doc();
+      await walletRef.set({
+        'id': walletRef.id,
+        'name': 'Ví cá nhân',
+        'balance': 0.0,
+        'ownerId': userModel.uid,
+        'members': [userModel.uid],
+        'isPersonal': true,
+      });
+
       // Sign out the user immediately after registration.
       // This forces them to go through the login flow, which checks for email verification.
       await firebaseAuth.signOut();

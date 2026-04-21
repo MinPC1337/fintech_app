@@ -11,6 +11,12 @@ import 'features/auth/domain/usecases/update_profile_usecase.dart';
 import 'features/auth/domain/usecases/reset_password_usecase.dart';
 import 'features/auth/presentation/cubit/auth_cubit.dart';
 
+import 'features/main/data/datasources/wallet_remote_data_source.dart';
+import 'features/main/data/repositories/wallet_repository_impl.dart';
+import 'features/main/domain/repositories/wallet_repository.dart';
+import 'features/main/domain/usecases/deposit_usecase.dart';
+import 'features/main/domain/usecases/get_primary_wallet_stream_usecase.dart';
+
 final sl = GetIt.instance; // sl: Service Locator
 
 Future<void> init() async {
@@ -49,7 +55,16 @@ Future<void> init() async {
   );
 
   //! Features - Wallet
+  sl.registerLazySingleton(() => DepositUseCase(sl()));
+  sl.registerLazySingleton(() => GetPrimaryWalletStreamUseCase(sl()));
 
+  sl.registerLazySingleton<WalletRepository>(
+    () => WalletRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  sl.registerLazySingleton<WalletRemoteDataSource>(
+    () => WalletRemoteDataSourceImpl(firestore: sl()),
+  );
   //! Features - Budget AI
 
   //! Core
