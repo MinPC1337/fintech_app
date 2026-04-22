@@ -21,4 +21,14 @@ class WalletRepositoryImpl implements WalletRepository {
   Stream<WalletEntity?> getPrimaryWalletStream(String userId) {
     return remoteDataSource.getPrimaryWalletStream(userId);
   }
+
+  @override
+  Future<void> transferOut(String senderUid, double amount, String targetPhone) async {
+    await remoteDataSource.transferOut(senderUid, amount, targetPhone);
+  }
+
+  @override
+  Stream<List<dynamic>> getTransactionsStream(String userId) {
+    return remoteDataSource.getTransactionsStream(userId);
+  }
 }

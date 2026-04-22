@@ -9,6 +9,8 @@ class TransactionEntity extends Equatable {
   final double amount;
   final String categoryId;
   final DateTime timestamp;
+  final String type;
+  final String note;
 
   const TransactionEntity({
     required this.id,
@@ -19,6 +21,8 @@ class TransactionEntity extends Equatable {
     required this.amount,
     required this.categoryId,
     required this.timestamp,
+    this.type = '',
+    this.note = '',
   });
 
   @override
@@ -31,5 +35,7 @@ class TransactionEntity extends Equatable {
         amount,
         categoryId,
         timestamp,
+        type,
+        note,
       ];
 }

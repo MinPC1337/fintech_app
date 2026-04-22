@@ -20,7 +20,6 @@ class LoginPage extends StatelessWidget {
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthSuccess) {
-          // Hiển thị Custom Dialog ở giữa màn hình
           showDialog(
             context: context,
             barrierDismissible: false, // Không cho phép bấm ra ngoài để đóng

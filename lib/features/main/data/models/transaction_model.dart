@@ -10,6 +10,8 @@ class TransactionModel extends TransactionEntity {
     required super.amount,
     required super.categoryId,
     required super.timestamp,
+    super.type,
+    super.note,
   });
 
   factory TransactionModel.fromJson(Map<String, dynamic> json) {
@@ -21,9 +23,11 @@ class TransactionModel extends TransactionEntity {
       receiverId: json['receiverId'],
       amount: (json['amount'] ?? 0).toDouble(),
       categoryId: json['categoryId'] ?? '',
-      timestamp: json['timestamp'] != null 
-          ? DateTime.parse(json['timestamp'].toString()) 
+      timestamp: json['timestamp'] != null
+          ? DateTime.parse(json['timestamp'].toString())
           : DateTime.now(),
+      type: json['type'] ?? '',
+      note: json['note'] ?? '',
     );
   }
 

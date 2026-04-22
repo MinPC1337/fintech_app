@@ -5,7 +5,10 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../injection_container.dart';
 import '../../domain/usecases/get_primary_wallet_stream_usecase.dart';
 import 'momo_deposit_page.dart';
+import 'transfer_page.dart';
 import 'package:intl/intl.dart';
+import '../../domain/usecases/get_transactions_stream_usecase.dart';
+import '../../data/models/transaction_model.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -18,11 +21,13 @@ class _HomePageState extends State<HomePage> {
   final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
   final User? currentUser = FirebaseAuth.instance.currentUser;
   late final GetPrimaryWalletStreamUseCase getPrimaryWalletStreamUseCase;
+  late final GetTransactionsStreamUseCase getTransactionsStreamUseCase;
 
   @override
   void initState() {
     super.initState();
     getPrimaryWalletStreamUseCase = sl<GetPrimaryWalletStreamUseCase>();
+    getTransactionsStreamUseCase = sl<GetTransactionsStreamUseCase>();
   }
 
   @override
@@ -97,11 +102,7 @@ class _HomePageState extends State<HomePage> {
           padding: const EdgeInsets.all(1), // Viền mỏng 1px
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: [kCyan, kPurple],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            gradient: AppGradients.balance,
           ),
           child: Container(
             padding: const EdgeInsets.all(3),
@@ -164,8 +165,8 @@ class _HomePageState extends State<HomePage> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.white,
-                  Colors.white.withValues(alpha: 0.4),
+                  kCyan,
+                  kCyan.withValues(alpha: 0.4),
                 ], // Gradient sáng xuống mờ
               ).createShader(bounds),
               child: Text(
@@ -173,7 +174,7 @@ class _HomePageState extends State<HomePage> {
                 style: const TextStyle(
                   fontSize: 52, // Con số khổng lồ
                   fontWeight: FontWeight.w900,
-                  color: Colors.white,
+                  color: kCyan,
                 ),
               ),
             ),
@@ -230,7 +231,10 @@ class _HomePageState extends State<HomePage> {
             iconColor: kPurple,
             title: 'Chuyển khoản',
             onTap: () {
-              // Thêm logic điều hướng chuyển khoản sau
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TransferPage()),
+              );
             },
           ),
         ),
@@ -253,9 +257,9 @@ class _HomePageState extends State<HomePage> {
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05), // Nền trắng mờ 5%
+              color: kThemeGlassBase, // --surface-secondary glass
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              border: Border.all(color: kThemeBorderDefault), // border cyan
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -265,6 +269,10 @@ class _HomePageState extends State<HomePage> {
                   decoration: BoxDecoration(
                     color: iconColor.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
+                    boxShadow: [
+                      if (iconColor == kCyan) AppGlows.cyan,
+                      if (iconColor == kPurple) AppGlows.purple,
+                    ],
                   ),
                   child: Icon(
                     icon,
@@ -319,30 +327,43 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
         const SizedBox(height: 16),
-        // Dữ liệu mẫu (Sẽ được thay bằng dữ liệu Stream thật sau này)
-        _buildTimelineItem(
-          isFirst: true,
-          isLast: false,
-          isIncome: true,
-          title: 'Nạp tiền qua Momo',
-          time: 'Hôm nay, 09:41',
-          amount: '+50.000',
-        ),
-        _buildTimelineItem(
-          isFirst: false,
-          isLast: false,
-          isIncome: false,
-          title: 'Thanh toán Netflix',
-          time: 'Hôm qua, 20:15',
-          amount: '-260.000',
-        ),
-        _buildTimelineItem(
-          isFirst: false,
-          isLast: true,
-          isIncome: false,
-          title: 'Chuyển khoản Synergy',
-          time: '12/10/2023',
-          amount: '-150.000',
+        StreamBuilder<List<dynamic>>(
+          stream: getTransactionsStreamUseCase.call(currentUser!.uid),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const CircularProgressIndicator(color: kCyan);
+            }
+            if (snapshot.hasError) {
+              return Text('Lỗi: ${snapshot.error}', style: const TextStyle(color: kRose));
+            }
+            
+            final transactions = snapshot.data ?? [];
+            if (transactions.isEmpty) {
+              return const Text('Chưa có giao dịch nào.', style: TextStyle(color: kTextSecondary));
+            }
+
+            return Column(
+              children: List.generate(transactions.length, (index) {
+                final tx = transactions[index];
+                
+                // Parse date
+                final timeDisplay = DateFormat('dd/MM/yyyy HH:mm').format(tx.timestamp);
+
+                // Income means the user received money (receiverId == uid or type == Income)
+                final isIncome = tx.receiverId == currentUser!.uid || tx.type == 'Income';
+                final sign = isIncome ? '+' : '-';
+
+                return _buildTimelineItem(
+                  isFirst: index == 0,
+                  isLast: index == transactions.length - 1,
+                  isIncome: isIncome,
+                  title: tx.note.isNotEmpty ? tx.note : (isIncome ? 'Nhận tiền' : 'Chuyển tiền'),
+                  time: timeDisplay,
+                  amount: '$sign${currencyFormatter.format(tx.amount).replaceAll('đ', '').trim()}',
+                );
+              }),
+            );
+          },
         ),
       ],
     );
@@ -412,9 +433,9 @@ class _HomePageState extends State<HomePage> {
               margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.03), // Glass-panel
+                color: kThemeSurfaceSecondary, // --surface-secondary
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                border: Border.all(color: kThemeBorderDefault), // border cyan
               ),
               child: Row(
                 children: [

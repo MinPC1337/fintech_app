@@ -9,4 +9,10 @@ abstract class WalletRepository {
 
   /// Gets a real-time stream of the user's primary wallet
   Stream<WalletEntity?> getPrimaryWalletStream(String userId);
+
+  /// Transfers a specific amount from the user's wallet out to an external phone/MoMo
+  Future<void> transferOut(String senderUid, double amount, String targetPhone);
+
+  /// Gets a real-time stream of transactions for a specific user
+  Stream<List<dynamic>> getTransactionsStream(String userId);
 }
