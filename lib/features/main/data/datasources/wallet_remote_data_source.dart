@@ -9,6 +9,8 @@ abstract class WalletRemoteDataSource {
   Stream<WalletModel?> getPrimaryWalletStream(String userId);
   Future<void> transferOut(String senderUid, double amount, String targetPhone);
   Stream<List<TransactionModel>> getTransactionsStream(String userId);
+  /// Chuyển tiền nội bộ từ user này sang user khác trong app
+  Future<void> transferToUser(String senderUid, String receiverUid, double amount);
 }
 
 class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
@@ -59,10 +61,11 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
         'id': txRef.id,
         'toWalletId': walletDoc.id,
         'receiverId': receiverUid,
+        'userId': receiverUid, // Bản ghi này thuộc về receiver
         'amount': amount,
-        'categoryId': 'deposit', // Category mặc định cho nạp tiền
+        'categoryId': 'deposit',
         'timestamp': FieldValue.serverTimestamp(),
-        'type': 'Income', // Metadata thêm để filter
+        'type': 'Income',
         'note': 'Nạp tiền vào ví',
       };
       transaction.set(txRef, txData);
@@ -136,7 +139,8 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
         'id': txRef.id,
         'fromWalletId': walletDoc.id,
         'senderId': senderUid,
-        'receiverId': targetPhone, // Cho app demo, lưu sdt vào receiverId
+        'receiverId': targetPhone,
+        'userId': senderUid, // Bản ghi này thuộc về sender
         'amount': amount,
         'categoryId': 'transfer',
         'timestamp': FieldValue.serverTimestamp(),
@@ -149,37 +153,96 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
 
   @override
   Stream<List<TransactionModel>> getTransactionsStream(String userId) {
-    // Lấy các giao dịch liên quan đến user (là sender hoặc receiver)
-    // Lưu ý: Firebase yêu cầu composite index nếu kết hợp nhiều where (OR query).
-    // Tạm thời để đơn giản cho Demo, ta lấy các giao dịch mà senderId = userId hoặc receiverId = userId
-    // Firebase Firestore SDK mới hỗ trợ Filter.or
+    // Query đơn giản theo 'userId' — mỗi bản ghi chỉ thuộc về 1 user duy nhất
     return firestore
         .collection('transactions')
-        .where(
-          Filter.or(
-            Filter('senderId', isEqualTo: userId),
-            Filter('receiverId', isEqualTo: userId),
-          ),
-        )
+        .where('userId', isEqualTo: userId)
         .orderBy('timestamp', descending: true)
         .limit(20)
         .snapshots()
         .map((snapshot) {
           return snapshot.docs.map((doc) {
-            // Handle timestamp serialization
-            final Map<String, dynamic> data = Map<String, dynamic>.from(
-              doc.data(),
-            );
+            final Map<String, dynamic> data = Map<String, dynamic>.from(doc.data());
             if (data['timestamp'] is Timestamp) {
-              data['timestamp'] = (data['timestamp'] as Timestamp)
-                  .toDate()
-                  .toIso8601String();
+              data['timestamp'] = (data['timestamp'] as Timestamp).toDate().toIso8601String();
             } else if (data['timestamp'] == null) {
-              data['timestamp'] = DateTime.now()
-                  .toIso8601String(); // Fallback pending server time
+              data['timestamp'] = DateTime.now().toIso8601String();
             }
             return TransactionModel.fromJson({...data, 'id': doc.id});
           }).toList();
         });
+  }
+
+  @override
+  Future<void> transferToUser(
+    String senderUid,
+    String receiverUid,
+    double amount,
+  ) async {
+    // 1. Tìm ví chính của sender và receiver
+    final senderWalletDoc = await _getPrimaryWalletDoc(senderUid);
+    if (senderWalletDoc == null) {
+      throw Exception('Không tìm thấy ví cá nhân của bạn');
+    }
+
+    final receiverWalletDoc = await _getPrimaryWalletDoc(receiverUid);
+    if (receiverWalletDoc == null) {
+      throw Exception('Không tìm thấy ví của người nhận. Kiểm tra lại UID.');
+    }
+
+    // 2. Chạy Firestore Transaction nguyên tử
+    await firestore.runTransaction((transaction) async {
+      final senderSnap = await transaction.get(senderWalletDoc.reference);
+      final receiverSnap = await transaction.get(receiverWalletDoc.reference);
+
+      if (!senderSnap.exists || !receiverSnap.exists) {
+        throw Exception('Ví không tồn tại');
+      }
+
+      final senderBalance = (senderSnap.data()?['balance'] ?? 0).toDouble();
+      if (senderBalance < amount) {
+        throw Exception('Số dư không đủ để thực hiện giao dịch');
+      }
+
+      final receiverBalance = (receiverSnap.data()?['balance'] ?? 0).toDouble();
+
+      // Cập nhật số dư cả hai ví
+      transaction.update(senderWalletDoc.reference, {'balance': senderBalance - amount});
+      transaction.update(receiverWalletDoc.reference, {'balance': receiverBalance + amount});
+
+      final now = DateTime.now().toIso8601String();
+
+      // Ghi giao dịch Expense cho sender (userId = senderUid)
+      final senderTxRef = firestore.collection('transactions').doc();
+      transaction.set(senderTxRef, {
+        'id': senderTxRef.id,
+        'fromWalletId': senderWalletDoc.id,
+        'toWalletId': receiverWalletDoc.id,
+        'senderId': senderUid,
+        'receiverId': receiverUid,
+        'userId': senderUid, // Bản ghi này thuộc về sender
+        'amount': amount,
+        'categoryId': 'internal_transfer',
+        'timestamp': FieldValue.serverTimestamp(),
+        'type': 'Expense',
+        'note': 'Chuyển tiền đến ví $receiverUid',
+      });
+
+      // Ghi giao dịch Income cho receiver (userId = receiverUid)
+      final receiverTxRef = firestore.collection('transactions').doc();
+      transaction.set(receiverTxRef, {
+        'id': receiverTxRef.id,
+        'fromWalletId': senderWalletDoc.id,
+        'toWalletId': receiverWalletDoc.id,
+        'senderId': senderUid,
+        'receiverId': receiverUid,
+        'userId': receiverUid, // Bản ghi này thuộc về receiver
+        'amount': amount,
+        'categoryId': 'internal_transfer',
+        'timestamp': FieldValue.serverTimestamp(),
+        'type': 'Income',
+        'note': 'Nhận tiền từ ví $senderUid',
+      });
+    });
   }
 }

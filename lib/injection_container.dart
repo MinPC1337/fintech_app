@@ -18,6 +18,7 @@ import 'features/main/domain/usecases/deposit_usecase.dart';
 import 'features/main/domain/usecases/get_primary_wallet_stream_usecase.dart';
 import 'features/main/domain/usecases/transfer_out_usecase.dart';
 import 'features/main/domain/usecases/get_transactions_stream_usecase.dart';
+import 'features/main/domain/usecases/transfer_to_user_usecase.dart';
 
 final sl = GetIt.instance; // sl: Service Locator
 
@@ -61,6 +62,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => GetPrimaryWalletStreamUseCase(sl()));
   sl.registerLazySingleton(() => TransferOutUseCase(sl()));
   sl.registerLazySingleton(() => GetTransactionsStreamUseCase(sl()));
+  sl.registerLazySingleton(() => TransferToUserUseCase(sl()));
 
   sl.registerLazySingleton<WalletRepository>(
     () => WalletRepositoryImpl(remoteDataSource: sl()),

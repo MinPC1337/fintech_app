@@ -15,4 +15,7 @@ abstract class WalletRepository {
 
   /// Gets a real-time stream of transactions for a specific user
   Stream<List<dynamic>> getTransactionsStream(String userId);
+
+  /// Chuyển tiền nội bộ từ user này sang user khác trong app
+  Future<void> transferToUser(String senderUid, String receiverUid, double amount);
 }

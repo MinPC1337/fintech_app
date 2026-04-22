@@ -6,6 +6,8 @@ import '../../../../injection_container.dart';
 import '../../domain/usecases/get_primary_wallet_stream_usecase.dart';
 import 'momo_deposit_page.dart';
 import 'transfer_page.dart';
+import 'receive_money_page.dart';
+import 'send_to_user_page.dart';
 import 'package:intl/intl.dart';
 import '../../domain/usecases/get_transactions_stream_usecase.dart';
 import '../../data/models/transaction_model.dart';
@@ -209,34 +211,66 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildBentoActions(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _buildBentoCard(
-            icon: Icons.account_balance_wallet_outlined,
-            iconColor: kCyan,
-            title: 'Nạp tiền',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const MomoDepositPage()),
-              );
-            },
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildBentoCard(
+                icon: Icons.account_balance_wallet_outlined,
+                iconColor: kCyan,
+                title: 'Nạp tiền',
+                subtitle: 'Qua MoMo',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MomoDepositPage()),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildBentoCard(
+                icon: Icons.qr_code_rounded,
+                iconColor: kEmerald,
+                title: 'Nhận tiền',
+                subtitle: 'Mã QR ví',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ReceiveMoneyPage()),
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildBentoCard(
-            icon: Icons.send_outlined,
-            iconColor: kPurple,
-            title: 'Chuyển khoản',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const TransferPage()),
-              );
-            },
-          ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildBentoCard(
+                icon: Icons.send_outlined,
+                iconColor: kPurple,
+                title: 'Chuyển vào ví',
+                subtitle: 'Nội bộ',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SendToUserPage()),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildBentoCard(
+                icon: Icons.arrow_upward_rounded,
+                iconColor: kRose,
+                title: 'Rút tiền',
+                subtitle: 'Ra MoMo',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TransferPage()),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -246,20 +280,21 @@ class _HomePageState extends State<HomePage> {
     required IconData icon,
     required Color iconColor,
     required String title,
+    String? subtitle,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24), // rounded-3xl
+        borderRadius: BorderRadius.circular(24),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: kThemeGlassBase, // --surface-secondary glass
+              color: kThemeGlassBase,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: kThemeBorderDefault), // border cyan
+              border: Border.all(color: kThemeBorderDefault),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -272,23 +307,29 @@ class _HomePageState extends State<HomePage> {
                     boxShadow: [
                       if (iconColor == kCyan) AppGlows.cyan,
                       if (iconColor == kPurple) AppGlows.purple,
+                      if (iconColor == kEmerald) BoxShadow(color: kEmerald.withValues(alpha: 0.3), blurRadius: 12),
+                      if (iconColor == kRose) BoxShadow(color: kRose.withValues(alpha: 0.3), blurRadius: 12),
                     ],
                   ),
-                  child: Icon(
-                    icon,
-                    color: iconColor,
-                    size: 28,
-                  ), // Icon phát sáng tương ứng
+                  child: Icon(icon, color: iconColor, size: 24),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 Text(
                   title,
                   style: const TextStyle(
                     color: kTextPrimary,
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                if (subtitle != null)
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: kTextSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -349,8 +390,9 @@ class _HomePageState extends State<HomePage> {
                 // Parse date
                 final timeDisplay = DateFormat('dd/MM/yyyy HH:mm').format(tx.timestamp);
 
-                // Income means the user received money (receiverId == uid or type == Income)
-                final isIncome = tx.receiverId == currentUser!.uid || tx.type == 'Income';
+                // Mỗi bản ghi đã thuộc về đúng user qua trường 'userId',
+                // nên chỉ cần kiểm tra type để phân loại Thu/Chi
+                final isIncome = tx.type == 'Income';
                 final sign = isIncome ? '+' : '-';
 
                 return _buildTimelineItem(

@@ -3,9 +3,9 @@ import 'package:http/http.dart' as http;
 import 'package:crypto/crypto.dart';
 
 class MomoApiService {
-  static const String _partnerCode = 'MOMOBKUN20180529';
-  static const String _accessKey = 'klm05TvNBzhg7h7j';
-  static const String _secretKey = 'at67qH6mk8w5Y1nAyMoYKMWACiEi2bsa';
+  static const String _partnerCode = 'MOMO';
+  static const String _accessKey = 'F8BBA842ECF85';
+  static const String _secretKey = 'K951B6PE1waDMi640xX08PD3vg6EkVlz';
 
   static const String _endpoint =
       'https://test-payment.momo.vn/v2/gateway/api/create';
@@ -31,7 +31,7 @@ class MomoApiService {
         'https://us-central1-fintechda-cfba5.cloudfunctions.net/momoIpnWebhook';
 
     // Đổi thành 'payWithMethod' thay vì 'captureWallet' vì tài khoản MOMOBKUN20180529 không hỗ trợ tạo QR trực tiếp.
-    const String requestType = 'payWithMethod';
+    const String requestType = 'captureWallet';
 
     // Mã hóa userId sang Base64 để truyền vào extraData (MoMo bắt buộc extraData phải là Base64 nếu có dữ liệu)
     final String extraData = base64Encode(utf8.encode(userId));
