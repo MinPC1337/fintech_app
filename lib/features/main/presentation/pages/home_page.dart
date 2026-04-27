@@ -1,6 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../injection_container.dart';
 import '../../domain/usecases/get_primary_wallet_stream_usecase.dart';
@@ -10,6 +10,10 @@ import 'receive_money_page.dart';
 import 'send_to_user_page.dart';
 import 'package:intl/intl.dart';
 import '../../domain/usecases/get_transactions_stream_usecase.dart';
+import '../../../auth/presentation/pages/profile_page.dart';
+import '../../../auth/domain/entities/user.dart' as auth_entity;
+import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../auth/presentation/cubit/auth_state.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -20,7 +24,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
-  final User? currentUser = FirebaseAuth.instance.currentUser;
   late final GetPrimaryWalletStreamUseCase getPrimaryWalletStreamUseCase;
   late final GetTransactionsStreamUseCase getTransactionsStreamUseCase;
 
@@ -33,44 +36,71 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (currentUser == null) {
-      return const Scaffold(body: Center(child: Text("Cần đăng nhập trước")));
-    }
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, state) {
+        auth_entity.User? currentUser;
+        if (state is AuthSuccess) {
+          currentUser = state.user;
+        }
 
-    return Scaffold(
-      backgroundColor: kBgColor,
-      body: SafeArea(
-        bottom: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // 1. Khối Tiêu đề & Cá nhân hóa
-              _buildHeader(),
-              const SizedBox(height: 48),
+        if (currentUser == null) {
+          return const Scaffold(body: Center(child: Text("Cần đăng nhập trước")));
+        }
 
-              // 2. Khối Trung tâm Số dư (Hero Section)
-              _buildBalanceHero(),
-              const SizedBox(height: 48),
+        return Scaffold(
+          backgroundColor: kBgColor,
+          body: SafeArea(
+            bottom: false,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // 1. Khối Tiêu đề & Cá nhân hóa
+                  _buildHeader(context, currentUser),
+                  const SizedBox(height: 48),
 
-              // 3. Khối Thao tác nhanh (Bento Quick Actions)
-              _buildBentoActions(context),
-              const SizedBox(height: 40),
+                  // 2. Khối Trung tâm Số dư (Hero Section)
+                  _buildBalanceHero(currentUser),
+                  const SizedBox(height: 48),
 
-              // 4. Khối Lịch sử Giao dịch (Fluid Transaction Timeline)
-              _buildTimelineSection(),
+                  // 3. Khối Thao tác nhanh (Bento Quick Actions)
+                  _buildBentoActions(context),
+                  const SizedBox(height: 40),
 
-              // Khoảng trống dưới cùng để không bị che bởi thanh lơ lửng Navigation
-              const SizedBox(height: 120),
-            ],
+                  // 4. Khối Lịch sử Giao dịch (Fluid Transaction Timeline)
+                  _buildTimelineSection(currentUser),
+
+                  // Khoảng trống dưới cùng để không bị che bởi thanh lơ lửng Navigation
+                  const SizedBox(height: 120),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildHeader() {
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour >= 5 && hour < 11) {
+      return 'CHÀO BUỔI SÁNG';
+    } else if (hour >= 11 && hour < 13) {
+      return 'CHÀO BUỔI TRƯA';
+    } else if (hour >= 13 && hour < 16) {
+      return 'CHÀO BUỔI CHIỀU';
+    } else {
+      return 'CHÀO BUỔI TỐI';
+    }
+  }
+
+  Widget _buildHeader(BuildContext context, auth_entity.User currentUser) {
+    final displayName = currentUser.fullName;
+    final nameToDisplay = (displayName.trim().isNotEmpty)
+        ? displayName
+        : 'Người Dùng';
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -78,7 +108,7 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'CHÀO BUỔI SÁNG',
+              _getGreeting(),
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.5),
                 letterSpacing: 2.0,
@@ -88,9 +118,7 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 4),
             Text(
-              currentUser?.displayName ??
-                  currentUser?.email?.split('@')[0] ??
-                  'Người Dùng',
+              nameToDisplay,
               style: const TextStyle(
                 color: kTextPrimary,
                 fontSize: 22,
@@ -99,33 +127,43 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
-        Container(
-          padding: const EdgeInsets.all(1), // Viền mỏng 1px
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: AppGradients.balance,
-          ),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ProfilePage(currentUser: currentUser),
+              ),
+            );
+          },
           child: Container(
-            padding: const EdgeInsets.all(3),
+            padding: const EdgeInsets.all(1), // Viền mỏng 1px
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              color: kBgColor, // Nền âm bản cắt vào viền
+              gradient: AppGradients.balance,
             ),
-            child: ClipOval(
-              child: ColorFiltered(
-                colorFilter: const ColorFilter.mode(
-                  Colors.grey, // Ám màu môi trường
-                  BlendMode.luminosity, // Hiệu ứng mix-blend-luminosity
-                ),
-                child: Image.asset(
-                  'assets/Futuristic Pro.png',
-                  width: 44,
-                  height: 44,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const Icon(
-                    Icons.person_outline,
-                    color: Colors.white,
-                    size: 40,
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: kBgColor, // Nền âm bản cắt vào viền
+              ),
+              child: ClipOval(
+                child: ColorFiltered(
+                  colorFilter: const ColorFilter.mode(
+                    Colors.grey, // Ám màu môi trường
+                    BlendMode.luminosity, // Hiệu ứng mix-blend-luminosity
+                  ),
+                  child: Image.asset(
+                    'assets/Futuristic Pro.png',
+                    width: 44,
+                    height: 44,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.person_outline,
+                      color: Colors.white,
+                      size: 40,
+                    ),
                   ),
                 ),
               ),
@@ -136,9 +174,9 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildBalanceHero() {
+  Widget _buildBalanceHero(auth_entity.User currentUser) {
     return StreamBuilder(
-      stream: getPrimaryWalletStreamUseCase.call(currentUser!.uid),
+      stream: getPrimaryWalletStreamUseCase.call(currentUser.uid),
       builder: (context, snapshot) {
         double balance = 0.0;
         if (snapshot.hasData) {
@@ -342,7 +380,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildTimelineSection() {
+  Widget _buildTimelineSection(auth_entity.User currentUser) {
     return Column(
       children: [
         Row(
@@ -373,7 +411,7 @@ class _HomePageState extends State<HomePage> {
         ),
         const SizedBox(height: 16),
         StreamBuilder<List<dynamic>>(
-          stream: getTransactionsStreamUseCase.call(currentUser!.uid),
+          stream: getTransactionsStreamUseCase.call(currentUser.uid),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const CircularProgressIndicator(color: kCyan);

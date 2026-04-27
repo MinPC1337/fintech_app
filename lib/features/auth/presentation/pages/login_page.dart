@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import 'register_page.dart';
@@ -8,18 +9,70 @@ import '../../../../features/main/presentation/pages/main_page.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/dialog_utils.dart';
 
-class LoginPage extends StatelessWidget {
-  LoginPage({super.key});
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
 
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+
+  String? _savedEmail;
+  bool _isCheckingSavedEmail = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedEmail();
+  }
+
+  Future<void> _loadSavedEmail() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final email = prefs.getString('last_email');
+      if (email != null && email.isNotEmpty) {
+        setState(() {
+          _savedEmail = email;
+          emailController.text = email;
+          _isCheckingSavedEmail = false;
+        });
+      } else {
+        setState(() {
+          _isCheckingSavedEmail = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isCheckingSavedEmail = false;
+      });
+    }
+  }
+
+  void _clearSavedEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('last_email');
+    setState(() {
+      _savedEmail = null;
+      emailController.clear();
+      passwordController.clear();
+    });
+  }
+
+  Future<void> _saveEmail(String email) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('last_email', email);
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthSuccess) {
+          _saveEmail(emailController.text.trim());
           showDialog(
             context: context,
             barrierDismissible: false, // Không cho phép bấm ra ngoài để đóng
@@ -131,20 +184,79 @@ class LoginPage extends StatelessWidget {
                         key: _formKey,
                         child: Column(
                           children: [
-                            _GlassmorphicTextField(
-                              controller: emailController,
-                              hintText: 'Email',
-                              icon: Icons.email_outlined,
-                              focusColor: kCyan,
-                              keyboardType: TextInputType.emailAddress,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Vui lòng nhập email';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 20),
+                            if (_isCheckingSavedEmail)
+                              const SizedBox(
+                                height: 76,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: kCyan,
+                                  ),
+                                ),
+                              )
+                            else if (_savedEmail != null) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                  horizontal: 16,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: kCyan.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: kCyan.withValues(alpha: 0.3),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.account_circle,
+                                      color: kCyan,
+                                      size: 40,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            "Xin chào,",
+                                            style: TextStyle(
+                                              color: kTextSecondary,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                          Text(
+                                            _savedEmail!,
+                                            style: const TextStyle(
+                                              color: kTextPrimary,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                            ] else ...[
+                              _GlassmorphicTextField(
+                                controller: emailController,
+                                hintText: 'Email',
+                                icon: Icons.email_outlined,
+                                focusColor: kCyan,
+                                keyboardType: TextInputType.emailAddress,
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Vui lòng nhập email';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 20),
+                            ],
                             _GlassmorphicTextField(
                               controller: passwordController,
                               hintText: 'Mật khẩu',
@@ -162,6 +274,26 @@ class LoginPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 24),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: _clearSavedEmail,
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Text(
+                            "Đăng nhập bằng tài khoản khác",
+                            style: TextStyle(
+                              color: kCyan,
+                              fontSize: 14,
+                              decoration: TextDecoration.none,
+                              decorationColor: kCyan,
+                            ),
+                          ),
+                        ),
+                      ),
 
                       // Utilities
                       _buildUtilities(context),
