@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -18,8 +17,9 @@ class MomoDepositPage extends StatefulWidget {
 
 class _MomoDepositPageState extends State<MomoDepositPage> {
   final User? currentUser = FirebaseAuth.instance.currentUser;
-  final TextEditingController _amountController =
-      TextEditingController(text: '10000');
+  final TextEditingController _amountController = TextEditingController(
+    text: '10000',
+  );
 
   bool _isLoadingQr = false;
   bool _isProcessingDeposit = false;
@@ -49,7 +49,12 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
 
     if (amount == null || amount <= 0) {
       showNotificationDialog(
-          context, 'Lỗi', 'Số tiền không hợp lệ', kRose, Icons.error);
+        context,
+        'Lỗi',
+        'Số tiền không hợp lệ',
+        kRose,
+        Icons.error,
+      );
       return;
     }
 
@@ -152,8 +157,7 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
   @override
   Widget build(BuildContext context) {
     if (currentUser == null) {
-      return const Scaffold(
-          body: Center(child: Text('Cần đăng nhập trước')));
+      return const Scaffold(body: Center(child: Text('Cần đăng nhập trước')));
     }
 
     const Color momoPink = Color(0xFFA50064);
@@ -162,8 +166,10 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: momoPink,
-        title: const Text('Nạp tiền qua MoMo',
-            style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Nạp tiền qua MoMo',
+          style: TextStyle(color: Colors.white),
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SafeArea(
@@ -176,9 +182,10 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
               const Text(
                 'Nhập số tiền muốn nạp:',
                 style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87),
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -198,34 +205,41 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
                   ),
                 ),
                 style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.w600),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 24),
 
               // ── Nút tạo QR ───────────────────────────────────────────────
               ElevatedButton(
-                onPressed:
-                    (_isLoadingQr || _qrCodeUrl != null) ? null : _generateMoMoQr,
+                onPressed: (_isLoadingQr || _qrCodeUrl != null)
+                    ? null
+                    : _generateMoMoQr,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: momoPink,
                   disabledBackgroundColor: Colors.grey.shade300,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: _isLoadingQr
                     ? const SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2),
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
                       )
                     : const Text(
                         'Tạo Mã QR MoMo',
                         style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold),
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
               ),
 
@@ -258,10 +272,12 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
                       data: _qrCodeUrl!,
                       version: QrVersions.auto,
                       size: 250.0,
-                      embeddedImage:
-                          const AssetImage('assets/Futuristic Pro.png'),
-                      embeddedImageStyle:
-                          const QrEmbeddedImageStyle(size: Size(40, 40)),
+                      embeddedImage: const AssetImage(
+                        'assets/Futuristic Pro.png',
+                      ),
+                      embeddedImageStyle: const QrEmbeddedImageStyle(
+                        size: Size(40, 40),
+                      ),
                     ),
                   ),
                 ),
@@ -298,11 +314,14 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: momoPink),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  child: const Text('Huỷ — Tạo QR mới',
-                      style: TextStyle(color: momoPink)),
+                  child: const Text(
+                    'Huỷ — Tạo QR mới',
+                    style: TextStyle(color: momoPink),
+                  ),
                 ),
               ],
 
@@ -324,8 +343,7 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
                     Expanded(
                       child: Text(
                         'App sẽ tự động kiểm tra trạng thái thanh toán mỗi 4 giây. Sau khi bạn thanh toán thành công, số dư sẽ được cập nhật tự động.',
-                        style:
-                            TextStyle(color: Colors.black87, fontSize: 13),
+                        style: TextStyle(color: Colors.black87, fontSize: 13),
                       ),
                     ),
                   ],

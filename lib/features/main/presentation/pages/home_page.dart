@@ -10,7 +10,6 @@ import 'receive_money_page.dart';
 import 'send_to_user_page.dart';
 import 'package:intl/intl.dart';
 import '../../domain/usecases/get_transactions_stream_usecase.dart';
-import '../../data/models/transaction_model.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -307,8 +306,16 @@ class _HomePageState extends State<HomePage> {
                     boxShadow: [
                       if (iconColor == kCyan) AppGlows.cyan,
                       if (iconColor == kPurple) AppGlows.purple,
-                      if (iconColor == kEmerald) BoxShadow(color: kEmerald.withValues(alpha: 0.3), blurRadius: 12),
-                      if (iconColor == kRose) BoxShadow(color: kRose.withValues(alpha: 0.3), blurRadius: 12),
+                      if (iconColor == kEmerald)
+                        BoxShadow(
+                          color: kEmerald.withValues(alpha: 0.3),
+                          blurRadius: 12,
+                        ),
+                      if (iconColor == kRose)
+                        BoxShadow(
+                          color: kRose.withValues(alpha: 0.3),
+                          blurRadius: 12,
+                        ),
                     ],
                   ),
                   child: Icon(icon, color: iconColor, size: 24),
@@ -325,10 +332,7 @@ class _HomePageState extends State<HomePage> {
                 if (subtitle != null)
                   Text(
                     subtitle,
-                    style: const TextStyle(
-                      color: kTextSecondary,
-                      fontSize: 11,
-                    ),
+                    style: const TextStyle(color: kTextSecondary, fontSize: 11),
                   ),
               ],
             ),
@@ -375,20 +379,28 @@ class _HomePageState extends State<HomePage> {
               return const CircularProgressIndicator(color: kCyan);
             }
             if (snapshot.hasError) {
-              return Text('Lỗi: ${snapshot.error}', style: const TextStyle(color: kRose));
+              return Text(
+                'Lỗi: ${snapshot.error}',
+                style: const TextStyle(color: kRose),
+              );
             }
-            
+
             final transactions = snapshot.data ?? [];
             if (transactions.isEmpty) {
-              return const Text('Chưa có giao dịch nào.', style: TextStyle(color: kTextSecondary));
+              return const Text(
+                'Chưa có giao dịch nào.',
+                style: TextStyle(color: kTextSecondary),
+              );
             }
 
             return Column(
               children: List.generate(transactions.length, (index) {
                 final tx = transactions[index];
-                
+
                 // Parse date
-                final timeDisplay = DateFormat('dd/MM/yyyy HH:mm').format(tx.timestamp);
+                final timeDisplay = DateFormat(
+                  'dd/MM/yyyy HH:mm',
+                ).format(tx.timestamp);
 
                 // Mỗi bản ghi đã thuộc về đúng user qua trường 'userId',
                 // nên chỉ cần kiểm tra type để phân loại Thu/Chi
@@ -399,9 +411,12 @@ class _HomePageState extends State<HomePage> {
                   isFirst: index == 0,
                   isLast: index == transactions.length - 1,
                   isIncome: isIncome,
-                  title: tx.note.isNotEmpty ? tx.note : (isIncome ? 'Nhận tiền' : 'Chuyển tiền'),
+                  title: tx.note.isNotEmpty
+                      ? tx.note
+                      : (isIncome ? 'Nhận tiền' : 'Chuyển tiền'),
                   time: timeDisplay,
-                  amount: '$sign${currencyFormatter.format(tx.amount).replaceAll('đ', '').trim()}',
+                  amount:
+                      '$sign${currencyFormatter.format(tx.amount).replaceAll('đ', '').trim()}',
                 );
               }),
             );

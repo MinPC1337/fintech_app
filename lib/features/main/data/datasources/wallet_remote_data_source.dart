@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../domain/entities/wallet_entity.dart';
 import '../models/wallet_model.dart';
 import '../models/transaction_model.dart';
 
@@ -9,8 +8,13 @@ abstract class WalletRemoteDataSource {
   Stream<WalletModel?> getPrimaryWalletStream(String userId);
   Future<void> transferOut(String senderUid, double amount, String targetPhone);
   Stream<List<TransactionModel>> getTransactionsStream(String userId);
+
   /// Chuyển tiền nội bộ từ user này sang user khác trong app
-  Future<void> transferToUser(String senderUid, String receiverUid, double amount);
+  Future<void> transferToUser(
+    String senderUid,
+    String receiverUid,
+    double amount,
+  );
 }
 
 class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
@@ -162,9 +166,13 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
         .snapshots()
         .map((snapshot) {
           return snapshot.docs.map((doc) {
-            final Map<String, dynamic> data = Map<String, dynamic>.from(doc.data());
+            final Map<String, dynamic> data = Map<String, dynamic>.from(
+              doc.data(),
+            );
             if (data['timestamp'] is Timestamp) {
-              data['timestamp'] = (data['timestamp'] as Timestamp).toDate().toIso8601String();
+              data['timestamp'] = (data['timestamp'] as Timestamp)
+                  .toDate()
+                  .toIso8601String();
             } else if (data['timestamp'] == null) {
               data['timestamp'] = DateTime.now().toIso8601String();
             }
@@ -207,10 +215,14 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
       final receiverBalance = (receiverSnap.data()?['balance'] ?? 0).toDouble();
 
       // Cập nhật số dư cả hai ví
-      transaction.update(senderWalletDoc.reference, {'balance': senderBalance - amount});
-      transaction.update(receiverWalletDoc.reference, {'balance': receiverBalance + amount});
+      transaction.update(senderWalletDoc.reference, {
+        'balance': senderBalance - amount,
+      });
+      transaction.update(receiverWalletDoc.reference, {
+        'balance': receiverBalance + amount,
+      });
 
-      final now = DateTime.now().toIso8601String();
+      DateTime.now().toIso8601String();
 
       // Ghi giao dịch Expense cho sender (userId = senderUid)
       final senderTxRef = firestore.collection('transactions').doc();
