@@ -273,27 +273,31 @@ class _LoginPageState extends State<LoginPage> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: _clearSavedEmail,
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: const Text(
-                            "Đăng nhập bằng tài khoản khác",
-                            style: TextStyle(
-                              color: kCyan,
-                              fontSize: 14,
-                              decoration: TextDecoration.none,
-                              decorationColor: kCyan,
+
+                      // Chỉ hiển thị nút chuyển tài khoản nếu đã có email được lưu từ lần đăng nhập trước
+                      if (_savedEmail != null) ...[
+                        const SizedBox(height: 24),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: _clearSavedEmail,
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text(
+                              "Đăng nhập bằng tài khoản khác",
+                              style: TextStyle(
+                                color: kCyan,
+                                fontSize: 14,
+                                decoration: TextDecoration.none,
+                                decorationColor: kCyan,
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
 
                       // Utilities
                       _buildUtilities(context),
