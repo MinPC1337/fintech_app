@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'receive_money_page.dart';
 
 /// Trang quét mã QR full-screen.
 /// Trả về [String?] khi pop — là raw value của QR hoặc null nếu huỷ.
@@ -90,7 +91,10 @@ class _QrScannerPageState extends State<QrScannerPage>
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.white,
+          ),
           onPressed: () => Navigator.of(context).pop(null),
         ),
         title: Text(
@@ -114,10 +118,7 @@ class _QrScannerPageState extends State<QrScannerPage>
       body: Stack(
         children: [
           // ── Camera feed ──────────────────────────────────────────
-          MobileScanner(
-            controller: _controller,
-            onDetect: _onDetect,
-          ),
+          MobileScanner(controller: _controller, onDetect: _onDetect),
 
           // ── Overlay tối ở 4 góc ─────────────────────────────────
           _buildDimOverlay(context),
@@ -181,7 +182,10 @@ class _QrScannerPageState extends State<QrScannerPage>
               children: [
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 40),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.55),
                     borderRadius: BorderRadius.circular(24),
@@ -190,7 +194,11 @@ class _QrScannerPageState extends State<QrScannerPage>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.qr_code_scanner_rounded, color: kCyan, size: 18),
+                      Icon(
+                        Icons.qr_code_scanner_rounded,
+                        color: kCyan,
+                        size: 18,
+                      ),
                       const SizedBox(width: 10),
                       Flexible(
                         child: Text(
@@ -207,13 +215,35 @@ class _QrScannerPageState extends State<QrScannerPage>
                   ),
                 ),
                 const SizedBox(height: 16),
-                TextButton.icon(
-                  onPressed: () => Navigator.of(context).pop(null),
-                  icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 16),
-                  label: const Text(
-                    'Huỷ quét',
-                    style: TextStyle(color: Colors.white54, fontSize: 13),
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () {
+                        // Đóng scanner (trả về null) rồi mở ReceiveMoneyPage đè lên
+                        Navigator.of(context).pop(null);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ReceiveMoneyPage(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.qr_code_rounded,
+                        color: kCyan,
+                        size: 16,
+                      ),
+                      label: const Text(
+                        'Mã QR của tôi',
+                        style: TextStyle(
+                          color: kCyan,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -236,17 +266,37 @@ class _QrScannerPageState extends State<QrScannerPage>
     return Stack(
       children: [
         // Top
-        Positioned(top: 0, left: 0, right: 0, height: topH,
-            child: Container(color: dimColor)),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: topH,
+          child: Container(color: dimColor),
+        ),
         // Bottom
-        Positioned(bottom: 0, left: 0, right: 0, height: topH,
-            child: Container(color: dimColor)),
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: topH,
+          child: Container(color: dimColor),
+        ),
         // Left
-        Positioned(top: topH, left: 0, width: sideW, height: frameSize,
-            child: Container(color: dimColor)),
+        Positioned(
+          top: topH,
+          left: 0,
+          width: sideW,
+          height: frameSize,
+          child: Container(color: dimColor),
+        ),
         // Right
-        Positioned(top: topH, right: 0, width: sideW, height: frameSize,
-            child: Container(color: dimColor)),
+        Positioned(
+          top: topH,
+          right: 0,
+          width: sideW,
+          height: frameSize,
+          child: Container(color: dimColor),
+        ),
       ],
     );
   }

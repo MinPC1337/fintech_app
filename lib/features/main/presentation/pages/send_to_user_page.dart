@@ -50,7 +50,9 @@ class _SendToUserPageState extends State<SendToUserPage> {
   @override
   void initState() {
     super.initState();
-    _uidController = TextEditingController(text: widget.initialReceiverUid ?? '');
+    _uidController = TextEditingController(
+      text: widget.initialReceiverUid ?? '',
+    );
   }
 
   @override
@@ -68,18 +70,36 @@ class _SendToUserPageState extends State<SendToUserPage> {
     final amountText = _amountController.text.trim();
 
     if (receiverUid.isEmpty) {
-      showNotificationDialog(context, 'Lỗi', 'Vui lòng nhập Mã ví người nhận', kRose, Icons.error);
+      showNotificationDialog(
+        context,
+        'Lỗi',
+        'Vui lòng nhập Mã ví người nhận',
+        kRose,
+        Icons.error,
+      );
       return;
     }
 
     if (receiverUid == currentUser!.uid) {
-      showNotificationDialog(context, 'Lỗi', 'Không thể chuyển tiền cho chính mình', kRose, Icons.error);
+      showNotificationDialog(
+        context,
+        'Lỗi',
+        'Không thể chuyển tiền cho chính mình',
+        kRose,
+        Icons.error,
+      );
       return;
     }
 
     final amount = double.tryParse(amountText);
     if (amount == null || amount <= 0) {
-      showNotificationDialog(context, 'Lỗi', 'Số tiền không hợp lệ', kRose, Icons.error);
+      showNotificationDialog(
+        context,
+        'Lỗi',
+        'Số tiền không hợp lệ',
+        kRose,
+        Icons.error,
+      );
       return;
     }
 
@@ -120,7 +140,10 @@ class _SendToUserPageState extends State<SendToUserPage> {
       appBar: AppBar(
         backgroundColor: kBgColor,
         elevation: 0,
-        title: const Text('Chuyển vào ví', style: TextStyle(color: kTextPrimary)),
+        title: const Text(
+          'Chuyển vào ví',
+          style: TextStyle(color: kTextPrimary),
+        ),
         iconTheme: const IconThemeData(color: kTextPrimary),
       ),
       body: SafeArea(
@@ -150,7 +173,11 @@ class _SendToUserPageState extends State<SendToUserPage> {
                             shape: BoxShape.circle,
                             boxShadow: [AppGlows.purple],
                           ),
-                          child: const Icon(Icons.send_rounded, color: kPurple, size: 28),
+                          child: const Icon(
+                            Icons.send_rounded,
+                            color: kPurple,
+                            size: 28,
+                          ),
                         ),
                         const SizedBox(width: 16),
                         const Column(
@@ -167,7 +194,10 @@ class _SendToUserPageState extends State<SendToUserPage> {
                             SizedBox(height: 4),
                             Text(
                               'Chuyển trực tiếp giữa các ví trong app',
-                              style: TextStyle(color: kTextSecondary, fontSize: 13),
+                              style: TextStyle(
+                                color: kTextSecondary,
+                                fontSize: 13,
+                              ),
                             ),
                           ],
                         ),
@@ -184,9 +214,13 @@ class _SendToUserPageState extends State<SendToUserPage> {
               const SizedBox(height: 8),
               TextField(
                 controller: _uidController,
-                style: const TextStyle(color: kTextPrimary, fontSize: 14, fontFamily: 'monospace'),
+                style: const TextStyle(
+                  color: kTextPrimary,
+                  fontSize: 14,
+                  fontFamily: 'monospace',
+                ),
                 decoration: _inputDecoration(
-                  hint: 'Dán Mã ví (UID) người nhận vào đây',
+                  hint: 'Mã ví (UID) người nhận',
                   icon: Icons.wallet_outlined,
                   iconColor: kPurple,
                   scanAction: _scanWalletQr,
@@ -238,19 +272,28 @@ class _SendToUserPageState extends State<SendToUserPage> {
                   backgroundColor: kPurple,
                   disabledBackgroundColor: kPurple.withValues(alpha: 0.4),
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                   elevation: 0,
                 ),
                 child: _isSending
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
                       )
                     : const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                          Icon(
+                            Icons.send_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                           SizedBox(width: 10),
                           Text(
                             'Chuyển tiền ngay',
@@ -282,7 +325,11 @@ class _SendToUserPageState extends State<SendToUserPage> {
                     Expanded(
                       child: Text(
                         'Giao dịch được xử lý nguyên tử — tiền trừ và cộng đồng thời, không thể hoàn tác sau khi xác nhận.',
-                        style: TextStyle(color: kTextSecondary, fontSize: 12, height: 1.5),
+                        style: TextStyle(
+                          color: kTextSecondary,
+                          fontSize: 12,
+                          height: 1.5,
+                        ),
                       ),
                     ),
                   ],

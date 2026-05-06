@@ -102,7 +102,9 @@ class ReceiveMoneyPage extends StatelessWidget {
 
                         // Tên người dùng
                         Text(
-                          user.displayName ?? user.email?.split('@')[0] ?? 'Người Dùng',
+                          user.displayName ??
+                              user.email?.split('@')[0] ??
+                              'Người Dùng',
                           style: const TextStyle(
                             color: kTextPrimary,
                             fontSize: 18,
@@ -127,16 +129,25 @@ class ReceiveMoneyPage extends StatelessWidget {
                             );
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
                             decoration: BoxDecoration(
                               color: kCyan.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: kCyan.withValues(alpha: 0.3)),
+                              border: Border.all(
+                                color: kCyan.withValues(alpha: 0.3),
+                              ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.wallet, color: kCyan, size: 16),
+                                const Icon(
+                                  Icons.wallet,
+                                  color: kCyan,
+                                  size: 16,
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
                                   shortUid,
@@ -148,7 +159,11 @@ class ReceiveMoneyPage extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                const Icon(Icons.copy_rounded, color: kCyan, size: 14),
+                                const Icon(
+                                  Icons.copy_rounded,
+                                  color: kCyan,
+                                  size: 14,
+                                ),
                               ],
                             ),
                           ),
@@ -181,9 +196,18 @@ class ReceiveMoneyPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _buildStep('1', 'Cho người gửi mở màn hình Chuyển khoản trong app'),
-                    _buildStep('2', 'Họ nhập Mã ví của bạn hoặc quét mã QR này'),
-                    _buildStep('3', 'Nhập số tiền và xác nhận — tiền vào ví ngay lập tức'),
+                    _buildStep(
+                      '1',
+                      'Cho người gửi mở màn hình Chuyển khoản trong app',
+                    ),
+                    _buildStep(
+                      '2',
+                      'Họ nhập Mã ví của bạn hoặc quét mã QR này',
+                    ),
+                    _buildStep(
+                      '3',
+                      'Nhập số tiền và xác nhận — tiền vào ví ngay lập tức',
+                    ),
                   ],
                 ),
               ),
@@ -206,11 +230,19 @@ class ReceiveMoneyPage extends StatelessWidget {
                   );
                 },
                 icon: const Icon(Icons.copy_all_rounded, color: kCyan),
-                label: const Text('Sao chép Mã ví đầy đủ', style: TextStyle(color: kCyan)),
+                label: const Text(
+                  'Sao chép Mã ví đầy đủ',
+                  style: TextStyle(color: kCyan),
+                ),
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: kCyan.withValues(alpha: 0.4)),
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 14,
+                    horizontal: 24,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ],
@@ -247,7 +279,11 @@ class ReceiveMoneyPage extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(color: kTextSecondary, fontSize: 13, height: 1.5),
+              style: const TextStyle(
+                color: kTextSecondary,
+                fontSize: 13,
+                height: 1.5,
+              ),
             ),
           ),
         ],

@@ -6,7 +6,6 @@ import '../../../../injection_container.dart';
 import '../../domain/usecases/get_primary_wallet_stream_usecase.dart';
 import 'momo_deposit_page.dart';
 import 'transfer_page.dart';
-import 'receive_money_page.dart';
 import 'send_to_user_page.dart';
 import 'package:intl/intl.dart';
 import '../../domain/usecases/get_transactions_stream_usecase.dart';
@@ -63,17 +62,29 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   // 1. Khối Tiêu đề & Cá nhân hóa
                   _buildHeader(context, currentUser),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 32),
 
-                  // 2. Khối Trung tâm Số dư (Hero Section)
+                  // 2. Thẻ Số dư (Hero Section)
                   _buildBalanceHero(currentUser),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 32),
 
-                  // 3. Khối Thao tác nhanh (Bento Quick Actions)
-                  _buildBentoActions(context),
+                  // Tiêu đề Thao tác nhanh
+                  const Text(
+                    'THAO TÁC NHANH',
+                    style: TextStyle(
+                      color: kTextPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 3. Khối Thao tác nhanh (Quick Actions Row)
+                  _buildQuickActions(context),
                   const SizedBox(height: 40),
 
-                  // 4. Khối Lịch sử Giao dịch (Fluid Transaction Timeline)
+                  // 4. Khối Lịch sử Giao dịch
                   _buildTimelineSection(currentUser),
 
                   // Khoảng trống dưới cùng để không bị che bởi thanh lơ lửng Navigation
@@ -191,195 +202,158 @@ class _HomePageState extends State<HomePage> {
           );
         }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              'TỔNG SỐ DƯ (VND)',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                letterSpacing: 3.0, // tracking-[0.2em]
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ShaderMask(
-              shaderCallback: (bounds) => LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  kCyan,
-                  kCyan.withValues(alpha: 0.4),
-                ], // Gradient sáng xuống mờ
-              ).createShader(bounds),
-              child: Text(
-                currencyFormatter.format(balance).replaceAll('đ', '').trim(),
-                style: const TextStyle(
-                  fontSize: 52, // Con số khổng lồ
-                  fontWeight: FontWeight.w900,
-                  color: kCyan,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(32),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
               decoration: BoxDecoration(
-                color: kEmerald.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: kEmerald.withValues(alpha: 0.2)),
+                color: kThemeGlassBase,
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(color: kThemeBorderDefault),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const Icon(Icons.trending_up, color: kEmerald, size: 16),
-                  const SizedBox(width: 8),
-                  const Text(
-                    '+12% so với tháng trước',
+                  Text(
+                    'TỔNG SỐ DƯ (VND)',
                     style: TextStyle(
-                      color: kEmerald,
+                      color: Colors.white.withValues(alpha: 0.5),
+                      letterSpacing: 3.0,
                       fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ShaderMask(
+                    shaderCallback: (bounds) => LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [kCyan, kCyan.withValues(alpha: 0.4)],
+                    ).createShader(bounds),
+                    child: Text(
+                      currencyFormatter
+                          .format(balance)
+                          .replaceAll('đ', '')
+                          .trim(),
+                      style: const TextStyle(
+                        fontSize: 52,
+                        fontWeight: FontWeight.w900,
+                        color: kCyan,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: kEmerald.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: kEmerald.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.trending_up, color: kEmerald, size: 16),
+                        SizedBox(width: 8),
+                        Text(
+                          '+12% so với tháng trước',
+                          style: TextStyle(
+                            color: kEmerald,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-          ],
+          ),
         );
       },
     );
   }
 
-  Widget _buildBentoActions(BuildContext context) {
-    return Column(
+  Widget _buildQuickActions(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildBentoCard(
-                icon: Icons.account_balance_wallet_outlined,
-                iconColor: kCyan,
-                title: 'Nạp tiền',
-                subtitle: 'Qua MoMo',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const MomoDepositPage()),
-                ),
-              ),
+        Expanded(
+          child: _buildActionItem(
+            icon: Icons.account_balance_wallet_outlined,
+            color: kCyan,
+            label: 'Nạp tiền',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MomoDepositPage()),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildBentoCard(
-                icon: Icons.qr_code_rounded,
-                iconColor: kEmerald,
-                title: 'Nhận tiền',
-                subtitle: 'Mã QR ví',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ReceiveMoneyPage()),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildBentoCard(
-                icon: Icons.send_outlined,
-                iconColor: kPurple,
-                title: 'Chuyển vào ví',
-                subtitle: 'Nội bộ',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SendToUserPage()),
-                ),
-              ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildActionItem(
+            icon: Icons.send_outlined,
+            color: kPurple,
+            label: 'Chuyển tiền',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SendToUserPage()),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildBentoCard(
-                icon: Icons.arrow_upward_rounded,
-                iconColor: kRose,
-                title: 'Rút tiền',
-                subtitle: 'Ra MoMo',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const TransferPage()),
-                ),
-              ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildActionItem(
+            icon: Icons.arrow_upward_rounded,
+            color: kRose,
+            label: 'Rút tiền',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const TransferPage()),
             ),
-          ],
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildBentoCard({
+  Widget _buildActionItem({
     required IconData icon,
-    required Color iconColor,
-    required String title,
-    String? subtitle,
+    required Color color,
+    required String label,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: kThemeGlassBase,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: kThemeBorderDefault),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: kThemeGlassBase,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: kThemeBorderDefault),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              style: const TextStyle(
+                color: kTextPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: iconColor.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      if (iconColor == kCyan) AppGlows.cyan,
-                      if (iconColor == kPurple) AppGlows.purple,
-                      if (iconColor == kEmerald)
-                        BoxShadow(
-                          color: kEmerald.withValues(alpha: 0.3),
-                          blurRadius: 12,
-                        ),
-                      if (iconColor == kRose)
-                        BoxShadow(
-                          color: kRose.withValues(alpha: 0.3),
-                          blurRadius: 12,
-                        ),
-                    ],
-                  ),
-                  child: Icon(icon, color: iconColor, size: 24),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: kTextPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (subtitle != null)
-                  Text(
-                    subtitle,
-                    style: const TextStyle(color: kTextSecondary, fontSize: 11),
-                  ),
-              ],
-            ),
-          ),
+          ],
         ),
       ),
     );
@@ -451,8 +425,6 @@ class _HomePageState extends State<HomePage> {
                 final sign = isIncome ? '+' : '-';
 
                 return _buildTimelineItem(
-                  isFirst: index == 0,
-                  isLast: index == transactions.length - 1,
                   isIncome: isIncome,
                   title: tx.note.isNotEmpty
                       ? tx.note
@@ -470,8 +442,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildTimelineItem({
-    required bool isFirst,
-    required bool isLast,
     required bool isIncome,
     required String title,
     required String time,
@@ -480,110 +450,94 @@ class _HomePageState extends State<HomePage> {
     final color = isIncome ? kEmerald : kRose; // Phân loại màu thông minh
     final icon = isIncome ? Icons.south_west_rounded : Icons.north_east_rounded;
 
-    return IntrinsicHeight(
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: kThemeSurfaceSecondary.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: color.withValues(alpha: 0.2), // Viền sáng màu đặc trưng
+          width: 1,
+        ),
+        boxShadow: [
+          // Shadow màu ở "đầu" viền thẻ (bên trái)
+          BoxShadow(
+            color: color.withValues(alpha: 0.15),
+            blurRadius: 12,
+            offset: const Offset(-4, 0), // Đẩy bóng về bên trái
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Row(
         children: [
-          // Dây rốn Năng lượng (Timeline Line)
-          SizedBox(
-            width: 32,
-            child: Stack(
-              alignment: Alignment.center,
+          // Icon biểu tượng với nền mờ
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Positioned(
-                  top: isFirst ? 40 : 0, // Căn chỉnh dòng bắt đầu
-                  bottom: isLast ? null : 0, // Căn chỉnh dòng kết thúc
-                  height: isLast ? 40 : null,
-                  child: Container(
-                    width: 2,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          kCyan.withValues(alpha: 0.6),
-                          kPurple.withValues(alpha: 0.2),
-                        ],
-                      ),
-                    ),
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: kTextPrimary.withValues(alpha: 0.9),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
                   ),
                 ),
-                // Điểm giao dịch (Node)
-                Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: kBgColor,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: color, width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.4),
-                        blurRadius: 8,
-                      ),
-                    ],
+                const SizedBox(height: 2),
+                Text(
+                  time,
+                  style: TextStyle(
+                    color: kTextSecondary.withValues(alpha: 0.6),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 16),
-          // Thẻ Giao dịch (Transaction Card)
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: kThemeSurfaceSecondary, // --surface-secondary
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: kThemeBorderDefault), // border cyan
+          const SizedBox(width: 8),
+          // Cột hiển thị số tiền
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '$amount đ',
+                style: TextStyle(
+                  color: isIncome ? kEmerald : kTextPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
+                ),
               ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(icon, color: color, size: 20),
+              if (isIncome)
+                Container(
+                  margin: const EdgeInsets.only(top: 2),
+                  height: 2,
+                  width: 20,
+                  decoration: BoxDecoration(
+                    color: kEmerald.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(1),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            color: kTextPrimary,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          time,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.4),
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    '$amount đ',
-                    style: TextStyle(
-                      color: isIncome
-                          ? kEmerald
-                          : kTextPrimary, // Emerald cho Thu, Trắng cho Chi
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                ),
+            ],
           ),
         ],
       ),
