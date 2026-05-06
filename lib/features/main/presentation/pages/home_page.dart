@@ -44,7 +44,9 @@ class _HomePageState extends State<HomePage> {
         }
 
         if (currentUser == null) {
-          return const Scaffold(body: Center(child: Text("Cần đăng nhập trước")));
+          return const Scaffold(
+            body: Center(child: Text("Cần đăng nhập trước")),
+          );
         }
 
         return Scaffold(
@@ -52,7 +54,10 @@ class _HomePageState extends State<HomePage> {
           body: SafeArea(
             bottom: false,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 16.0,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -88,7 +93,7 @@ class _HomePageState extends State<HomePage> {
       return 'CHÀO BUỔI SÁNG';
     } else if (hour >= 11 && hour < 13) {
       return 'CHÀO BUỔI TRƯA';
-    } else if (hour >= 13 && hour < 16) {
+    } else if (hour >= 13 && hour < 18) {
       return 'CHÀO BUỔI CHIỀU';
     } else {
       return 'CHÀO BUỔI TỐI';

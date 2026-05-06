@@ -4,9 +4,13 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/dialog_utils.dart';
 import '../../../../injection_container.dart';
 import '../../domain/usecases/transfer_out_usecase.dart';
+import 'qr_scanner_page.dart';
 
 class TransferPage extends StatefulWidget {
-  const TransferPage({super.key});
+  /// Số điện thoại điền sẵn (từ QR scanner)
+  final String? initialPhone;
+
+  const TransferPage({super.key, this.initialPhone});
 
   @override
   State<TransferPage> createState() => _TransferPageState();
@@ -14,10 +18,67 @@ class TransferPage extends StatefulWidget {
 
 class _TransferPageState extends State<TransferPage> {
   final User? currentUser = FirebaseAuth.instance.currentUser;
-  final TextEditingController _phoneController = TextEditingController();
+  late final TextEditingController _phoneController;
   final TextEditingController _amountController = TextEditingController();
 
   bool _isTransferring = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _phoneController =
+        TextEditingController(text: widget.initialPhone ?? '');
+  }
+
+  /// Mở QrScannerPage, parse SĐT 10 số từ kết quả QR MoMo UAT.
+  /// Hỗ trợ các định dạng:
+  ///   - EMV QR: "2|99|0987654321|..."
+  ///   - Deeplink: "momo://...phone=0987654321..."
+  ///   - Chuỗi thẳng 10 số
+  Future<void> _scanMomoQr() async {
+    final result = await Navigator.push<String?>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const QrScannerPage(
+          title: 'Quét QR MoMo',
+          hint: 'Quét mã QR ví MoMo để tự động điền số điện thoại',
+        ),
+      ),
+    );
+
+    // ── DEBUG: kết quả trả về từ QR scanner ──────────────────────────
+    debugPrint('[TransferPage._scanMomoQr] raw result: "$result"');
+    // ──────────────────────────────────────────────────
+
+    if (result == null || result.isEmpty) return;
+
+    // Parse số điện thoại 10 số (bắt đầu bằng 0)
+    final phoneRegex = RegExp(r'(?<![\d])(0\d{9})(?![\d])');
+    final match = phoneRegex.firstMatch(result);
+    if (match != null) {
+      debugPrint('[TransferPage._scanMomoQr] ✔ Phone extracted via regex: "${match.group(1)}"');
+      _phoneController.text = match.group(1)!;
+      return;
+    }
+
+    // Nếu toàn bộ chuỗi chỉ là SĐT
+    if (RegExp(r'^0\d{9}$').hasMatch(result.trim())) {
+      debugPrint('[TransferPage._scanMomoQr] ✔ Phone is raw string: "${result.trim()}"');
+      _phoneController.text = result.trim();
+      return;
+    }
+
+    debugPrint('[TransferPage._scanMomoQr] ✖ No phone found in QR content');
+    if (mounted) {
+      showNotificationDialog(
+        context,
+        'Không tìm thấy SĐT',
+        'Mã QR không chứa số điện thoại MoMo hợp lệ.\nNội dung: $result',
+        kRose,
+        Icons.qr_code_2_rounded,
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -165,6 +226,12 @@ class _TransferPageState extends State<TransferPage> {
                   prefixIcon: const Icon(
                     Icons.phone_android,
                     color: kElectricBlue,
+                  ),
+                  suffixIcon: IconButton(
+                    tooltip: 'Quét mã QR MoMo',
+                    icon: const Icon(Icons.qr_code_scanner_rounded,
+                        color: kElectricBlue),
+                    onPressed: _scanMomoQr,
                   ),
                   filled: true,
                   fillColor: kSurface,

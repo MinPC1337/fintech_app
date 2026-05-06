@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/dialog_utils.dart';
 import '../../../../injection_container.dart';
 import '../../domain/usecases/transfer_to_user_usecase.dart';
+import 'qr_scanner_page.dart';
 
 class SendToUserPage extends StatefulWidget {
   /// Pre-fill receiver UID nếu được truyền từ QR scanner
@@ -23,6 +24,28 @@ class _SendToUserPageState extends State<SendToUserPage> {
   final TextEditingController _noteController = TextEditingController();
 
   bool _isSending = false;
+
+  /// Mở QrScannerPage và điền UID người nhận từ QR ví nội bộ.
+  Future<void> _scanWalletQr() async {
+    final result = await Navigator.push<String?>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const QrScannerPage(
+          title: 'Quét QR ví',
+          hint: 'Quét mã QR ví của người nhận để tự động điền Mã ví',
+        ),
+      ),
+    );
+
+    if (result == null || result.isEmpty) return;
+
+    final rawTrimmed = result.trim();
+    if (rawTrimmed.startsWith('fintech://receive?uid=')) {
+      _uidController.text = rawTrimmed.replaceAll('fintech://receive?uid=', '');
+    } else {
+      _uidController.text = rawTrimmed;
+    }
+  }
 
   @override
   void initState() {
@@ -166,6 +189,7 @@ class _SendToUserPageState extends State<SendToUserPage> {
                   hint: 'Dán Mã ví (UID) người nhận vào đây',
                   icon: Icons.wallet_outlined,
                   iconColor: kPurple,
+                  scanAction: _scanWalletQr,
                 ),
               ),
 
@@ -288,6 +312,7 @@ class _SendToUserPageState extends State<SendToUserPage> {
     required IconData icon,
     required Color iconColor,
     String? suffix,
+    VoidCallback? scanAction,
   }) {
     return InputDecoration(
       hintText: hint,
@@ -295,6 +320,13 @@ class _SendToUserPageState extends State<SendToUserPage> {
       suffixText: suffix,
       suffixStyle: const TextStyle(color: kTextSecondary, fontSize: 14),
       prefixIcon: Icon(icon, color: iconColor, size: 20),
+      suffixIcon: scanAction != null
+          ? IconButton(
+              tooltip: 'Quét mã QR',
+              icon: const Icon(Icons.qr_code_scanner_rounded, color: kPurple),
+              onPressed: scanAction,
+            )
+          : null,
       filled: true,
       fillColor: kThemeSurfaceSecondary,
       border: OutlineInputBorder(

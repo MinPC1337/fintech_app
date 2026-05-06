@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'home_page.dart';
 import 'settings_page.dart';
+import 'qr_scanner_page.dart';
+import 'transfer_page.dart';
+import 'send_to_user_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -52,7 +55,7 @@ class _MainPageState extends State<MainPage> {
         children: [
           // 1. Thanh Dock Glassmorphism (Kính mờ không gian)
           Positioned(
-            bottom: 25, // bottom-8: Cách đáy 32px tạo cảm giác lơ lửng
+            bottom: 15, // bottom-8: Cách đáy 32px tạo cảm giác lơ lửng
             left: 24, // Thụt vào 2 bên
             right: 24,
             child: Container(
@@ -142,8 +145,8 @@ class _MainPageState extends State<MainPage> {
 
   Widget _buildScanButton() {
     return Container(
-      width: 76,
-      height: 76,
+      width: 80,
+      height: 80,
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
         // Màu đen nguyên bản trùng với nền app để tạo viền chìm (Negative Space)
@@ -173,9 +176,7 @@ class _MainPageState extends State<MainPage> {
           color: Colors.transparent,
           child: InkWell(
             customBorder: const CircleBorder(),
-            onTap: () {
-              // Thêm logic mở Camera quét mã QR của bạn ở đây
-            },
+            onTap: () => _handleScanButton(),
             child: const Icon(
               Icons.qr_code_scanner,
               color: Colors.white,
@@ -185,5 +186,267 @@ class _MainPageState extends State<MainPage> {
         ),
       ),
     );
+  }
+
+  /// Mở QrScannerPage và định tuyến thông minh dựa trên nội dung QR:
+  Future<void> _handleScanButton() async {
+    final result = await Navigator.push<String?>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const QrScannerPage(
+          title: 'Quét mã QR',
+          hint: 'Quét QR MoMo để rút tiền\nhoặc QR ví để chuyển nội bộ',
+        ),
+      ),
+    );
+
+    if (result == null || result.isEmpty || !mounted) return;
+
+    final rawTrimmed = result.trim();
+
+    // ── DEBUG ──────────────────────────────────────────
+    debugPrint('┌──────────────────────────────────────────┐');
+    debugPrint('│ [MainPage] QR result received');
+    debugPrint('│  Raw    : "$rawTrimmed"');
+    debugPrint('│  Length : ${rawTrimmed.length} chars');
+    debugPrint('└──────────────────────────────────────────┘');
+    // ──────────────────────────────────────────
+
+    // 1. EMVCo QR (MoMo UAT / VietQR) — bắt đầu bằng "000201"
+    if (rawTrimmed.startsWith('000201')) {
+      final phone = _extractPhoneFromEmvco(rawTrimmed);
+      debugPrint('[MainPage] EMVCo QR detected. Phone parsed: $phone');
+      if (phone != null && mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TransferPage(initialPhone: phone),
+          ),
+        );
+        return;
+      }
+      if (mounted) _showUnknownQrSheet(rawTrimmed);
+      return;
+    }
+
+    // 2. Số điện thoại thẳng 10 số
+    if (RegExp(r'^0\d{9}$').hasMatch(rawTrimmed)) {
+      debugPrint('[MainPage] → ROUTE: TransferPage (plain phone = $rawTrimmed)');
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => TransferPage(initialPhone: rawTrimmed),
+        ),
+      );
+      return;
+    }
+
+    // 3. UID Firebase hoặc Deeplink ví cá nhân
+    // Hỗ trợ mã QR thuần (chỉ chứa UID) hoặc deeplink: fintech://receive?uid=...
+    String? extractedUid;
+    if (rawTrimmed.startsWith('fintech://receive?uid=')) {
+      extractedUid = rawTrimmed.replaceAll('fintech://receive?uid=', '');
+    } else if (rawTrimmed.length >= 20 &&
+        RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(rawTrimmed)) {
+      extractedUid = rawTrimmed;
+    }
+
+    if (extractedUid != null && extractedUid.isNotEmpty) {
+      debugPrint('[MainPage] → ROUTE: SendToUserPage (UID = $extractedUid)');
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SendToUserPage(initialReceiverUid: extractedUid),
+        ),
+      );
+      return;
+    }
+
+    // 3. Không nhận dạng được → bottom sheet chọn hành động
+    debugPrint('[MainPage] → ROUTE: Unknown QR — showing bottom sheet');
+    if (!mounted) return;
+    _showUnknownQrSheet(result);
+  }
+
+  void _showUnknownQrSheet(String rawValue) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: BoxDecoration(
+          color: kThemeSurfaceSecondary,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(color: kThemeBorderDefault),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: kThemeBorderDefault,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Không nhận dạng được QR',
+              style: TextStyle(
+                color: kTextPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Nội dung: $rawValue',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: kTextSecondary, fontSize: 12),
+            ),
+            const SizedBox(height: 24),
+            _sheetAction(
+              icon: Icons.phone_android,
+              color: kElectricBlue,
+              label: 'Rút tiền ra MoMo',
+              subtitle: 'Nhập số điện thoại thủ công',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TransferPage()),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            _sheetAction(
+              icon: Icons.send_rounded,
+              color: kPurple,
+              label: 'Chuyển vào ví nội bộ',
+              subtitle: 'Nhập mã ví thủ công',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SendToUserPage()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sheetAction({
+    required IconData icon,
+    required Color color,
+    required String label,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: kTextPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: kTextSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios_rounded, color: color, size: 14),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Parse số điện thoại từ EMVCo QR (chuẩn MoMo UAT).
+  /// Cấu trúc: Tag 38 → Sub-tag 01 → Sub-sub-tag 01 = SĐT.
+  String? _extractPhoneFromEmvco(String qr) {
+    try {
+      // Lấy value của Tag 38 (Merchant Account Information)
+      final tag38 = _emvcoTagValue(qr, '38');
+      if (tag38 == null) {
+        debugPrint('[EMVCo] Tag 38 not found');
+        return null;
+      }
+      debugPrint('[EMVCo] Tag38 value: $tag38');
+
+      // Trong tag 38, lấy Sub-tag 01
+      final sub01 = _emvcoTagValue(tag38, '01');
+      if (sub01 == null) {
+        debugPrint('[EMVCo] Sub-tag 01 not found in Tag38');
+        return null;
+      }
+      debugPrint('[EMVCo] Sub-tag01 value: $sub01');
+
+      // Trong sub-tag 01, lấy Sub-sub-tag 01 = phone
+      final phone = _emvcoTagValue(sub01, '01');
+      debugPrint('[EMVCo] Phone field: $phone');
+
+      if (phone != null && RegExp(r'^0[3-9]\d{8}$').hasMatch(phone)) {
+        return phone;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('[EMVCo] Parse error: $e');
+      return null;
+    }
+  }
+
+  /// Tìm value của [tag] trong chuỗi TLV EMVCo (mỗi entry: 2-char tag + 2-char len + value).
+  String? _emvcoTagValue(String data, String tag) {
+    int pos = 0;
+    while (pos + 4 <= data.length) {
+      final currentTag = data.substring(pos, pos + 2);
+      final lenStr = data.substring(pos + 2, pos + 4);
+      final len = int.tryParse(lenStr);
+      if (len == null || pos + 4 + len > data.length) break;
+      final value = data.substring(pos + 4, pos + 4 + len);
+      if (currentTag == tag) return value;
+      pos += 4 + len;
+    }
+    return null;
   }
 }
