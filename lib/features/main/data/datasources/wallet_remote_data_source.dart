@@ -73,6 +73,18 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
         'note': 'Nạp tiền vào ví',
       };
       transaction.set(txRef, txData);
+
+      // 3. Tạo bản ghi thông báo
+      final notifRef = firestore.collection('notifications').doc();
+      transaction.set(notifRef, {
+        'id': notifRef.id,
+        'userId': receiverUid,
+        'title': 'Nạp tiền thành công',
+        'body': 'Bạn vừa nạp ${amount.toStringAsFixed(0)} VNĐ vào ví từ MoMo.',
+        'timestamp': FieldValue.serverTimestamp(),
+        'isRead': false,
+        'type': 'transaction',
+      });
     });
   }
 
@@ -152,6 +164,19 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
         'note': 'Chuyển khoản đến MoMo $targetPhone',
       };
       transaction.set(txRef, txData);
+
+      // 3. Tạo bản ghi thông báo
+      final notifRef = firestore.collection('notifications').doc();
+      transaction.set(notifRef, {
+        'id': notifRef.id,
+        'userId': senderUid,
+        'title': 'Rút tiền thành công',
+        'body':
+            'Giao dịch rút ${amount.toStringAsFixed(0)} VNĐ về số $targetPhone đã hoàn tất.',
+        'timestamp': FieldValue.serverTimestamp(),
+        'isRead': false,
+        'type': 'transaction',
+      });
     });
   }
 
@@ -254,6 +279,31 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
         'timestamp': FieldValue.serverTimestamp(),
         'type': 'Income',
         'note': 'Nhận tiền từ ví $senderUid',
+      });
+
+      // 4. Tạo thông báo cho cả hai bên
+      final senderNotifRef = firestore.collection('notifications').doc();
+      transaction.set(senderNotifRef, {
+        'id': senderNotifRef.id,
+        'userId': senderUid,
+        'title': 'Chuyển tiền thành công',
+        'body':
+            'Bạn đã chuyển ${amount.toStringAsFixed(0)} VNĐ đến ví $receiverUid.',
+        'timestamp': FieldValue.serverTimestamp(),
+        'isRead': false,
+        'type': 'transaction',
+      });
+
+      final receiverNotifRef = firestore.collection('notifications').doc();
+      transaction.set(receiverNotifRef, {
+        'id': receiverNotifRef.id,
+        'userId': receiverUid,
+        'title': 'Nhận tiền thành công',
+        'body':
+            'Bạn vừa nhận được ${amount.toStringAsFixed(0)} VNĐ từ ví $senderUid.',
+        'timestamp': FieldValue.serverTimestamp(),
+        'isRead': false,
+        'type': 'transaction',
       });
     });
   }

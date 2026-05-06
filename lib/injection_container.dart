@@ -11,6 +11,7 @@ import 'features/auth/domain/usecases/update_profile_usecase.dart';
 import 'features/auth/domain/usecases/reset_password_usecase.dart';
 import 'features/auth/presentation/cubit/auth_cubit.dart';
 
+import 'features/main/data/datasources/notification_remote_data_source.dart';
 import 'features/main/data/datasources/wallet_remote_data_source.dart';
 import 'features/main/data/repositories/wallet_repository_impl.dart';
 import 'features/main/domain/repositories/wallet_repository.dart';
@@ -56,6 +57,7 @@ Future<void> init() async {
   sl.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSourceImpl(firebaseAuth: sl(), firestore: sl()),
   );
+  sl.registerLazySingleton(() => NotificationRemoteDataSource(firestore: sl()));
 
   //! Features - Wallet
   sl.registerLazySingleton(() => DepositUseCase(sl()));

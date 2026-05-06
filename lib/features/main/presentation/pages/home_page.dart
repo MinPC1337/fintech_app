@@ -5,8 +5,10 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../injection_container.dart';
 import '../../domain/usecases/get_primary_wallet_stream_usecase.dart';
 import 'momo_deposit_page.dart';
+import '../../data/datasources/notification_remote_data_source.dart';
 import 'transfer_page.dart';
 import 'send_to_user_page.dart';
+import 'notifications_page.dart';
 import 'package:intl/intl.dart';
 import '../../domain/usecases/get_transactions_stream_usecase.dart';
 import '../../../auth/presentation/pages/profile_page.dart';
@@ -143,50 +145,135 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ProfilePage(currentUser: currentUser),
-              ),
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.all(1), // Viền mỏng 1px
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: AppGradients.balance,
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(3),
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: kBgColor, // Nền âm bản cắt vào viền
-              ),
-              child: ClipOval(
-                child: ColorFiltered(
-                  colorFilter: const ColorFilter.mode(
-                    Colors.grey, // Ám màu môi trường
-                    BlendMode.luminosity, // Hiệu ứng mix-blend-luminosity
+        Row(
+          children: [
+            _buildNotificationIcon(context, currentUser.uid),
+            const SizedBox(width: 12),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProfilePage(currentUser: currentUser),
                   ),
-                  child: Image.asset(
-                    'assets/Futuristic Pro.png',
-                    width: 44,
-                    height: 44,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.person_outline,
-                      color: Colors.white,
-                      size: 40,
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(1), // Viền mỏng 1px
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: AppGradients.balance,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: kBgColor, // Nền âm bản cắt vào viền
+                  ),
+                  child: ClipOval(
+                    child: ColorFiltered(
+                      colorFilter: const ColorFilter.mode(
+                        Colors.grey, // Ám màu môi trường
+                        BlendMode.luminosity, // Hiệu ứng mix-blend-luminosity
+                      ),
+                      child: Image.asset(
+                        'assets/Futuristic Pro.png',
+                        width: 44,
+                        height: 44,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(
+                              Icons.person_outline,
+                              color: Colors.white,
+                              size: 40,
+                            ),
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
+          ],
         ),
       ],
+    );
+  }
+
+  Widget _buildNotificationIcon(BuildContext context, String userId) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => NotificationsPage(userId: userId)),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: kThemeGlassBase,
+          shape: BoxShape.circle,
+          border: Border.all(color: kThemeBorderDefault),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            const Icon(
+              Icons.notifications_none_rounded,
+              color: kTextPrimary,
+              size: 24,
+            ),
+            StreamBuilder<int>(
+              stream: sl<NotificationRemoteDataSource>().getUnreadCountStream(
+                userId,
+              ),
+              builder: (context, snapshot) {
+                final count = snapshot.data ?? 0;
+                if (count == 0) return const SizedBox.shrink();
+
+                return Positioned(
+                  top: -4,
+                  right: -4,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    constraints: const BoxConstraints(
+                      minWidth: 18,
+                      minHeight: 18,
+                    ),
+                    decoration: BoxDecoration(
+                      color: kRose,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: kBgColor, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: kRose.withValues(alpha: 0.5),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      count > 9 ? '9+' : count.toString(),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
