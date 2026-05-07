@@ -6,6 +6,8 @@ import 'settings_page.dart';
 import 'qr_scanner_page.dart';
 import 'transfer_page.dart';
 import 'send_to_user_page.dart';
+import 'budget_page.dart';
+import 'group_wallet_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -20,19 +22,8 @@ class _MainPageState extends State<MainPage> {
   // Danh sách các trang. Index 0 là HomePage hiện tại của bạn.
   final List<Widget> _pages = [
     const HomePage(),
-    const Scaffold(
-      body: Center(
-        child: Text(
-          "Phân tích Insights",
-          style: TextStyle(color: kTextPrimary),
-        ),
-      ),
-    ),
-    const Scaffold(
-      body: Center(
-        child: Text("Ví nhóm / Synergy", style: TextStyle(color: kTextPrimary)),
-      ),
-    ),
+    const BudgetPage(),
+    const GroupWalletPage(),
     const SettingsPage(),
   ];
 
@@ -107,7 +98,7 @@ class _MainPageState extends State<MainPage> {
 
           // 2. Điểm nhấn trung tâm (Elevated Scan Button)
           Positioned(
-            bottom: 45, // Đẩy trồi lên khỏi thanh dock
+            bottom: 30, // Đẩy trồi lên khỏi thanh dock
             child: _buildScanButton(),
           ),
         ],
@@ -219,9 +210,7 @@ class _MainPageState extends State<MainPage> {
       if (phone != null && mounted) {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => TransferPage(initialPhone: phone),
-          ),
+          MaterialPageRoute(builder: (_) => TransferPage(initialPhone: phone)),
         );
         return;
       }
@@ -231,7 +220,9 @@ class _MainPageState extends State<MainPage> {
 
     // 2. Số điện thoại thẳng 10 số
     if (RegExp(r'^0\d{9}$').hasMatch(rawTrimmed)) {
-      debugPrint('[MainPage] → ROUTE: TransferPage (plain phone = $rawTrimmed)');
+      debugPrint(
+        '[MainPage] → ROUTE: TransferPage (plain phone = $rawTrimmed)',
+      );
       if (!mounted) return;
       Navigator.push(
         context,
@@ -386,10 +377,7 @@ class _MainPageState extends State<MainPage> {
                   ),
                   Text(
                     subtitle,
-                    style: const TextStyle(
-                      color: kTextSecondary,
-                      fontSize: 11,
-                    ),
+                    style: const TextStyle(color: kTextSecondary, fontSize: 11),
                   ),
                 ],
               ),

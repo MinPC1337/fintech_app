@@ -72,21 +72,6 @@ class _HomePageState extends State<HomePage> {
                   _buildBalanceHero(currentUser),
                   const SizedBox(height: 32),
 
-                  const Text(
-                    'BÁO CÁO TỔNG QUAN',
-                    style: TextStyle(
-                      color: kTextPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // 3. Khối Thống kê tháng (Mới)
-                  _buildMonthlySummary(currentUser),
-                  const SizedBox(height: 32),
-
                   // Tiêu đề Thao tác nhanh
                   const Text(
                     'THAO TÁC NHANH',
@@ -98,10 +83,24 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  // 4. Khối Thao tác nhanh (Quick Actions Row)
+                  // 3. Khối Thao tác nhanh (Quick Actions Row)
                   _buildQuickActions(context),
                   const SizedBox(height: 40),
+
+                  const Text(
+                    'BÁO CÁO TỔNG QUAN',
+                    style: TextStyle(
+                      color: kTextPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 4. Khối Thống kê tháng
+                  _buildMonthlySummary(currentUser),
+                  const SizedBox(height: 32),
 
                   // 5. Khối Lịch sử Giao dịch
                   _buildTimelineSection(currentUser),
