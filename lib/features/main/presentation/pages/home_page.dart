@@ -27,6 +27,8 @@ class _HomePageState extends State<HomePage> {
   final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
   late final GetPrimaryWalletStreamUseCase getPrimaryWalletStreamUseCase;
   late final GetTransactionsStreamUseCase getTransactionsStreamUseCase;
+  bool _isBalanceHidden = false; // Trạng thái ẩn/hiện số dư
+  DateTime _selectedMonth = DateTime.now(); // Tháng đang chọn để xem báo cáo
 
   @override
   void initState() {
@@ -70,6 +72,21 @@ class _HomePageState extends State<HomePage> {
                   _buildBalanceHero(currentUser),
                   const SizedBox(height: 32),
 
+                  const Text(
+                    'BÁO CÁO TỔNG QUAN',
+                    style: TextStyle(
+                      color: kTextPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 3. Khối Thống kê tháng (Mới)
+                  _buildMonthlySummary(currentUser),
+                  const SizedBox(height: 32),
+
                   // Tiêu đề Thao tác nhanh
                   const Text(
                     'THAO TÁC NHANH',
@@ -82,11 +99,11 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // 3. Khối Thao tác nhanh (Quick Actions Row)
+                  // 4. Khối Thao tác nhanh (Quick Actions Row)
                   _buildQuickActions(context),
                   const SizedBox(height: 40),
 
-                  // 4. Khối Lịch sử Giao dịch
+                  // 5. Khối Lịch sử Giao dịch
                   _buildTimelineSection(currentUser),
 
                   // Khoảng trống dưới cùng để không bị che bởi thanh lơ lửng Navigation
@@ -280,93 +297,382 @@ class _HomePageState extends State<HomePage> {
   Widget _buildBalanceHero(auth_entity.User currentUser) {
     return StreamBuilder(
       stream: getPrimaryWalletStreamUseCase.call(currentUser.uid),
-      builder: (context, snapshot) {
+      builder: (context, walletSnapshot) {
         double balance = 0.0;
-        if (snapshot.hasData) {
-          snapshot.data!.fold(
+        if (walletSnapshot.hasData) {
+          walletSnapshot.data!.fold(
             (failure) => null,
             (wallet) => balance = wallet?.balance ?? 0.0,
           );
         }
 
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(32),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-              decoration: BoxDecoration(
-                color: kThemeGlassBase,
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(color: kThemeBorderDefault),
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: [
+              BoxShadow(
+                color: kCyan.withValues(alpha: 0.15),
+                blurRadius: 40,
+                spreadRadius: -10,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    'TỔNG SỐ DƯ (VND)',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      letterSpacing: 3.0,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(32),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      kCyan.withValues(alpha: 0.15),
+                      kPurple.withValues(alpha: 0.1),
+                      Colors.transparent,
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  ShaderMask(
-                    shaderCallback: (bounds) => LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [kCyan, kCyan.withValues(alpha: 0.4)],
-                    ).createShader(bounds),
-                    child: Text(
-                      currencyFormatter
-                          .format(balance)
-                          .replaceAll('đ', '')
-                          .trim(),
-                      style: const TextStyle(
-                        fontSize: 52,
-                        fontWeight: FontWeight.w900,
-                        color: kCyan,
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(
+                    color: kCyan.withValues(alpha: 0.2),
+                    width: 1.5,
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    // Decorative "Energy Core" light
+                    Positioned(
+                      right: -30,
+                      top: -30,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: kPurple.withValues(alpha: 0.1),
+                        ),
                       ),
                     ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildCardChip(),
+                            IconButton(
+                              onPressed: () => setState(
+                                () => _isBalanceHidden = !_isBalanceHidden,
+                              ),
+                              icon: Icon(
+                                _isBalanceHidden
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                color: kCyan.withValues(alpha: 0.6),
+                                size: 22,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 28),
+                        Text(
+                          'SỐ DƯ KHẢ DỤNG',
+                          style: TextStyle(
+                            color: kTextSecondary.withValues(alpha: 0.7),
+                            letterSpacing: 2.0,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              _isBalanceHidden
+                                  ? '••••••••'
+                                  : currencyFormatter
+                                        .format(balance)
+                                        .replaceAll('đ', '')
+                                        .trim(),
+                              style: const TextStyle(
+                                fontSize: 42,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: -1,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'VND',
+                              style: TextStyle(
+                                color: kCyan,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              currentUser.uid,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.8),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const Icon(
+                              Icons.contactless_outlined,
+                              color: kCyan,
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMonthlySummary(auth_entity.User currentUser) {
+    return StreamBuilder<List<dynamic>>(
+      stream: getTransactionsStreamUseCase.call(currentUser.uid),
+      builder: (context, snapshot) {
+        final allTransactions = snapshot.data ?? [];
+
+        // Lọc giao dịch theo tháng/năm đã chọn
+        final monthlyTxs = allTransactions
+            .where(
+              (tx) =>
+                  tx.timestamp.month == _selectedMonth.month &&
+                  tx.timestamp.year == _selectedMonth.year,
+            )
+            .toList();
+
+        final totalIncome = monthlyTxs
+            .where((tx) => tx.type == 'Income')
+            .fold(0.0, (sum, tx) => sum + tx.amount);
+        final totalExpense = monthlyTxs
+            .where((tx) => tx.type == 'Expense')
+            .fold(0.0, (sum, tx) => sum + tx.amount);
+
+        // Tính toán tỉ lệ cho thanh Progress
+        final double total = totalIncome + totalExpense;
+        final double incomeRatio = total > 0 ? totalIncome / total : 0.0;
+
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: kThemeSurfacePrimary.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Bộ chọn tháng
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'PHÂN TÍCH LUỒNG TIỀN',
+                    style: TextStyle(
+                      color: kTextSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.5,
+                    ),
                   ),
-                  const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 6,
+                      horizontal: 4,
+                      vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: kEmerald.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: kEmerald.withValues(alpha: 0.2),
-                      ),
+                      color: kCyan.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: kCyan.withValues(alpha: 0.2)),
                     ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
+                    child: Row(
                       children: [
-                        Icon(Icons.trending_up, color: kEmerald, size: 16),
-                        SizedBox(width: 8),
-                        Text(
-                          '+12% so với tháng trước',
-                          style: TextStyle(
-                            color: kEmerald,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                        IconButton(
+                          onPressed: () => _changeMonth(-1),
+                          icon: const Icon(
+                            Icons.chevron_left,
+                            color: kCyan,
+                            size: 18,
                           ),
+                          visualDensity: VisualDensity.compact,
+                          constraints: const BoxConstraints(),
+                        ),
+                        Text(
+                          DateFormat('MM/yyyy').format(_selectedMonth),
+                          style: const TextStyle(
+                            color: kCyan,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => _changeMonth(1),
+                          icon: const Icon(
+                            Icons.chevron_right,
+                            color: kCyan,
+                            size: 18,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                          constraints: const BoxConstraints(),
                         ),
                       ],
                     ),
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 24),
+              // Chỉ số Thu nhập & Chi tiêu
+              Row(
+                children: [
+                  _buildStatItem(
+                    label: 'THU NHẬP',
+                    amount: totalIncome,
+                    color: kEmerald,
+                    icon: Icons.arrow_downward_rounded,
+                  ),
+                  _buildStatItem(
+                    label: 'CHI TIÊU',
+                    amount: totalExpense,
+                    color: kRose,
+                    icon: Icons.arrow_upward_rounded,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              // Thanh tỉ lệ (Ratio Bar)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: SizedBox(
+                      height: 8,
+                      child: LinearProgressIndicator(
+                        value: incomeRatio,
+                        backgroundColor: kRose.withValues(alpha: 0.3),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          kEmerald,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ],
           ),
         );
       },
+    );
+  }
+
+  void _changeMonth(int offset) {
+    setState(() {
+      _selectedMonth = DateTime(
+        _selectedMonth.year,
+        _selectedMonth.month + offset,
+      );
+    });
+  }
+
+  Widget _buildCardChip() {
+    return Container(
+      width: 40,
+      height: 30,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(6),
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFFFFD700), // Gold
+            Color(0xFFB8860B), // Dark Goldenrod
+            Color(0xFFFFD700),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Stack(
+        children: [
+          Center(
+            child: Container(
+              width: 14,
+              height: 18,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.black26, width: 0.5),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem({
+    required String label,
+    required double amount,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Expanded(
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color, size: 12),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.4),
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            currencyFormatter.format(amount).replaceAll('đ', '').trim(),
+            style: const TextStyle(
+              color: kTextPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -453,7 +759,7 @@ class _HomePageState extends State<HomePage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              'LỊCH SỬ GIAO DỊCH',
+              'GIAO DỊCH GẦN ĐÂY',
               style: TextStyle(
                 color: kTextPrimary,
                 fontSize: 16,
@@ -489,14 +795,16 @@ class _HomePageState extends State<HomePage> {
               );
             }
 
-            final transactions = snapshot.data ?? [];
-            if (transactions.isEmpty) {
+            final allTransactions = snapshot.data ?? [];
+            if (allTransactions.isEmpty) {
               return const Text(
                 'Chưa có giao dịch nào.',
                 style: TextStyle(color: kTextSecondary),
               );
             }
 
+            // Chỉ lấy 5 giao dịch mới nhất để hiển thị tại trang Home
+            final transactions = allTransactions.take(5).toList();
             return Column(
               children: List.generate(transactions.length, (index) {
                 final tx = transactions[index];
