@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -160,70 +161,81 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
       return const Scaffold(body: Center(child: Text('Cần đăng nhập trước')));
     }
 
-    const Color momoPink = Color(0xFFA50064);
-
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: kBgColor,
       appBar: AppBar(
-        backgroundColor: momoPink,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: const Text(
           'Nạp tiền qua MoMo',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: kTextPrimary, fontWeight: FontWeight.bold),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: kTextPrimary),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // ── Nhập số tiền ────────────────────────────────────────────
-              const Text(
-                'Nhập số tiền muốn nạp:',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 12),
+              _buildFieldLabel('SỐ TIỀN CẦN NẠP'),
+              const SizedBox(height: 8),
               TextField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
-                enabled: _qrCodeUrl == null, // Khoá khi đang chờ thanh toán
+                enabled: _qrCodeUrl == null,
+                style: const TextStyle(
+                  color: kTextPrimary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
                 decoration: InputDecoration(
+                  filled: true,
+                  fillColor: kSurface,
                   hintText: 'Ví dụ: 50000',
+                  hintStyle: const TextStyle(color: kTextSecondary),
                   suffixText: 'VNĐ',
+                  suffixStyle: const TextStyle(
+                    color: kCyan,
+                    fontWeight: FontWeight.bold,
+                  ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: momoPink),
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: kCyan, width: 1),
                   ),
                 ),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
 
               // ── Nút tạo QR ───────────────────────────────────────────────
               ElevatedButton(
                 onPressed: (_isLoadingQr || _qrCodeUrl != null)
                     ? null
                     : _generateMoMoQr,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: momoPink,
-                  disabledBackgroundColor: Colors.grey.shade300,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+                style:
+                    ElevatedButton.styleFrom(
+                      backgroundColor: kCyan,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
+                    ).copyWith(
+                      backgroundColor: WidgetStateProperty.resolveWith((
+                        states,
+                      ) {
+                        if (states.contains(WidgetState.disabled)) {
+                          return kCyan.withValues(alpha: 0.4);
+                        }
+                        return kCyan;
+                      }),
+                    ),
                 child: _isLoadingQr
                     ? const SizedBox(
                         height: 20,
@@ -234,11 +246,11 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
                         ),
                       )
                     : const Text(
-                        'Tạo Mã QR MoMo',
+                        'TẠO MÃ QR MOMO',
                         style: TextStyle(
-                          color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
                         ),
                       ),
               ),
@@ -247,36 +259,34 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
               if (_qrCodeUrl != null) ...[
                 const SizedBox(height: 40),
 
-                const Text(
-                  'Dùng ứng dụng MoMo quét mã dưới đây',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: Colors.black87),
-                ),
+                _buildFieldLabel('HÃY QUÉT MÃ DƯỚI ĐÂY'),
                 const SizedBox(height: 20),
 
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 10,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: QrImageView(
-                      data: _qrCodeUrl!,
-                      version: QrVersions.auto,
-                      size: 250.0,
-                      embeddedImage: const AssetImage(
-                        'assets/Futuristic Pro.png',
+                // Container QR với hiệu ứng Glassmorphism
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: kThemeGlassBase,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: kThemeBorderDefault),
                       ),
-                      embeddedImageStyle: const QrEmbeddedImageStyle(
-                        size: Size(40, 40),
+                      child: Center(
+                        child: QrImageView(
+                          data: _qrCodeUrl!,
+                          version: QrVersions.auto,
+                          size: 250.0,
+                          backgroundColor: Colors.white,
+                          embeddedImage: const AssetImage(
+                            'assets/Futuristic Pro.png',
+                          ),
+                          embeddedImageStyle: const QrEmbeddedImageStyle(
+                            size: Size(40, 40),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -286,13 +296,13 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
 
                 // Trạng thái chờ
                 if (_isProcessingDeposit)
-                  const Column(
+                  Column(
                     children: [
-                      CircularProgressIndicator(color: momoPink),
-                      SizedBox(height: 12),
+                      const CircularProgressIndicator(color: kPurple),
+                      const SizedBox(height: 12),
                       Text(
                         'Đang ghi nhận thanh toán...',
-                        style: TextStyle(color: Colors.black54),
+                        style: TextStyle(color: kTextSecondary),
                       ),
                     ],
                   )
@@ -312,15 +322,15 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
                     });
                   },
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: momoPink),
+                    side: const BorderSide(color: kRose),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                   child: const Text(
-                    'Huỷ — Tạo QR mới',
-                    style: TextStyle(color: momoPink),
+                    'HỦY — TẠO QR MỚI',
+                    style: TextStyle(color: kRose, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -328,25 +338,36 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
               const SizedBox(height: 32),
 
               // ── Chú thích ────────────────────────────────────────────────
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange.shade200),
-                ),
-                child: const Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.info_outline, color: Colors.orange),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'App sẽ tự động kiểm tra trạng thái thanh toán mỗi 4 giây. Sau khi bạn thanh toán thành công, số dư sẽ được cập nhật tự động.',
-                        style: TextStyle(color: Colors.black87, fontSize: 13),
-                      ),
+              // Container thông tin với Glassmorphism
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: kThemeGlassBase,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: kThemeBorderDefault),
                     ),
-                  ],
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.info_outline, color: kCyan),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Sau khi thanh toán thành công, số dư sẽ được cập nhật tự động.',
+                            style: TextStyle(
+                              color: kTextSecondary,
+                              fontSize: 13,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -365,15 +386,27 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
           height: 16,
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            color: Colors.grey.shade400,
+            color: kTextSecondary.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(width: 10),
-        Text(
+        const Text(
           'Đang chờ thanh toán...',
-          style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+          style: TextStyle(color: kTextSecondary, fontSize: 13),
         ),
       ],
+    );
+  }
+
+  Widget _buildFieldLabel(String label) {
+    return Text(
+      label,
+      style: TextStyle(
+        color: kTextSecondary.withValues(alpha: 0.7),
+        fontSize: 11,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 1.5,
+      ),
     );
   }
 }

@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import '../../domain/entities/user.dart';
@@ -18,13 +16,13 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   late final TextEditingController fullNameController;
-  File? _selectedImage;
-  bool _isUploading = false;
 
   @override
   void initState() {
     super.initState();
-    fullNameController = TextEditingController(text: widget.currentUser.fullName);
+    fullNameController = TextEditingController(
+      text: widget.currentUser.fullName,
+    );
   }
 
   @override
@@ -33,61 +31,30 @@ class _ProfilePageState extends State<ProfilePage> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _selectedImage = File(pickedFile.path);
-      });
-    }
-  }
-
-  Future<void> _handleUpdate() async {
+  void _handleUpdate() {
     if (fullNameController.text.trim().isEmpty) return;
 
-    setState(() {
-      _isUploading = true;
-    });
-
-    String avatarUrl = widget.currentUser.avatarUrl;
-
-    try {
-      if (_selectedImage != null) {
-        final ref = FirebaseStorage.instance
-            .ref()
-            .child('avatars/${widget.currentUser.uid}.jpg');
-        await ref.putFile(_selectedImage!);
-        avatarUrl = await ref.getDownloadURL();
-      }
-
-      if (mounted) {
-        context.read<AuthCubit>().updateProfile(
-              widget.currentUser.uid,
-              fullNameController.text.trim(),
-              avatarUrl,
-              widget.currentUser.fcmToken,
-            );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi tải ảnh lên: ${e.toString()}')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isUploading = false;
-        });
-      }
-    }
+    context.read<AuthCubit>().updateProfile(
+      widget.currentUser.uid,
+      fullNameController.text.trim(),
+      widget.currentUser.avatarUrl,
+      widget.currentUser.fcmToken,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Hồ sơ cá nhân')),
+      backgroundColor: kBgColor,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text(
+          'Hồ sơ cá nhân',
+          style: TextStyle(color: kTextPrimary, fontWeight: FontWeight.bold),
+        ),
+        iconTheme: const IconThemeData(color: kTextPrimary),
+      ),
       body: BlocConsumer<AuthCubit, AuthState>(
         listener: (context, state) {
           if (state is AuthSuccess) {
@@ -95,73 +62,145 @@ class _ProfilePageState extends State<ProfilePage> {
               const SnackBar(content: Text('Cập nhật hồ sơ thành công')),
             );
           } else if (state is AuthError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Lỗi: ${state.message}')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Lỗi: ${state.message}')));
           }
         },
         builder: (context, state) {
-          if (state is AuthLoading || _isUploading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+          final bool isLoading = state is AuthLoading;
 
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  GestureDetector(
-                    onTap: _pickImage,
-                    child: Stack(
-                      alignment: Alignment.bottomRight,
-                      children: [
-                        CircleAvatar(
-                          radius: 50,
-                          backgroundImage: _selectedImage != null
-                              ? FileImage(_selectedImage!) as ImageProvider
-                              : (widget.currentUser.avatarUrl.isNotEmpty
-                                  ? NetworkImage(widget.currentUser.avatarUrl)
-                                  : null),
-                          child: _selectedImage == null &&
-                                  widget.currentUser.avatarUrl.isEmpty
-                              ? const Icon(Icons.person, size: 50)
-                              : null,
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Avatar Section
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [kCyan, kPurple],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: kBgColor,
+                      ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/Futuristic Pro.png',
+                          width: 120,
+                          height: 120,
+                          fit: BoxFit.cover,
                         ),
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: Colors.blue,
-                            shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // Email Info (Non-editable)
+                _buildFieldLabel('ĐỊA CHỈ EMAIL'),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: kSurface.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.05),
+                    ),
+                  ),
+                  child: Text(
+                    widget.currentUser.email,
+                    style: const TextStyle(color: kTextSecondary, fontSize: 16),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Full Name Input
+                _buildFieldLabel('HỌ VÀ TÊN'),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: fullNameController,
+                  style: const TextStyle(color: kTextPrimary),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: kSurface,
+                    hintText: 'Nhập họ tên của bạn',
+                    hintStyle: const TextStyle(color: kTextSecondary),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: kCyan, width: 1),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 48),
+
+                // Update Button
+                ElevatedButton(
+                  onPressed: isLoading ? null : _handleUpdate,
+                  style:
+                      ElevatedButton.styleFrom(
+                        backgroundColor: kCyan,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ).copyWith(
+                        backgroundColor: WidgetStateProperty.resolveWith(
+                          (states) => states.contains(WidgetState.disabled)
+                              ? Colors.grey
+                              : kCyan,
+                        ),
+                      ),
+                  child: isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
                           ),
-                          child: const Icon(Icons.camera_alt,
-                              color: Colors.white, size: 20),
+                        )
+                      : const Text(
+                          'LƯU THAY ĐỔI',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Email: ${widget.currentUser.email}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  TextField(
-                    controller: fullNameController,
-                    decoration: const InputDecoration(labelText: 'Họ và tên'),
-                  ),
-                  const SizedBox(height: 32),
-                  ElevatedButton(
-                    onPressed: _handleUpdate,
-                    child: const Text('Cập nhật'),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildFieldLabel(String label) {
+    return Text(
+      label,
+      style: TextStyle(
+        color: kTextSecondary.withValues(alpha: 0.7),
+        fontSize: 11,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 1.5,
       ),
     );
   }
