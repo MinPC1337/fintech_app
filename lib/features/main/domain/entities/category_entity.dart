@@ -13,6 +13,12 @@ class CategoryEntity extends Equatable {
   final double currentSpent;
   final CategoryType type;
 
+  /// Code point Material Icons (lưu Firestore). Null = UI dùng icon mặc định.
+  final int? iconCodePoint;
+
+  /// Màu accent ARGB 32-bit (vd `Color(0xFF22D3EE).value`). Null = theme mặc định.
+  final int? accentArgb;
+
   const CategoryEntity({
     required this.id,
     required this.walletId,
@@ -20,6 +26,8 @@ class CategoryEntity extends Equatable {
     required this.budgetLimit,
     required this.currentSpent,
     required this.type,
+    this.iconCodePoint,
+    this.accentArgb,
   });
 
   @override
@@ -30,5 +38,7 @@ class CategoryEntity extends Equatable {
         budgetLimit,
         currentSpent,
         type,
+        iconCodePoint,
+        accentArgb,
       ];
 }

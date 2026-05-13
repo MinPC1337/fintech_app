@@ -1,346 +1,534 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../injection_container.dart' as di;
+import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../auth/presentation/cubit/auth_state.dart';
+import '../../domain/entities/category_entity.dart';
+import '../cubit/budget_cubit.dart';
+import '../cubit/budget_state.dart';
 
-class BudgetPage extends StatefulWidget {
-  const BudgetPage({super.key});
-
-  @override
-  State<BudgetPage> createState() => _BudgetPageState();
+String _formatBudgetMoney(double value) {
+  final currency = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
+  return currency.format(value).replaceAll('đ', '').trim();
 }
 
-class _BudgetPageState extends State<BudgetPage> {
-  final _currency = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
-  DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
+IconData _budgetCategoryIcon(CategoryEntity c) {
+  final p = c.iconCodePoint;
+  if (p != null) {
+    return IconData(p, fontFamily: 'MaterialIcons');
+  }
+  return Icons.category_rounded;
+}
 
-  final List<_BudgetCategory> _categories = [
-    _BudgetCategory(
-      name: 'Ăn uống',
-      icon: Icons.restaurant_rounded,
-      accent: kRose,
-      limit: 2500000,
-      spent: 1360000,
+Color _budgetCategoryAccent(CategoryEntity c) {
+  final a = c.accentArgb;
+  if (a != null) {
+    return Color(a);
+  }
+  return kCyan;
+}
+
+int _colorToArgb(Color color) {
+  final a = (color.a * 255.0).round() & 0xff;
+  final r = (color.r * 255.0).round() & 0xff;
+  final g = (color.g * 255.0).round() & 0xff;
+  final b = (color.b * 255.0).round() & 0xff;
+  return (a << 24) | (r << 16) | (g << 8) | b;
+}
+
+/// Chuỗi nhập kiểu `2500000`, `2.500.000`, `2,500,000` → số VND.
+double? _parseMoneyVndInput(String raw) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) return null;
+  final digitsOnly = trimmed.replaceAll(RegExp(r'[^\d]'), '');
+  if (digitsOnly.isEmpty) return null;
+  return double.tryParse(digitsOnly);
+}
+
+void _showBudgetCategorySheet(
+  BuildContext context, {
+  required String walletId,
+  required String title,
+  CategoryEntity? existing,
+}) {
+  final cubit = context.read<BudgetCubit>();
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    useSafeArea: true,
+    builder: (ctx) => BlocProvider<BudgetCubit>.value(
+      value: cubit,
+      child: _BudgetCategoryFormSheet(
+        walletId: walletId,
+        title: title,
+        existing: existing,
+      ),
     ),
-    _BudgetCategory(
-      name: 'Di chuyển',
-      icon: Icons.directions_car_rounded,
-      accent: kCyan,
-      limit: 1200000,
-      spent: 640000,
-    ),
-    _BudgetCategory(
-      name: 'Mua sắm',
-      icon: Icons.shopping_bag_rounded,
-      accent: kPurple,
-      limit: 3000000,
-      spent: 2820000,
-    ),
-    _BudgetCategory(
-      name: 'Hóa đơn',
-      icon: Icons.receipt_long_rounded,
-      accent: kEmerald,
-      limit: 1800000,
-      spent: 910000,
-    ),
-  ];
+  );
+}
+
+class _BudgetCategoryFormSheet extends StatefulWidget {
+  const _BudgetCategoryFormSheet({
+    required this.walletId,
+    required this.title,
+    this.existing,
+  });
+
+  final String walletId;
+  final String title;
+  final CategoryEntity? existing;
+
+  @override
+  State<_BudgetCategoryFormSheet> createState() => _BudgetCategoryFormSheetState();
+}
+
+class _BudgetCategoryFormSheetState extends State<_BudgetCategoryFormSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _limitCtrl;
+  late Color _accent;
+  late IconData _icon;
+  bool _saving = false;
+  String? _localError;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.existing;
+    _nameCtrl = TextEditingController(text: e?.name ?? '');
+    _limitCtrl = TextEditingController(
+      text: e != null && e.budgetLimit > 0 ? e.budgetLimit.toStringAsFixed(0) : '',
+    );
+    _accent = e != null && e.accentArgb != null ? Color(e.accentArgb!) : kCyan;
+    _icon = e?.iconCodePoint != null
+        ? IconData(e!.iconCodePoint!, fontFamily: 'MaterialIcons')
+        : Icons.category_rounded;
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _limitCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    setState(() => _localError = null);
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final name = _nameCtrl.text.trim();
+    final limit = _parseMoneyVndInput(_limitCtrl.text);
+    if (limit == null || limit <= 0) {
+      setState(() => _localError = 'Nhập giới hạn là số dương (vd: 2500000 hoặc 2.500.000)');
+      return;
+    }
+
+    setState(() => _saving = true);
+    FocusScope.of(context).unfocus();
+
+    final cubit = context.read<BudgetCubit>();
+    final ok = await cubit.upsertCategory(
+      walletId: widget.walletId,
+      id: widget.existing?.id ?? '',
+      name: name,
+      budgetLimit: limit,
+      type: CategoryType.outType,
+      iconCodePoint: _icon.codePoint,
+      accentArgb: _colorToArgb(_accent),
+    );
+
+    if (!mounted) return;
+    setState(() => _saving = false);
+    if (ok) Navigator.of(context).pop();
+  }
+
+  Future<void> _delete() async {
+    final e = widget.existing;
+    if (e == null) return;
+    setState(() {
+      _saving = true;
+      _localError = null;
+    });
+    FocusScope.of(context).unfocus();
+    final ok = await context.read<BudgetCubit>().deleteCategory(widget.walletId, e.id);
+    if (!mounted) return;
+    setState(() => _saving = false);
+    if (ok) Navigator.of(context).pop();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final totalLimit = _categories.fold<double>(0, (s, c) => s + c.limit);
-    final totalSpent = _categories.fold<double>(0, (s, c) => s + c.spent);
-    final remaining =
-        (totalLimit - totalSpent).clamp(0, double.infinity).toDouble();
-    final ratio = totalLimit > 0
-        ? (totalSpent / totalLimit).clamp(0, 1).toDouble()
-        : 0.0;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final maxH = MediaQuery.of(context).size.height * 0.92;
 
-    return Scaffold(
-      backgroundColor: kBgColor,
-      body: SafeArea(
-        bottom: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _Header(
-                title: 'NGÂN SÁCH',
-                subtitle: 'Theo dõi giới hạn chi tiêu theo tháng',
-                trailing: _MonthPickerChip(
-                  month: _selectedMonth,
-                  onPrev: () => _changeMonth(-1),
-                  onNext: () => _changeMonth(1),
-                ),
-              ),
-              const SizedBox(height: 20),
-              _GlassCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _Kpi(
-                          label: 'ĐÃ CHI',
-                          value: _formatMoney(totalSpent),
-                          color: kRose,
-                        ),
-                        _Kpi(
-                          label: 'CÒN LẠI',
-                          value: _formatMoney(remaining),
-                          color: kEmerald,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: SizedBox(
-                        height: 10,
-                        child: LinearProgressIndicator(
-                          value: ratio,
-                          backgroundColor: Colors.white.withValues(alpha: 0.06),
-                          valueColor: const AlwaysStoppedAnimation<Color>(kCyan),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxH),
+          child: Material(
+            color: Colors.transparent,
+            child: _SheetContainer(
+              title: widget.title,
+              child: Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_localError != null) ...[
                         Text(
-                          'Giới hạn: ${_formatMoney(totalLimit)}',
-                          style: TextStyle(
-                            color: kTextSecondary.withValues(alpha: 0.8),
+                          _localError!,
+                          style: const TextStyle(
+                            color: kRose,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        Text(
-                          '${(ratio * 100).round()}%',
-                          style: const TextStyle(
-                            color: kCyan,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
+                        const SizedBox(height: 10),
                       ],
-                    ),
-                  ],
+                      _NeoField(
+                        controller: _nameCtrl,
+                        hint: 'Tên danh mục (vd: Ăn uống)',
+                        prefix: Icon(_icon, color: _accent, size: 18),
+                        textCapitalization: TextCapitalization.sentences,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) {
+                            return 'Vui lòng nhập tên danh mục';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      _NeoField(
+                        controller: _limitCtrl,
+                        hint: 'Giới hạn VND (vd: 2500000 hoặc 2.500.000)',
+                        keyboardType: const TextInputType.numberWithOptions(decimal: false),
+                        prefix: const Icon(Icons.shield_rounded, color: kCyan, size: 18),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'[\d\s.,]')),
+                        ],
+                        validator: (v) {
+                          final parsed = _parseMoneyVndInput(v ?? '');
+                          if (parsed == null || parsed <= 0) {
+                            return 'Nhập số tiền dương';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                      _PaletteRow(
+                        selected: _accent,
+                        onPick: (c) => setState(() => _accent = c),
+                      ),
+                      const SizedBox(height: 10),
+                      _IconRow(
+                        selected: _icon,
+                        onPick: (i) => setState(() => _icon = i),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          if (widget.existing != null)
+                            Expanded(
+                              child: _SheetButton(
+                                label: 'Xóa',
+                                color: kRose,
+                                enabled: !_saving,
+                                onTap: _delete,
+                              ),
+                            ),
+                          if (widget.existing != null) const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: _SheetButton(
+                              label: _saving ? 'Đang lưu…' : 'Lưu',
+                              color: kCyan,
+                              enabled: !_saving,
+                              onTap: _submit,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 26),
-              const Text(
-                'DANH MỤC',
-                style: TextStyle(
-                  color: kTextPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
-                ),
-              ),
-              const SizedBox(height: 14),
-              ..._categories.map((c) => _CategoryCard(
-                    category: c,
-                    formatMoney: _formatMoney,
-                    onEdit: () => _openEditCategorySheet(c),
-                  )),
-              const SizedBox(height: 120),
-            ],
+            ),
           ),
         ),
       ),
-      floatingActionButton: _NeoFab(
-        label: 'Thêm danh mục',
-        icon: Icons.add_rounded,
-        onTap: _openCreateCategorySheet,
-      ),
     );
   }
+}
 
-  void _changeMonth(int offset) {
-    setState(() {
-      _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month + offset);
-    });
-  }
+class BudgetPage extends StatelessWidget {
+  const BudgetPage({super.key});
 
-  String _formatMoney(double value) {
-    return _currency.format(value).replaceAll('đ', '').trim();
-  }
-
-  void _openCreateCategorySheet() {
-    _openCategorySheet(
-      initial: _BudgetCategory(
-        name: '',
-        icon: Icons.category_rounded,
-        accent: kCyan,
-        limit: 0,
-        spent: 0,
-      ),
-      title: 'Tạo danh mục ngân sách',
-      onSave: (cat) {
-        setState(() => _categories.add(cat));
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, authState) {
+        if (authState is! AuthSuccess) {
+          return Scaffold(
+            backgroundColor: kBgColor,
+            body: SafeArea(
+              child: Center(
+                child: Text(
+                  'Cần đăng nhập để xem ngân sách',
+                  style: TextStyle(
+                    color: kTextSecondary.withValues(alpha: 0.85),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+        return BlocProvider(
+          key: ValueKey(authState.user.uid),
+          create: (_) => di.sl<BudgetCubit>()..start(authState.user.uid),
+          child: const _BudgetScaffold(),
+        );
       },
     );
   }
+}
 
-  void _openEditCategorySheet(_BudgetCategory existing) {
-    _openCategorySheet(
-      initial: existing,
-      title: 'Chỉnh sửa danh mục',
-      onSave: (cat) {
-        setState(() {
-          final idx = _categories.indexOf(existing);
-          if (idx >= 0) _categories[idx] = cat;
-        });
+class _BudgetScaffold extends StatelessWidget {
+  const _BudgetScaffold();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<BudgetCubit, BudgetState>(
+      listenWhen: (prev, curr) {
+        if (curr is! BudgetLoaded) return false;
+        final msg = curr.errorMessage;
+        if (msg == null || msg.isEmpty) return false;
+        if (prev is BudgetLoaded && prev.errorMessage == msg) return false;
+        return true;
       },
-      onDelete: () {
-        setState(() => _categories.remove(existing));
+      listener: (context, state) {
+        final s = state as BudgetLoaded;
+        final msg = s.errorMessage;
+        if (msg != null && msg.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+          context.read<BudgetCubit>().dismissError();
+        }
       },
-    );
-  }
-
-  void _openCategorySheet({
-    required _BudgetCategory initial,
-    required String title,
-    required ValueChanged<_BudgetCategory> onSave,
-    VoidCallback? onDelete,
-  }) {
-    final nameCtrl = TextEditingController(text: initial.name);
-    final limitCtrl = TextEditingController(
-      text: initial.limit > 0 ? initial.limit.toStringAsFixed(0) : '',
-    );
-    final spentCtrl = TextEditingController(
-      text: initial.spent > 0 ? initial.spent.toStringAsFixed(0) : '',
-    );
-
-    Color selectedAccent = initial.accent;
-    IconData selectedIcon = initial.icon;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-          child: _SheetContainer(
-            title: title,
-            child: StatefulBuilder(
-              builder: (ctx, setSheetState) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _NeoField(
-                      controller: nameCtrl,
-                      hint: 'Tên danh mục (vd: Ăn uống)',
-                      prefix: Icon(selectedIcon, color: selectedAccent, size: 18),
+      builder: (context, state) {
+        if (state is BudgetInitial || state is BudgetLoading) {
+          return const Scaffold(
+            backgroundColor: kBgColor,
+            body: SafeArea(
+              child: Center(child: CircularProgressIndicator(color: kCyan)),
+            ),
+          );
+        }
+        if (state is BudgetNoWallet) {
+          return Scaffold(
+            backgroundColor: kBgColor,
+            body: SafeArea(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    'Chưa có ví cá nhân. Tạo ví để dùng ngân sách.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: kTextSecondary.withValues(alpha: 0.9),
+                      fontWeight: FontWeight.w600,
                     ),
-                    const SizedBox(height: 12),
-                    Row(
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+        if (state is BudgetFailure) {
+          return Scaffold(
+            backgroundColor: kBgColor,
+            body: SafeArea(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        state.message,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: kRose, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: () {
+                          final auth = context.read<AuthCubit>().state;
+                          if (auth is AuthSuccess) {
+                            context.read<BudgetCubit>().start(auth.user.uid);
+                          }
+                        },
+                        child: const Text('Thử lại'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+        if (state is! BudgetLoaded) {
+          return const Scaffold(backgroundColor: kBgColor, body: SizedBox.shrink());
+        }
+
+        final loaded = state;
+        final totalLimit = loaded.totalLimit;
+        final totalSpent = loaded.totalSpent;
+        final remaining =
+            (totalLimit - totalSpent).clamp(0, double.infinity).toDouble();
+        final ratio = totalLimit > 0
+            ? (totalSpent / totalLimit).clamp(0, 1).toDouble()
+            : 0.0;
+
+        return Scaffold(
+          backgroundColor: kBgColor,
+          body: SafeArea(
+            bottom: false,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _Header(
+                    title: 'NGÂN SÁCH',
+                    subtitle: 'Theo dõi giới hạn và chi tiêu thực tế theo tháng',
+                    trailing: _MonthPickerChip(
+                      month: loaded.month,
+                      onPrev: () => context.read<BudgetCubit>().changeMonth(-1),
+                      onNext: () => context.read<BudgetCubit>().changeMonth(1),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _GlassCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: _NeoField(
-                            controller: limitCtrl,
-                            hint: 'Giới hạn (VND)',
-                            keyboardType: TextInputType.number,
-                            prefix: const Icon(Icons.shield_rounded, color: kCyan, size: 18),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _NeoField(
-                            controller: spentCtrl,
-                            hint: 'Đã chi (VND)',
-                            keyboardType: TextInputType.number,
-                            prefix: const Icon(Icons.payments_rounded, color: kRose, size: 18),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    _PaletteRow(
-                      selected: selectedAccent,
-                      onPick: (c) => setSheetState(() => selectedAccent = c),
-                    ),
-                    const SizedBox(height: 10),
-                    _IconRow(
-                      selected: selectedIcon,
-                      onPick: (i) => setSheetState(() => selectedIcon = i),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        if (onDelete != null)
-                          Expanded(
-                            child: _SheetButton(
-                              label: 'Xóa',
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _Kpi(
+                              label: 'ĐÃ CHI',
+                              value: _formatBudgetMoney(totalSpent),
                               color: kRose,
-                              onTap: () {
-                                Navigator.pop(ctx);
-                                onDelete();
-                              },
+                            ),
+                            _Kpi(
+                              label: 'CÒN LẠI',
+                              value: _formatBudgetMoney(remaining),
+                              color: kEmerald,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: SizedBox(
+                            height: 10,
+                            child: LinearProgressIndicator(
+                              value: ratio,
+                              backgroundColor: Colors.white.withValues(alpha: 0.06),
+                              valueColor: const AlwaysStoppedAnimation<Color>(kCyan),
                             ),
                           ),
-                        if (onDelete != null) const SizedBox(width: 12),
-                        Expanded(
-                          flex: 2,
-                          child: _SheetButton(
-                            label: 'Lưu',
-                            color: kCyan,
-                            onTap: () {
-                              final name = nameCtrl.text.trim();
-                              final limit = double.tryParse(limitCtrl.text.trim()) ?? 0;
-                              final spent = double.tryParse(spentCtrl.text.trim()) ?? 0;
-                              if (name.isEmpty) return;
-                              Navigator.pop(ctx);
-                              onSave(
-                                _BudgetCategory(
-                                  name: name,
-                                  icon: selectedIcon,
-                                  accent: selectedAccent,
-                                  limit: limit,
-                                  spent: spent,
-                                ),
-                              );
-                            },
-                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Giới hạn: ${_formatBudgetMoney(totalLimit)}',
+                              style: TextStyle(
+                                color: kTextSecondary.withValues(alpha: 0.8),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              '${(ratio * 100).round()}%',
+                              style: const TextStyle(
+                                color: kCyan,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                );
-              },
+                  ),
+                  const SizedBox(height: 26),
+                  const Text(
+                    'DANH MỤC',
+                    style: TextStyle(
+                      color: kTextPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  if (loaded.items.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Text(
+                        'Chưa có danh mục chi. Nhấn "Thêm danh mục" để bắt đầu.',
+                        style: TextStyle(
+                          color: kTextSecondary.withValues(alpha: 0.85),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ...loaded.items.map(
+                    (item) => _CategoryCard(
+                      item: item,
+                      formatMoney: _formatBudgetMoney,
+                      onEdit: () => _showBudgetCategorySheet(
+                        context,
+                        walletId: loaded.walletId,
+                        title: 'Chỉnh sửa danh mục',
+                        existing: item.category,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 120),
+                ],
+              ),
+            ),
+          ),
+          floatingActionButton: _NeoFab(
+            label: 'Thêm danh mục',
+            icon: Icons.add_rounded,
+            onTap: () => _showBudgetCategorySheet(
+              context,
+              walletId: loaded.walletId,
+              title: 'Tạo danh mục ngân sách',
             ),
           ),
         );
       },
-    ).whenComplete(() {
-      nameCtrl.dispose();
-      limitCtrl.dispose();
-      spentCtrl.dispose();
-    });
+    );
   }
-}
-
-class _BudgetCategory {
-  _BudgetCategory({
-    required this.name,
-    required this.icon,
-    required this.accent,
-    required this.limit,
-    required this.spent,
-  });
-
-  final String name;
-  final IconData icon;
-  final Color accent;
-  final double limit;
-  final double spent;
 }
 
 class _Header extends StatelessWidget {
@@ -525,25 +713,28 @@ class _Kpi extends StatelessWidget {
 
 class _CategoryCard extends StatelessWidget {
   const _CategoryCard({
-    required this.category,
+    required this.item,
     required this.formatMoney,
     required this.onEdit,
   });
 
-  final _BudgetCategory category;
+  final BudgetLineItem item;
   final String Function(double) formatMoney;
   final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
-    final limit = category.limit;
-    final spent = category.spent;
+    final cat = item.category;
+    final limit = item.budgetLimit;
+    final spent = item.spentThisMonth;
     final remaining = (limit - spent);
     final ratio =
         limit > 0 ? (spent / limit).clamp(0, 1).toDouble() : 0.0;
 
     final isOver = remaining < 0;
-    final accent = isOver ? kRose : category.accent;
+    final baseAccent = _budgetCategoryAccent(cat);
+    final accent = isOver ? kRose : baseAccent;
+    final icon = _budgetCategoryIcon(cat);
 
     return GestureDetector(
       onTap: onEdit,
@@ -578,7 +769,7 @@ class _CategoryCard extends StatelessWidget {
                       shape: BoxShape.circle,
                       color: accent.withValues(alpha: 0.12),
                     ),
-                    child: Icon(category.icon, color: accent, size: 20),
+                    child: Icon(icon, color: accent, size: 20),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -586,7 +777,7 @@ class _CategoryCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          category.name,
+                          cat.name,
                           style: const TextStyle(
                             color: kTextPrimary,
                             fontSize: 14,
@@ -763,12 +954,18 @@ class _NeoField extends StatelessWidget {
     required this.hint,
     this.keyboardType,
     this.prefix,
+    this.validator,
+    this.textCapitalization = TextCapitalization.none,
+    this.inputFormatters,
   });
 
   final TextEditingController controller;
   final String hint;
   final TextInputType? keyboardType;
   final Widget? prefix;
+  final String? Function(String?)? validator;
+  final TextCapitalization textCapitalization;
+  final List<TextInputFormatter>? inputFormatters;
 
   @override
   Widget build(BuildContext context) {
@@ -779,9 +976,12 @@ class _NeoField extends StatelessWidget {
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: TextField(
+      child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
+        textCapitalization: textCapitalization,
+        inputFormatters: inputFormatters,
+        validator: validator,
         style: const TextStyle(color: kTextPrimary, fontWeight: FontWeight.w700),
         decoration: InputDecoration(
           border: InputBorder.none,
@@ -789,6 +989,11 @@ class _NeoField extends StatelessWidget {
           hintStyle: TextStyle(color: kTextSecondary.withValues(alpha: 0.7)),
           prefixIconConstraints: const BoxConstraints(minWidth: 40),
           prefixIcon: prefix == null ? null : Center(child: prefix),
+          errorStyle: const TextStyle(
+            color: kRose,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -796,30 +1001,48 @@ class _NeoField extends StatelessWidget {
 }
 
 class _SheetButton extends StatelessWidget {
-  const _SheetButton({required this.label, required this.color, required this.onTap});
+  const _SheetButton({
+    required this.label,
+    required this.color,
+    required this.onTap,
+    this.enabled = true,
+  });
 
   final String label;
   final Color color;
-  final VoidCallback onTap;
+  final Future<void> Function()? onTap;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.22)),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.3,
+    final effectiveColor = enabled ? color : color.withValues(alpha: 0.35);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: enabled
+            ? () async {
+                await onTap?.call();
+              }
+            : null,
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: effectiveColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: effectiveColor.withValues(alpha: 0.22)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Center(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: effectiveColor,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.3,
+                ),
+              ),
             ),
           ),
         ),

@@ -13,13 +13,17 @@ import 'features/auth/presentation/cubit/auth_cubit.dart';
 
 import 'features/main/data/datasources/notification_remote_data_source.dart';
 import 'features/main/data/datasources/wallet_remote_data_source.dart';
+import 'features/main/data/datasources/budget_remote_data_source.dart';
 import 'features/main/data/repositories/wallet_repository_impl.dart';
+import 'features/main/data/repositories/budget_repository_impl.dart';
 import 'features/main/domain/repositories/wallet_repository.dart';
+import 'features/main/domain/repositories/budget_repository.dart';
 import 'features/main/domain/usecases/deposit_usecase.dart';
 import 'features/main/domain/usecases/get_primary_wallet_stream_usecase.dart';
 import 'features/main/domain/usecases/transfer_out_usecase.dart';
 import 'features/main/domain/usecases/get_transactions_stream_usecase.dart';
 import 'features/main/domain/usecases/transfer_to_user_usecase.dart';
+import 'features/main/presentation/cubit/budget_cubit.dart';
 
 final sl = GetIt.instance; // sl: Service Locator
 
@@ -73,7 +77,19 @@ Future<void> init() async {
   sl.registerLazySingleton<WalletRemoteDataSource>(
     () => WalletRemoteDataSourceImpl(firestore: sl()),
   );
-  //! Features - Budget AI
+
+  sl.registerLazySingleton<BudgetRemoteDataSource>(
+    () => BudgetRemoteDataSourceImpl(firestore: sl()),
+  );
+  sl.registerLazySingleton<BudgetRepository>(
+    () => BudgetRepositoryImpl(remoteDataSource: sl()),
+  );
+  sl.registerFactory(
+    () => BudgetCubit(
+      getPrimaryWalletStreamUseCase: sl(),
+      budgetRepository: sl(),
+    ),
+  );
 
   //! Core
 
