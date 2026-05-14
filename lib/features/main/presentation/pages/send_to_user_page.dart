@@ -9,6 +9,7 @@ import '../../domain/usecases/transfer_to_user_usecase.dart';
 import '../../domain/usecases/watch_out_categories_usecase.dart';
 import '../widgets/category_dropdown.dart';
 import 'qr_scanner_page.dart';
+import 'transaction_success_page.dart';
 
 class SendToUserPage extends StatefulWidget {
   /// Pre-fill receiver UID nếu được truyền từ QR scanner
@@ -27,6 +28,7 @@ class _SendToUserPageState extends State<SendToUserPage> {
   final TextEditingController _noteController = TextEditingController();
 
   String? _selectedCategoryId;
+  String? _selectedCategoryName;
 
   bool _isSending = false;
 
@@ -127,21 +129,29 @@ class _SendToUserPageState extends State<SendToUserPage> {
     setState(() => _isSending = false);
 
     result.fold(
-      (failure) => showNotificationDialog(
-        context,
-        'Thất bại',
-        failure.message,
-        kRose,
-        Icons.error_outline,
-      ),
-      (_) => showNotificationDialog(
-        context,
-        'Thành công',
-        'Đã chuyển ${amount.toStringAsFixed(0)} VNĐ vào ví người nhận.',
-        kEmerald,
-        Icons.check_circle_outline,
-        onOkPressed: () => Navigator.of(context).pop(),
-      ),
+      (failure) {
+        showNotificationDialog(
+          context,
+          'Thất bại',
+          failure.message,
+          kRose,
+          Icons.error_outline,
+        );
+      },
+      (_) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => TransactionSuccessPage(
+              amount: amount,
+              receiver: receiverUid,
+              categoryName: _selectedCategoryName ?? 'Chưa phân loại',
+              timestamp: DateTime.now(),
+              note: _noteController.text.trim(),
+              isInternal: true,
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -317,6 +327,13 @@ class _SendToUserPageState extends State<SendToUserPage> {
                     onChanged: (val) {
                       setState(() {
                         _selectedCategoryId = val;
+                        if (val != null) {
+                          _selectedCategoryName = categories
+                              .firstWhere((c) => c.id == val)
+                              .name;
+                        } else {
+                          _selectedCategoryName = null;
+                        }
                       });
                     },
                   );

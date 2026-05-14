@@ -8,6 +8,7 @@ import '../../domain/usecases/transfer_out_usecase.dart';
 import '../../domain/usecases/watch_out_categories_usecase.dart';
 import '../widgets/category_dropdown.dart';
 import 'qr_scanner_page.dart';
+import 'transaction_success_page.dart';
 
 class TransferPage extends StatefulWidget {
   /// Số điện thoại điền sẵn (từ QR scanner)
@@ -25,6 +26,7 @@ class _TransferPageState extends State<TransferPage> {
   final TextEditingController _amountController = TextEditingController();
   
   String? _selectedCategoryId;
+  String? _selectedCategoryName;
 
   bool _isTransferring = false;
 
@@ -154,15 +156,17 @@ class _TransferPageState extends State<TransferPage> {
         );
       },
       (_) {
-        showNotificationDialog(
-          context,
-          'Thành công',
-          'Đã chuyển ${amount.toStringAsFixed(0)} VNĐ đến ví MoMo $phone.',
-          kEmerald,
-          Icons.check_circle_outline,
-          onOkPressed: () {
-            Navigator.of(context).pop();
-          },
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => TransactionSuccessPage(
+              amount: amount,
+              receiver: phone,
+              categoryName: _selectedCategoryName ?? 'Chưa phân loại',
+              timestamp: DateTime.now(),
+              note: 'Rút tiền về MoMo',
+              isInternal: false,
+            ),
+          ),
         );
       },
     );
@@ -328,6 +332,13 @@ class _TransferPageState extends State<TransferPage> {
                     onChanged: (val) {
                       setState(() {
                         _selectedCategoryId = val;
+                        if (val != null) {
+                          _selectedCategoryName = categories
+                              .firstWhere((c) => c.id == val)
+                              .name;
+                        } else {
+                          _selectedCategoryName = null;
+                        }
                       });
                     },
                   );

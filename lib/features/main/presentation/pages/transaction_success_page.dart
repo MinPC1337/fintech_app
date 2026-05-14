@@ -1,0 +1,230 @@
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../../../../core/theme/app_colors.dart';
+import 'main_page.dart';
+
+class TransactionSuccessPage extends StatelessWidget {
+  final double amount;
+  final String receiver;
+  final String categoryName;
+  final DateTime timestamp;
+  final String note;
+  final bool isInternal;
+
+  const TransactionSuccessPage({
+    super.key,
+    required this.amount,
+    required this.receiver,
+    required this.categoryName,
+    required this.timestamp,
+    required this.note,
+    this.isInternal = true,
+  });
+
+  String _formatCurrency(double value) {
+    final currency = NumberFormat.currency(locale: 'vi_VN', symbol: 'VNĐ');
+    return currency.format(value);
+  }
+
+  String _formatDate(DateTime date) {
+    return DateFormat('HH:mm - dd/MM/yyyy').format(date);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: kBgColor,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Spacer(),
+
+              // Success Icon & Amount
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: kEmerald.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    color: kEmerald,
+                    size: 80,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Giao dịch thành công!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: kEmerald,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _formatCurrency(amount),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: kTextPrimary,
+                  fontSize: 36,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 40),
+
+              // Receipt Card
+              ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: kThemeGlassBase,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: kThemeBorderDefault),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        _buildDetailRow(
+                          'Thời gian',
+                          _formatDate(timestamp),
+                          Icons.access_time_rounded,
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Divider(color: kBorder, height: 1),
+                        ),
+                        _buildDetailRow(
+                          isInternal ? 'Ví nhận' : 'Số MoMo nhận',
+                          receiver,
+                          isInternal ? Icons.wallet_rounded : Icons.phone_android_rounded,
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Divider(color: kBorder, height: 1),
+                        ),
+                        _buildDetailRow(
+                          'Danh mục',
+                          categoryName,
+                          Icons.category_rounded,
+                        ),
+                        if (note.isNotEmpty) ...[
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Divider(color: kBorder, height: 1),
+                          ),
+                          _buildDetailRow(
+                            'Ghi chú',
+                            note,
+                            Icons.notes_rounded,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              const Spacer(),
+
+              // Action Buttons
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const MainPage()),
+                    (route) => false,
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kCyan,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  'Về trang chủ',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  side: const BorderSide(color: kBorder),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: const Text(
+                  'Thực hiện giao dịch khác',
+                  style: TextStyle(
+                    color: kTextPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String title, String value, IconData icon) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: kTextSecondary, size: 20),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: const TextStyle(
+            color: kTextSecondary,
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+              color: kTextPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
