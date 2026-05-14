@@ -12,9 +12,9 @@ class TransactionHistoryPage extends StatelessWidget {
 
   const TransactionHistoryPage({super.key, required this.userId});
 
-  String _formatCategory(String categoryName) {
+  String _formatCategory(String categoryId) {
     // Basic formatting for known system categories if name is not available
-    switch (categoryName) {
+    switch (categoryId) {
       case 'deposit':
         return 'Nạp tiền';
       case 'internal_transfer':
@@ -23,8 +23,8 @@ class TransactionHistoryPage extends StatelessWidget {
         return 'Rút tiền';
       default:
         // Attempt to format generic string by capitalizing
-        if (categoryName.isEmpty) return 'Chưa phân loại';
-        return categoryName
+        if (categoryId.isEmpty) return 'Chưa phân loại';
+        return categoryId
             .replaceAll('_', ' ')
             .replaceFirstMapped(
               RegExp(r'^[a-z]'),
@@ -121,7 +121,7 @@ class TransactionHistoryPage extends StatelessWidget {
                         receiver: isIncome
                             ? formatWallet(userId, false)
                             : formatWallet(tx.receiverId, false),
-                        categoryName: _formatCategory(tx.categoryName),
+                        categoryName: _formatCategory(tx.categoryId),
                         timestamp: tx.timestamp,
                         note: tx.note,
                         isInternal: true,

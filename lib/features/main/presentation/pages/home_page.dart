@@ -837,8 +837,8 @@ class _HomePageState extends State<HomePage> {
                   amount:
                       '$sign${currencyFormatter.format(tx.amount).replaceAll('đ', '').trim()}',
                   onTap: () {
-                    String formatCategory(String categoryName) {
-                      switch (categoryName) {
+                    String formatCategory(String categoryId) {
+                      switch (categoryId) {
                         case 'deposit':
                           return 'Nạp tiền';
                         case 'internal_transfer':
@@ -846,8 +846,8 @@ class _HomePageState extends State<HomePage> {
                         case 'transfer':
                           return 'Rút tiền';
                         default:
-                          if (categoryName.isEmpty) return 'Chưa phân loại';
-                          return categoryName
+                          if (categoryId.isEmpty) return 'Chưa phân loại';
+                          return categoryId
                               .replaceAll('_', ' ')
                               .replaceFirstMapped(
                                 RegExp(r'^[a-z]'),
