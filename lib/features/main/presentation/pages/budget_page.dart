@@ -568,6 +568,27 @@ class _CategoryCard extends StatelessWidget {
                             fontWeight: FontWeight.w800,
                           ),
                         ),
+                        if (cat.month != null && cat.year != null) ...[
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.event_note_rounded,
+                                color: accent.withValues(alpha: 0.6),
+                                size: 11,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Tháng ${cat.month}/${cat.year}',
+                                style: TextStyle(
+                                  color: accent.withValues(alpha: 0.7),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: 2),
                         Text(
                           'Giới hạn ${formatMoney(limit)} • Đã chi ${formatMoney(spent)}',

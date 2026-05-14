@@ -15,9 +15,9 @@ class BudgetCubit extends Cubit<BudgetState> {
   BudgetCubit({
     required GetPrimaryWalletStreamUseCase getPrimaryWalletStreamUseCase,
     required BudgetRepository budgetRepository,
-  })  : _getPrimaryWalletStreamUseCase = getPrimaryWalletStreamUseCase,
-        _budgetRepository = budgetRepository,
-        super(BudgetInitial());
+  }) : _getPrimaryWalletStreamUseCase = getPrimaryWalletStreamUseCase,
+       _budgetRepository = budgetRepository,
+       super(BudgetInitial());
 
   final GetPrimaryWalletStreamUseCase _getPrimaryWalletStreamUseCase;
   final BudgetRepository _budgetRepository;
@@ -69,15 +69,17 @@ class BudgetCubit extends Cubit<BudgetState> {
 
   void _listenCategories(String walletId) {
     _categoriesSub?.cancel();
-    _categoriesSub = _budgetRepository.watchBudgetCategories(walletId).listen(
-      (list) {
-        _categories = list;
-        _emitLoaded();
-      },
-      onError: (Object e, _) {
-        emit(BudgetFailure(e.toString()));
-      },
-    );
+    _categoriesSub = _budgetRepository
+        .watchBudgetCategories(walletId, month: _month.month, year: _month.year)
+        .listen(
+          (list) {
+            _categories = list;
+            _emitLoaded();
+          },
+          onError: (Object e, _) {
+            emit(BudgetFailure(e.toString()));
+          },
+        );
   }
 
   void _listenTransactions() {
@@ -87,19 +89,19 @@ class BudgetCubit extends Cubit<BudgetState> {
     _transactionsSub?.cancel();
     _transactionsSub = _budgetRepository
         .watchTransactionsForMonth(
-      userId: uid,
-      year: _month.year,
-      month: _month.month,
-    )
+          userId: uid,
+          year: _month.year,
+          month: _month.month,
+        )
         .listen(
-      (list) {
-        _transactions = list;
-        _emitLoaded();
-      },
-      onError: (Object e, _) {
-        emit(BudgetFailure(e.toString()));
-      },
-    );
+          (list) {
+            _transactions = list;
+            _emitLoaded();
+          },
+          onError: (Object e, _) {
+            emit(BudgetFailure(e.toString()));
+          },
+        );
   }
 
   void _emitLoaded() {
@@ -114,8 +116,9 @@ class BudgetCubit extends Cubit<BudgetState> {
       }
     }
 
-    final outCategories =
-        _categories.where((c) => c.type == CategoryType.outType).toList();
+    final outCategories = _categories
+        .where((c) => c.type == CategoryType.outType)
+        .toList();
 
     final items = outCategories
         .map(
@@ -129,12 +132,14 @@ class BudgetCubit extends Cubit<BudgetState> {
     final prev = state;
     final err = prev is BudgetLoaded ? prev.errorMessage : null;
 
-    emit(BudgetLoaded(
-      month: _month,
-      items: items,
-      walletId: walletId,
-      errorMessage: err,
-    ));
+    emit(
+      BudgetLoaded(
+        month: _month,
+        items: items,
+        walletId: walletId,
+        errorMessage: err,
+      ),
+    );
   }
 
   void changeMonth(int monthDelta) {
@@ -143,6 +148,9 @@ class BudgetCubit extends Cubit<BudgetState> {
     _emitLoaded();
     if (_userId != null) {
       _listenTransactions();
+    }
+    if (_walletId != null) {
+      _listenCategories(_walletId!);
     }
   }
 
@@ -190,23 +198,21 @@ class BudgetCubit extends Cubit<BudgetState> {
   void _setSheetError(String message) {
     final s = state;
     if (s is BudgetLoaded) {
-      emit(BudgetLoaded(
-        month: s.month,
-        items: s.items,
-        walletId: s.walletId,
-        errorMessage: message,
-      ));
+      emit(
+        BudgetLoaded(
+          month: s.month,
+          items: s.items,
+          walletId: s.walletId,
+          errorMessage: message,
+        ),
+      );
     }
   }
 
   void _clearSheetError() {
     final s = state;
     if (s is BudgetLoaded && s.errorMessage != null) {
-      emit(BudgetLoaded(
-        month: s.month,
-        items: s.items,
-        walletId: s.walletId,
-      ));
+      emit(BudgetLoaded(month: s.month, items: s.items, walletId: s.walletId));
     }
   }
 
