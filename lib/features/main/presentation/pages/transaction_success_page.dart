@@ -8,25 +8,23 @@ import 'main_page.dart';
 class TransactionSuccessPage extends StatelessWidget {
   final double amount;
   final String receiver;
-  final String? sender; // Thêm sender
+  final String sender; // Nguồn tiền
   final String categoryName;
   final DateTime timestamp;
   final String note;
   final bool isInternal;
   final bool isViewOnly;
-  final bool isIncome; // Xác định luồng tiền để đổi label
 
   const TransactionSuccessPage({
     super.key,
     required this.amount,
     required this.receiver,
-    this.sender,
+    required this.sender,
     required this.categoryName,
     required this.timestamp,
     required this.note,
     this.isInternal = true,
     this.isViewOnly = false,
-    this.isIncome = false,
   });
 
   String _formatCurrency(double value) {
@@ -133,21 +131,19 @@ class TransactionSuccessPage extends StatelessWidget {
                           padding: EdgeInsets.symmetric(vertical: 12),
                           child: Divider(color: kBorder, height: 1),
                         ),
-                        if (isIncome && sender != null) ...[
-                          _buildDetailRow(
-                            'Nguồn tiền',
-                            sender!,
-                            Icons.login_rounded,
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 12),
-                            child: Divider(color: kBorder, height: 1),
-                          ),
-                        ],
                         _buildDetailRow(
-                          isIncome ? 'Ví nhận' : (isInternal ? 'Ví nhận' : 'Số MoMo nhận'),
+                          'Nguồn tiền',
+                          sender,
+                          Icons.login_rounded,
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Divider(color: kBorder, height: 1),
+                        ),
+                        _buildDetailRow(
+                          'Tài khoản nhận',
                           receiver,
-                          isInternal ? Icons.wallet_rounded : Icons.phone_android_rounded,
+                          Icons.account_balance_wallet_rounded,
                         ),
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 12),

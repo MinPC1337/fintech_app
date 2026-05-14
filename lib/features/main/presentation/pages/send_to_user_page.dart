@@ -141,14 +141,20 @@ class _SendToUserPageState extends State<SendToUserPage> {
       (_) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (_) => TransactionSuccessPage(
-              amount: amount,
-              receiver: receiverUid,
-              categoryName: _selectedCategoryName ?? 'Chưa phân loại',
-              timestamp: DateTime.now(),
-              note: _noteController.text.trim(),
-              isInternal: true,
-            ),
+            builder: (_) {
+              final name = currentUser?.displayName?.isNotEmpty == true
+                  ? currentUser!.displayName!
+                  : 'Người dùng';
+              return TransactionSuccessPage(
+                amount: amount,
+                sender: 'Ví cá nhân - $name',
+                receiver: 'Ví cá nhân - $receiverUid',
+                categoryName: _selectedCategoryName ?? 'Chưa phân loại',
+                timestamp: DateTime.now(),
+                note: _noteController.text.trim(),
+                isInternal: true,
+              );
+            },
           ),
         );
       },

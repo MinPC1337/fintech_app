@@ -146,11 +146,15 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
       (_) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (_) => TransactionSuccessPage(
-              amount: amount,
-              receiver: 'Ví cá nhân',
-              sender: 'Ví MoMo',
-              categoryName: 'Nạp tiền',
+            builder: (_) {
+              final name = currentUser?.displayName?.isNotEmpty == true
+                  ? currentUser!.displayName!
+                  : 'Người dùng';
+              return TransactionSuccessPage(
+                amount: amount,
+                receiver: 'Ví cá nhân - $name',
+                sender: 'Ví MoMo',
+                categoryName: 'Nạp tiền',
               timestamp: DateTime.now(),
               note: 'Nạp tiền vào ví từ MoMo',
               isInternal: true,

@@ -158,14 +158,20 @@ class _TransferPageState extends State<TransferPage> {
       (_) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (_) => TransactionSuccessPage(
-              amount: amount,
-              receiver: phone,
-              categoryName: _selectedCategoryName ?? 'Chưa phân loại',
-              timestamp: DateTime.now(),
-              note: 'Rút tiền về MoMo',
-              isInternal: false,
-            ),
+            builder: (_) {
+              final name = currentUser?.displayName?.isNotEmpty == true
+                  ? currentUser!.displayName!
+                  : 'Người dùng';
+              return TransactionSuccessPage(
+                amount: amount,
+                sender: 'Ví cá nhân - $name',
+                receiver: 'Ví MoMo - $phone',
+                categoryName: _selectedCategoryName ?? 'Chưa phân loại',
+                timestamp: DateTime.now(),
+                note: _noteController.text.trim(),
+                isInternal: false,
+              );
+            },
           ),
         );
       },

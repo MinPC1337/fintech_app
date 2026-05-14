@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../injection_container.dart';
@@ -84,6 +85,18 @@ class TransactionHistoryPage extends StatelessWidget {
                   ? tx.note
                   : (isIncome ? 'Nhận tiền' : 'Chuyển tiền');
 
+              String formatWallet(String? id, bool isSender) {
+                if (id == null || id.isEmpty) return 'Ví MoMo';
+                if (id == userId) {
+                  final currentUser = FirebaseAuth.instance.currentUser;
+                  final name = (currentUser?.displayName?.isNotEmpty ?? false)
+                      ? currentUser!.displayName!
+                      : 'Người dùng';
+                  return 'Ví cá nhân - $name';
+                }
+                return 'Ví cá nhân - $id';
+              }
+
               return GestureDetector(
                 onTap: () {
                   Navigator.push(
@@ -91,16 +104,13 @@ class TransactionHistoryPage extends StatelessWidget {
                     MaterialPageRoute(
                       builder: (_) => TransactionSuccessPage(
                         amount: tx.amount,
-                        receiver: isIncome
-                            ? 'Ví cá nhân'
-                            : (tx.receiverId ?? 'Hệ thống'),
-                        sender: isIncome ? (tx.senderId ?? 'Ví MoMo') : null,
+                        sender: isIncome ? formatWallet(tx.senderId, true) : formatWallet(userId, true),
+                        receiver: isIncome ? formatWallet(userId, false) : formatWallet(tx.receiverId, false),
                         categoryName: _formatCategory(tx.categoryId),
                         timestamp: tx.timestamp,
                         note: tx.note,
-                        isInternal: true, // We don't have exact context here, default to true or infer
+                        isInternal: true,
                         isViewOnly: true,
-                        isIncome: isIncome,
                       ),
                     ),
                   );

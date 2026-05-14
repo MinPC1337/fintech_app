@@ -848,21 +848,27 @@ class _HomePageState extends State<HomePage> {
                       }
                     }
 
+                    String formatWallet(String? id) {
+                      if (id == null || id.isEmpty) return 'Ví MoMo';
+                      if (id == currentUser.uid) {
+                        final name = currentUser.fullName.isNotEmpty ? currentUser.fullName : 'Người dùng';
+                        return 'Ví cá nhân - $name';
+                      }
+                      return 'Ví cá nhân - $id';
+                    }
+
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => TransactionSuccessPage(
                           amount: tx.amount,
-                          receiver: isIncome
-                              ? 'Ví cá nhân'
-                              : (tx.receiverId ?? 'Hệ thống'),
-                          sender: isIncome ? (tx.senderId ?? 'Ví MoMo') : null,
+                          sender: isIncome ? formatWallet(tx.senderId) : formatWallet(currentUser.uid),
+                          receiver: isIncome ? formatWallet(currentUser.uid) : formatWallet(tx.receiverId),
                           categoryName: formatCategory(tx.categoryId),
                           timestamp: tx.timestamp,
                           note: tx.note,
                           isInternal: true,
                           isViewOnly: true,
-                          isIncome: isIncome,
                         ),
                       ),
                     );
