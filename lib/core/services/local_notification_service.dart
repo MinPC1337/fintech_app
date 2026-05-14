@@ -9,9 +9,7 @@ class LocalNotificationService {
   Future<void> init() async {
     // Cấu hình cho Android
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings(
-          '@mipmap/launcher_icon',
-        ); // Đảm bảo bạn có icon này trong res/drawable
+        AndroidInitializationSettings('@mipmap/launcher_icon');
 
     // Cấu hình cho iOS
     const DarwinInitializationSettings initializationSettingsDarwin =
