@@ -10,7 +10,7 @@ class LocalNotificationService {
     // Cấu hình cho Android
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings(
-          'launcher_icon',
+          '@mipmap/launcher_icon',
         ); // Đảm bảo bạn có icon này trong res/drawable
 
     // Cấu hình cho iOS
