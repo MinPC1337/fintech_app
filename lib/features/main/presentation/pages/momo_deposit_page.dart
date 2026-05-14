@@ -155,11 +155,11 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
                 receiver: 'Ví cá nhân - $name',
                 sender: 'Ví MoMo',
                 categoryName: 'Nạp tiền',
-              timestamp: DateTime.now(),
-              note: 'Nạp tiền vào ví từ MoMo',
-              isInternal: true,
-              isIncome: true,
-            ),
+                timestamp: DateTime.now(),
+                note: 'Nạp tiền vào ví từ MoMo',
+                isInternal: true,
+              );
+            },
           ),
         );
       },

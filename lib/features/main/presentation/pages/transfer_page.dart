@@ -24,7 +24,8 @@ class _TransferPageState extends State<TransferPage> {
   final User? currentUser = FirebaseAuth.instance.currentUser;
   late final TextEditingController _phoneController;
   final TextEditingController _amountController = TextEditingController();
-  
+  final TextEditingController _noteController = TextEditingController();
+
   String? _selectedCategoryId;
   String? _selectedCategoryName;
 
@@ -33,8 +34,7 @@ class _TransferPageState extends State<TransferPage> {
   @override
   void initState() {
     super.initState();
-    _phoneController =
-        TextEditingController(text: widget.initialPhone ?? '');
+    _phoneController = TextEditingController(text: widget.initialPhone ?? '');
   }
 
   /// Mở QrScannerPage, parse SĐT 10 số từ kết quả QR MoMo UAT.
@@ -63,14 +63,18 @@ class _TransferPageState extends State<TransferPage> {
     final phoneRegex = RegExp(r'(?<![\d])(0\d{9})(?![\d])');
     final match = phoneRegex.firstMatch(result);
     if (match != null) {
-      debugPrint('[TransferPage._scanMomoQr] ✔ Phone extracted via regex: "${match.group(1)}"');
+      debugPrint(
+        '[TransferPage._scanMomoQr] ✔ Phone extracted via regex: "${match.group(1)}"',
+      );
       _phoneController.text = match.group(1)!;
       return;
     }
 
     // Nếu toàn bộ chuỗi chỉ là SĐT
     if (RegExp(r'^0\d{9}$').hasMatch(result.trim())) {
-      debugPrint('[TransferPage._scanMomoQr] ✔ Phone is raw string: "${result.trim()}"');
+      debugPrint(
+        '[TransferPage._scanMomoQr] ✔ Phone is raw string: "${result.trim()}"',
+      );
       _phoneController.text = result.trim();
       return;
     }
@@ -91,6 +95,7 @@ class _TransferPageState extends State<TransferPage> {
   void dispose() {
     _phoneController.dispose();
     _amountController.dispose();
+    _noteController.dispose();
     super.dispose();
   }
 
@@ -139,7 +144,12 @@ class _TransferPageState extends State<TransferPage> {
     });
 
     final transferUseCase = sl<TransferOutUseCase>();
-    final result = await transferUseCase.call(currentUser!.uid, amount, phone, _selectedCategoryId!);
+    final result = await transferUseCase.call(
+      currentUser!.uid,
+      amount,
+      phone,
+      _selectedCategoryId!,
+    );
 
     setState(() {
       _isTransferring = false;
@@ -255,8 +265,10 @@ class _TransferPageState extends State<TransferPage> {
                   ),
                   suffixIcon: IconButton(
                     tooltip: 'Quét mã QR MoMo',
-                    icon: const Icon(Icons.qr_code_scanner_rounded,
-                        color: kElectricBlue),
+                    icon: const Icon(
+                      Icons.qr_code_scanner_rounded,
+                      color: kElectricBlue,
+                    ),
                     onPressed: _scanMomoQr,
                   ),
                   filled: true,
@@ -302,6 +314,31 @@ class _TransferPageState extends State<TransferPage> {
               const SizedBox(height: 24),
 
               const Text(
+                'Ghi chú (tuỳ chọn)',
+                style: TextStyle(color: kTextSecondary, fontSize: 14),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _noteController,
+                style: const TextStyle(color: kTextPrimary, fontSize: 16),
+                decoration: InputDecoration(
+                  hintText: 'Ví dụ: Trả tiền cà phê',
+                  hintStyle: const TextStyle(color: kTextSecondary),
+                  prefixIcon: const Icon(
+                    Icons.edit_note_rounded,
+                    color: kElectricBlue,
+                  ),
+                  filled: true,
+                  fillColor: kSurface,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              const Text(
                 'Danh mục',
                 style: TextStyle(color: kTextSecondary, fontSize: 14),
               ),
@@ -310,7 +347,9 @@ class _TransferPageState extends State<TransferPage> {
                 stream: sl<WatchOutCategoriesUseCase>().call(currentUser!.uid),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator(color: kElectricBlue));
+                    return const Center(
+                      child: CircularProgressIndicator(color: kElectricBlue),
+                    );
                   }
                   final categories = snapshot.data ?? [];
                   if (categories.isEmpty) {
@@ -326,9 +365,10 @@ class _TransferPageState extends State<TransferPage> {
                       ),
                     );
                   }
-                  
+
                   // Ensure _selectedCategoryId is valid
-                  if (_selectedCategoryId != null && !categories.any((c) => c.id == _selectedCategoryId)) {
+                  if (_selectedCategoryId != null &&
+                      !categories.any((c) => c.id == _selectedCategoryId)) {
                     _selectedCategoryId = null;
                   }
 
