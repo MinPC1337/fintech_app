@@ -8,6 +8,7 @@ import '../../../../injection_container.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/usecases/transfer_to_user_usecase.dart';
 import '../../domain/usecases/watch_out_categories_usecase.dart';
+import '../../../../core/services/local_notification_service.dart';
 import '../widgets/category_dropdown.dart';
 import 'qr_scanner_page.dart';
 import 'transaction_success_page.dart';
@@ -125,7 +126,12 @@ class _SendToUserPageState extends State<SendToUserPage> {
     setState(() => _isSending = true);
 
     final useCase = sl<TransferToUserUseCase>();
-    final result = await useCase.call(currentUser!.uid, receiverUid, amount, _selectedCategoryId!);
+    final result = await useCase.call(
+      currentUser!.uid,
+      receiverUid,
+      amount,
+      _selectedCategoryId!,
+    );
 
     setState(() => _isSending = false);
 
@@ -154,6 +160,13 @@ class _SendToUserPageState extends State<SendToUserPage> {
           // Giữ fallback "Người dùng"
         }
         if (!mounted) return;
+        sl<LocalNotificationService>().showNotification(
+          id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          title: 'Chuyển tiền thành công',
+          body:
+              'Bạn đã chuyển ${amount.toStringAsFixed(0)} VNĐ đến $receiverName.',
+        );
+
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) {
@@ -319,7 +332,9 @@ class _SendToUserPageState extends State<SendToUserPage> {
                 stream: sl<WatchOutCategoriesUseCase>().call(currentUser!.uid),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator(color: kPurple));
+                    return const Center(
+                      child: CircularProgressIndicator(color: kPurple),
+                    );
                   }
                   final categories = snapshot.data ?? [];
                   if (categories.isEmpty) {
@@ -336,9 +351,10 @@ class _SendToUserPageState extends State<SendToUserPage> {
                       ),
                     );
                   }
-                  
+
                   // Ensure _selectedCategoryId is valid
-                  if (_selectedCategoryId != null && !categories.any((c) => c.id == _selectedCategoryId)) {
+                  if (_selectedCategoryId != null &&
+                      !categories.any((c) => c.id == _selectedCategoryId)) {
                     _selectedCategoryId = null;
                   }
 

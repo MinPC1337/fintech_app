@@ -6,6 +6,7 @@ import '../../../../injection_container.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/usecases/transfer_out_usecase.dart';
 import '../../domain/usecases/watch_out_categories_usecase.dart';
+import '../../../../core/services/local_notification_service.dart';
 import '../widgets/category_dropdown.dart';
 import 'qr_scanner_page.dart';
 import 'transaction_success_page.dart';
@@ -166,6 +167,12 @@ class _TransferPageState extends State<TransferPage> {
         );
       },
       (_) {
+        sl<LocalNotificationService>().showNotification(
+          id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          title: 'Rút tiền thành công',
+          body:
+              'Giao dịch rút ${amount.toStringAsFixed(0)} VNĐ về số $phone đã hoàn tất.',
+        );
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) {

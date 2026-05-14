@@ -11,6 +11,7 @@ import 'features/auth/domain/usecases/update_profile_usecase.dart';
 import 'features/auth/domain/usecases/reset_password_usecase.dart';
 import 'features/auth/presentation/cubit/auth_cubit.dart';
 
+import 'core/services/local_notification_service.dart';
 import 'features/main/data/datasources/notification_remote_data_source.dart';
 import 'features/main/data/datasources/wallet_remote_data_source.dart';
 import 'features/main/data/datasources/budget_remote_data_source.dart';
@@ -92,6 +93,11 @@ Future<void> init() async {
       budgetRepository: sl(),
     ),
   );
+
+  //! Core Services
+  final localNotif = LocalNotificationService();
+  await localNotif.init();
+  sl.registerLazySingleton(() => localNotif);
 
   //! Core
 

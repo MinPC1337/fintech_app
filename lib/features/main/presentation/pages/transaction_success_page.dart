@@ -211,27 +211,27 @@ class TransactionSuccessPage extends StatelessWidget {
                   ),
                 ),
               if (!isViewOnly) const SizedBox(height: 16),
-              if (!isViewOnly)
-                OutlinedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: const BorderSide(color: kBorder),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: const Text(
-                    'Thực hiện giao dịch khác',
-                    style: TextStyle(
-                      color: kTextPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+              // if (!isViewOnly)
+              //   OutlinedButton(
+              //     onPressed: () {
+              //       Navigator.of(context).pop();
+              //     },
+              //     style: OutlinedButton.styleFrom(
+              //       padding: const EdgeInsets.symmetric(vertical: 16),
+              //       side: const BorderSide(color: kBorder),
+              //       shape: RoundedRectangleBorder(
+              //         borderRadius: BorderRadius.circular(14),
+              //       ),
+              //     ),
+              //     child: const Text(
+              //       'Thực hiện giao dịch khác',
+              //       style: TextStyle(
+              //         color: kTextPrimary,
+              //         fontSize: 16,
+              //         fontWeight: FontWeight.w600,
+              //       ),
+              //     ),
+              //   ),
             ],
           ),
         ),
