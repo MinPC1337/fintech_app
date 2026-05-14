@@ -8,6 +8,7 @@ import '../../../../core/utils/dialog_utils.dart';
 import '../../../../injection_container.dart';
 import '../../domain/usecases/deposit_usecase.dart';
 import '../../data/datasources/momo_api_service.dart';
+import 'transaction_success_page.dart';
 
 class MomoDepositPage extends StatefulWidget {
   const MomoDepositPage({super.key});
@@ -142,14 +143,20 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
         kRose,
         Icons.error_outline,
       ),
-      (_) => showNotificationDialog(
-        context,
-        '✅ Thanh toán thành công!',
-        'Đã nhận ${amount.toStringAsFixed(0)} VNĐ vào ví từ MoMo.',
-        kEmerald,
-        Icons.check_circle_outline,
-        onOkPressed: () => Navigator.of(context).pop(),
-      ),
+      (_) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => TransactionSuccessPage(
+              amount: amount,
+              receiver: 'Ví cá nhân',
+              categoryName: 'Nạp tiền',
+              timestamp: DateTime.now(),
+              note: 'Nạp tiền vào ví từ MoMo',
+              isInternal: true,
+            ),
+          ),
+        );
+      },
     );
   }
 
