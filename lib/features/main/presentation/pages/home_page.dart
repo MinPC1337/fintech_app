@@ -11,6 +11,8 @@ import 'send_to_user_page.dart';
 import 'notifications_page.dart';
 import 'package:intl/intl.dart';
 import '../../domain/usecases/get_transactions_stream_usecase.dart';
+import 'transaction_history_page.dart';
+import 'transaction_success_page.dart';
 import '../../../auth/presentation/pages/profile_page.dart';
 import '../../../auth/domain/entities/user.dart' as auth_entity;
 import '../../../auth/presentation/cubit/auth_cubit.dart';
@@ -767,7 +769,14 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             TextButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => TransactionHistoryPage(userId: currentUser.uid),
+                  ),
+                );
+              },
               child: const Text(
                 'XEM TẤT CẢ', // Micro-CTA màu Xanh Neon
                 style: TextStyle(
@@ -826,6 +835,34 @@ class _HomePageState extends State<HomePage> {
                   time: timeDisplay,
                   amount:
                       '$sign${currencyFormatter.format(tx.amount).replaceAll('đ', '').trim()}',
+                  onTap: () {
+                    String formatCategory(String categoryId) {
+                      switch (categoryId) {
+                        case 'deposit': return 'Nạp tiền';
+                        case 'internal_transfer': return 'Chuyển tiền nội bộ';
+                        case 'transfer': return 'Rút tiền';
+                        default:
+                          if (categoryId.isEmpty) return 'Chưa phân loại';
+                          return categoryId.replaceAll('_', ' ').replaceFirstMapped(
+                              RegExp(r'^[a-z]'), (m) => m.group(0)!.toUpperCase());
+                      }
+                    }
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => TransactionSuccessPage(
+                          amount: tx.amount,
+                          receiver: isIncome ? tx.senderId : tx.receiverId,
+                          categoryName: formatCategory(tx.categoryId),
+                          timestamp: tx.timestamp,
+                          note: tx.note,
+                          isInternal: true,
+                          isViewOnly: true,
+                        ),
+                      ),
+                    );
+                  },
                 );
               }),
             );
@@ -840,13 +877,16 @@ class _HomePageState extends State<HomePage> {
     required String title,
     required String time,
     required String amount,
+    VoidCallback? onTap,
   }) {
     final color = isIncome ? kEmerald : kRose; // Phân loại màu thông minh
     final icon = isIncome ? Icons.south_west_rounded : Icons.north_east_rounded;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(14),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: kThemeSurfaceSecondary.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(24),
@@ -935,6 +975,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-    );
+    ));
   }
 }

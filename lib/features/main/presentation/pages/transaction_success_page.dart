@@ -12,6 +12,7 @@ class TransactionSuccessPage extends StatelessWidget {
   final DateTime timestamp;
   final String note;
   final bool isInternal;
+  final bool isViewOnly;
 
   const TransactionSuccessPage({
     super.key,
@@ -21,6 +22,7 @@ class TransactionSuccessPage extends StatelessWidget {
     required this.timestamp,
     required this.note,
     this.isInternal = true,
+    this.isViewOnly = false,
   });
 
   String _formatCurrency(double value) {
@@ -36,6 +38,18 @@ class TransactionSuccessPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBgColor,
+      appBar: isViewOnly
+          ? AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              iconTheme: const IconThemeData(color: kTextPrimary),
+              title: const Text(
+                'Chi tiết giao dịch',
+                style: TextStyle(color: kTextPrimary, fontWeight: FontWeight.bold),
+              ),
+              centerTitle: true,
+            )
+          : null,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
@@ -43,33 +57,35 @@ class TransactionSuccessPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Spacer(),
+              if (!isViewOnly) const Spacer(),
 
               // Success Icon & Amount
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: kEmerald.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
+              if (!isViewOnly)
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: kEmerald.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check_circle_rounded,
+                      color: kEmerald,
+                      size: 80,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.check_circle_rounded,
+                ),
+              if (!isViewOnly) const SizedBox(height: 24),
+              if (!isViewOnly)
+                const Text(
+                  'Giao dịch thành công!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
                     color: kEmerald,
-                    size: 80,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Giao dịch thành công!',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: kEmerald,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
               const SizedBox(height: 12),
               Text(
                 _formatCurrency(amount),
@@ -144,54 +160,56 @@ class TransactionSuccessPage extends StatelessWidget {
                 ),
               ),
 
-              const Spacer(),
+              if (!isViewOnly) const Spacer(),
 
               // Action Buttons
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const MainPage()),
-                    (route) => false,
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kCyan,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+              if (!isViewOnly)
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const MainPage()),
+                      (route) => false,
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kCyan,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
                   ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  'Về trang chủ',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              OutlinedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: const BorderSide(color: kBorder),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                  child: const Text(
+                    'Về trang chủ',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-                child: const Text(
-                  'Thực hiện giao dịch khác',
-                  style: TextStyle(
-                    color: kTextPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+              if (!isViewOnly) const SizedBox(height: 16),
+              if (!isViewOnly)
+                OutlinedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    side: const BorderSide(color: kBorder),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    'Thực hiện giao dịch khác',
+                    style: TextStyle(
+                      color: kTextPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
