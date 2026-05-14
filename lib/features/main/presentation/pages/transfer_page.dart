@@ -3,7 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/dialog_utils.dart';
 import '../../../../injection_container.dart';
+import '../../domain/entities/category_entity.dart';
 import '../../domain/usecases/transfer_out_usecase.dart';
+import '../../domain/usecases/watch_out_categories_usecase.dart';
+import '../widgets/category_dropdown.dart';
 import 'qr_scanner_page.dart';
 
 class TransferPage extends StatefulWidget {
@@ -20,6 +23,8 @@ class _TransferPageState extends State<TransferPage> {
   final User? currentUser = FirebaseAuth.instance.currentUser;
   late final TextEditingController _phoneController;
   final TextEditingController _amountController = TextEditingController();
+  
+  String? _selectedCategoryId;
 
   bool _isTransferring = false;
 
@@ -116,12 +121,23 @@ class _TransferPageState extends State<TransferPage> {
       return;
     }
 
+    if (_selectedCategoryId == null) {
+      showNotificationDialog(
+        context,
+        'Lỗi',
+        'Vui lòng chọn danh mục chi tiêu',
+        kRose,
+        Icons.category,
+      );
+      return;
+    }
+
     setState(() {
       _isTransferring = true;
     });
 
     final transferUseCase = sl<TransferOutUseCase>();
-    final result = await transferUseCase.call(currentUser!.uid, amount, phone);
+    final result = await transferUseCase.call(currentUser!.uid, amount, phone, _selectedCategoryId!);
 
     setState(() {
       _isTransferring = false;
@@ -272,6 +288,50 @@ class _TransferPageState extends State<TransferPage> {
                     borderSide: BorderSide.none,
                   ),
                 ),
+              ),
+              const SizedBox(height: 24),
+
+              const Text(
+                'Danh mục',
+                style: TextStyle(color: kTextSecondary, fontSize: 14),
+              ),
+              const SizedBox(height: 8),
+              StreamBuilder<List<CategoryEntity>>(
+                stream: sl<WatchOutCategoriesUseCase>().call(currentUser!.uid),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator(color: kElectricBlue));
+                  }
+                  final categories = snapshot.data ?? [];
+                  if (categories.isEmpty) {
+                    return Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: kSurface,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        'Bạn chưa có danh mục chi tiêu nào. Vui lòng tạo danh mục ở trang Ngân sách trước khi chuyển tiền.',
+                        style: TextStyle(color: kRose, fontSize: 14),
+                      ),
+                    );
+                  }
+                  
+                  // Ensure _selectedCategoryId is valid
+                  if (_selectedCategoryId != null && !categories.any((c) => c.id == _selectedCategoryId)) {
+                    _selectedCategoryId = null;
+                  }
+
+                  return CategoryDropdown(
+                    categories: categories,
+                    selectedCategoryId: _selectedCategoryId,
+                    onChanged: (val) {
+                      setState(() {
+                        _selectedCategoryId = val;
+                      });
+                    },
+                  );
+                },
               ),
               const SizedBox(height: 40),
 

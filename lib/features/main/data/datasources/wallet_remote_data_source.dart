@@ -6,7 +6,7 @@ abstract class WalletRemoteDataSource {
   Future<void> depositToWallet(String receiverUid, double amount);
   Future<WalletModel?> getPrimaryWallet(String userId);
   Stream<WalletModel?> getPrimaryWalletStream(String userId);
-  Future<void> transferOut(String senderUid, double amount, String targetPhone);
+  Future<void> transferOut(String senderUid, double amount, String targetPhone, String categoryId);
   Stream<List<TransactionModel>> getTransactionsStream(String userId);
 
   /// Chuyển tiền nội bộ từ user này sang user khác trong app
@@ -14,6 +14,7 @@ abstract class WalletRemoteDataSource {
     String senderUid,
     String receiverUid,
     double amount,
+    String categoryId,
   );
 }
 
@@ -122,6 +123,7 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
     String senderUid,
     double amount,
     String targetPhone,
+    String categoryId,
   ) async {
     // 1. Tìm ví chính của user
     final walletDoc = await _getPrimaryWalletDoc(senderUid);
@@ -158,7 +160,7 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
         'receiverId': targetPhone,
         'userId': senderUid, // Bản ghi này thuộc về sender
         'amount': amount,
-        'categoryId': 'transfer',
+        'categoryId': categoryId,
         'timestamp': FieldValue.serverTimestamp(),
         'type': 'Expense',
         'note': 'Chuyển khoản đến MoMo $targetPhone',
@@ -211,6 +213,7 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
     String senderUid,
     String receiverUid,
     double amount,
+    String categoryId,
   ) async {
     // 1. Tìm ví chính của sender và receiver
     final senderWalletDoc = await _getPrimaryWalletDoc(senderUid);
@@ -259,7 +262,7 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
         'receiverId': receiverUid,
         'userId': senderUid, // Bản ghi này thuộc về sender
         'amount': amount,
-        'categoryId': 'internal_transfer',
+        'categoryId': categoryId,
         'timestamp': FieldValue.serverTimestamp(),
         'type': 'Expense',
         'note': 'Chuyển tiền đến ví $receiverUid',

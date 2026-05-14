@@ -7,7 +7,7 @@ class TransferOutUseCase {
 
   TransferOutUseCase(this.repository);
 
-  Future<Either<Failure, void>> call(String senderUid, double amount, String targetPhone) async {
+  Future<Either<Failure, void>> call(String senderUid, double amount, String targetPhone, String categoryId) async {
     try {
       if (amount <= 0) {
         return Left(ValidationFailure('Số tiền chuyển phải lớn hơn 0'));
@@ -16,7 +16,7 @@ class TransferOutUseCase {
         return Left(ValidationFailure('Số điện thoại không hợp lệ'));
       }
       
-      await repository.transferOut(senderUid, amount, targetPhone);
+      await repository.transferOut(senderUid, amount, targetPhone, categoryId);
       return const Right(null);
     } catch (e) {
       return Left(ServerFailure(e.toString()));

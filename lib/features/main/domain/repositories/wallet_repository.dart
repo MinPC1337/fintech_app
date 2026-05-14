@@ -11,11 +11,11 @@ abstract class WalletRepository {
   Stream<WalletEntity?> getPrimaryWalletStream(String userId);
 
   /// Transfers a specific amount from the user's wallet out to an external phone/MoMo
-  Future<void> transferOut(String senderUid, double amount, String targetPhone);
+  Future<void> transferOut(String senderUid, double amount, String targetPhone, String categoryId);
 
   /// Gets a real-time stream of transactions for a specific user
   Stream<List<dynamic>> getTransactionsStream(String userId);
 
   /// Chuyển tiền nội bộ từ user này sang user khác trong app
-  Future<void> transferToUser(String senderUid, String receiverUid, double amount);
+  Future<void> transferToUser(String senderUid, String receiverUid, double amount, String categoryId);
 }
