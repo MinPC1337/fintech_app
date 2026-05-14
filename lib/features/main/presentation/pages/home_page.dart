@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../injection_container.dart';
+import '../../domain/entities/category_entity.dart';
 import '../../domain/usecases/get_primary_wallet_stream_usecase.dart';
 import 'momo_deposit_page.dart';
 import '../../data/datasources/notification_remote_data_source.dart';
 import 'transfer_page.dart';
+import '../../domain/usecases/watch_out_categories_usecase.dart';
 import 'send_to_user_page.dart';
 import 'notifications_page.dart';
 import 'package:intl/intl.dart';
@@ -29,6 +31,7 @@ class _HomePageState extends State<HomePage> {
   final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
   late final GetPrimaryWalletStreamUseCase getPrimaryWalletStreamUseCase;
   late final GetTransactionsStreamUseCase getTransactionsStreamUseCase;
+  late final WatchOutCategoriesUseCase watchOutCategoriesUseCase;
   bool _isBalanceHidden = false; // Trạng thái ẩn/hiện số dư
   DateTime _selectedMonth = DateTime.now(); // Tháng đang chọn để xem báo cáo
 
@@ -37,6 +40,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     getPrimaryWalletStreamUseCase = sl<GetPrimaryWalletStreamUseCase>();
     getTransactionsStreamUseCase = sl<GetTransactionsStreamUseCase>();
+    watchOutCategoriesUseCase = sl<WatchOutCategoriesUseCase>();
   }
 
   @override
@@ -116,6 +120,43 @@ class _HomePageState extends State<HomePage> {
         );
       },
     );
+  }
+
+  String _getCategoryLabel(
+    String categoryId,
+    List<CategoryEntity> walletCategories,
+  ) {
+    switch (categoryId) {
+      case 'deposit':
+        return 'Nạp tiền';
+      case 'internal_transfer':
+        return 'Chuyển tiền nội bộ';
+      case 'transfer':
+        return 'Rút tiền';
+      default:
+        if (categoryId.isEmpty) return 'Chưa phân loại';
+        for (final c in walletCategories) {
+          if (c.id == categoryId) return c.name;
+        }
+        return categoryId
+            .replaceAll('_', ' ')
+            .replaceFirstMapped(
+              RegExp(r'^[a-z]'),
+              (match) => match.group(0)!.toUpperCase(),
+            );
+    }
+  }
+
+  String _formatWallet(
+    String? id,
+    String currentUserId,
+    String currentUserName,
+  ) {
+    if (id == null || id.isEmpty) return 'Ví MoMo';
+    if (id == currentUserId) {
+      return 'Ví cá nhân - ${currentUserName.isNotEmpty ? currentUserName : 'Người dùng'}';
+    }
+    return 'Ví cá nhân - $id';
   }
 
   String _getGreeting() {
@@ -814,81 +855,71 @@ class _HomePageState extends State<HomePage> {
 
             // Chỉ lấy 5 giao dịch mới nhất để hiển thị tại trang Home
             final transactions = allTransactions.take(5).toList();
-            return Column(
-              children: List.generate(transactions.length, (index) {
-                final tx = transactions[index];
+            return StreamBuilder<List<CategoryEntity>>(
+              stream: watchOutCategoriesUseCase.call(currentUser.uid),
+              builder: (context, catSnapshot) {
+                final walletCategories = catSnapshot.data ?? [];
 
-                // Parse date
-                final timeDisplay = DateFormat(
-                  'dd/MM/yyyy HH:mm',
-                ).format(tx.timestamp);
+                return Column(
+                  children: transactions.map((tx) {
+                    final timeDisplay = DateFormat(
+                      'dd/MM/yyyy HH:mm',
+                    ).format(tx.timestamp);
+                    final isIncome = tx.type == 'Income';
+                    final sign = isIncome ? '+' : '-';
 
-                // Mỗi bản ghi đã thuộc về đúng user qua trường 'userId',
-                // nên chỉ cần kiểm tra type để phân loại Thu/Chi
-                final isIncome = tx.type == 'Income';
-                final sign = isIncome ? '+' : '-';
-
-                return _buildTimelineItem(
-                  isIncome: isIncome,
-                  title: tx.note.isNotEmpty
-                      ? tx.note
-                      : (isIncome ? 'Nhận tiền' : 'Chuyển tiền'),
-                  time: timeDisplay,
-                  amount:
-                      '$sign${currencyFormatter.format(tx.amount).replaceAll('đ', '').trim()}',
-                  onTap: () {
-                    String formatCategory(String categoryId) {
-                      switch (categoryId) {
-                        case 'deposit':
-                          return 'Nạp tiền';
-                        case 'internal_transfer':
-                          return 'Chuyển tiền nội bộ';
-                        case 'transfer':
-                          return 'Rút tiền';
-                        default:
-                          if (categoryId.isEmpty) return 'Chưa phân loại';
-                          return categoryId
-                              .replaceAll('_', ' ')
-                              .replaceFirstMapped(
-                                RegExp(r'^[a-z]'),
-                                (m) => m.group(0)!.toUpperCase(),
-                              );
-                      }
-                    }
-
-                    String formatWallet(String? id) {
-                      if (id == null || id.isEmpty) return 'Ví MoMo';
-                      if (id == currentUser.uid) {
-                        final name = currentUser.fullName.isNotEmpty
-                            ? currentUser.fullName
-                            : 'Người dùng';
-                        return 'Ví cá nhân - $name';
-                      }
-                      return 'Ví cá nhân - $id';
-                    }
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => TransactionSuccessPage(
-                          amount: tx.amount,
-                          sender: isIncome
-                              ? formatWallet(tx.senderId)
-                              : formatWallet(currentUser.uid),
-                          receiver: isIncome
-                              ? formatWallet(currentUser.uid)
-                              : formatWallet(tx.receiverId),
-                          categoryName: formatCategory(tx.categoryId),
-                          timestamp: tx.timestamp,
-                          note: tx.note,
-                          isInternal: true,
-                          isViewOnly: true,
-                        ),
-                      ),
+                    return _buildTimelineItem(
+                      isIncome: isIncome,
+                      title: tx.note.isNotEmpty
+                          ? tx.note
+                          : (isIncome ? 'Nhận tiền' : 'Chuyển tiền'),
+                      time: timeDisplay,
+                      amount:
+                          '$sign${currencyFormatter.format(tx.amount).replaceAll('đ', '').trim()}',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => TransactionSuccessPage(
+                              amount: tx.amount,
+                              sender: isIncome
+                                  ? _formatWallet(
+                                      tx.senderId,
+                                      currentUser.uid,
+                                      currentUser.fullName,
+                                    )
+                                  : _formatWallet(
+                                      currentUser.uid,
+                                      currentUser.uid,
+                                      currentUser.fullName,
+                                    ),
+                              receiver: isIncome
+                                  ? _formatWallet(
+                                      currentUser.uid,
+                                      currentUser.uid,
+                                      currentUser.fullName,
+                                    )
+                                  : _formatWallet(
+                                      tx.receiverId,
+                                      currentUser.uid,
+                                      currentUser.fullName,
+                                    ),
+                              categoryName: _getCategoryLabel(
+                                tx.categoryId,
+                                walletCategories,
+                              ),
+                              timestamp: tx.timestamp,
+                              note: tx.note,
+                              isInternal: true,
+                              isViewOnly: true,
+                            ),
+                          ),
+                        );
+                      },
                     );
-                  },
+                  }).toList(),
                 );
-              }),
+              },
             );
           },
         ),
