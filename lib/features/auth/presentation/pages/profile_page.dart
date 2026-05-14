@@ -95,7 +95,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       child: ClipOval(
                         child: Image.asset(
-                          'assets/Futuristic Pro.png',
+                          'assets/ic_launcher_round.png',
                           width: 120,
                           height: 120,
                           fit: BoxFit.cover,

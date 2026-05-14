@@ -172,7 +172,7 @@ class _SettingsPageState extends State<SettingsPage>
                             ),
                             child: ClipOval(
                               child: Image.asset(
-                                'assets/Futuristic Pro.png',
+                                'assets/ic_launcher_round.png',
                                 width: 56,
                                 height: 56,
                               ),
