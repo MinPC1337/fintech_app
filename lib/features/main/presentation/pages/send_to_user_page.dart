@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -138,7 +139,21 @@ class _SendToUserPageState extends State<SendToUserPage> {
           Icons.error_outline,
         );
       },
-      (_) {
+      (_) async {
+        var receiverName = 'Người dùng';
+        try {
+          final doc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(receiverUid)
+              .get();
+          final fn = doc.data()?['fullName'];
+          if (fn is String && fn.trim().isNotEmpty) {
+            receiverName = fn.trim();
+          }
+        } catch (_) {
+          // Giữ fallback "Người dùng"
+        }
+        if (!mounted) return;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) {
@@ -148,7 +163,7 @@ class _SendToUserPageState extends State<SendToUserPage> {
               return TransactionSuccessPage(
                 amount: amount,
                 sender: 'Ví cá nhân - $name',
-                receiver: 'Ví cá nhân - $receiverUid',
+                receiver: 'Ví cá nhân - $receiverName',
                 categoryName: _selectedCategoryName ?? 'Chưa phân loại',
                 timestamp: DateTime.now(),
                 note: _noteController.text.trim(),

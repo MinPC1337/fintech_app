@@ -42,6 +42,21 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
     return walletsQuery.docs.first;
   }
 
+  /// Tên hiển thị từ `users/{uid}.fullName` (đồng bộ với profile app).
+  Future<String> _getUserFullName(String uid) async {
+    try {
+      final doc = await firestore.collection('users').doc(uid).get();
+      if (!doc.exists) return 'Người dùng';
+      final name = doc.data()?['fullName'];
+      if (name is String && name.trim().isNotEmpty) {
+        return name.trim();
+      }
+    } catch (_) {
+      // Bỏ qua lỗi mạng / quyền đọc — fallback bên dưới
+    }
+    return 'Người dùng';
+  }
+
   @override
   Future<void> depositToWallet(String receiverUid, double amount) async {
     // 1. Tìm ví chính của user
@@ -231,6 +246,9 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
       throw Exception('Không tìm thấy ví của người nhận. Kiểm tra lại UID.');
     }
 
+    final senderName = await _getUserFullName(senderUid);
+    final receiverName = await _getUserFullName(receiverUid);
+
     // 2. Chạy Firestore Transaction nguyên tử
     await firestore.runTransaction((transaction) async {
       final senderSnap = await transaction.get(senderWalletDoc.reference);
@@ -268,7 +286,7 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
         'categoryId': categoryId,
         'timestamp': FieldValue.serverTimestamp(),
         'type': 'Expense',
-        'note': 'Chuyển tiền đến ví $receiverUid',
+        'note': 'Chuyển tiền đến $receiverName',
       });
 
       // Ghi giao dịch Income cho receiver (userId = receiverUid)
@@ -284,7 +302,7 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
         'categoryId': 'internal_transfer',
         'timestamp': FieldValue.serverTimestamp(),
         'type': 'Income',
-        'note': 'Nhận tiền từ ví $senderUid',
+        'note': 'Nhận tiền từ $senderName',
       });
 
       // 4. Tạo thông báo cho cả hai bên
@@ -294,7 +312,7 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
         'userId': senderUid,
         'title': 'Chuyển tiền thành công',
         'body':
-            'Bạn đã chuyển ${amount.toStringAsFixed(0)} VNĐ đến ví $receiverUid.',
+            'Bạn đã chuyển ${amount.toStringAsFixed(0)} VNĐ đến $receiverName.',
         'timestamp': FieldValue.serverTimestamp(),
         'isRead': false,
         'type': 'transaction',
@@ -306,7 +324,7 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
         'userId': receiverUid,
         'title': 'Nhận tiền thành công',
         'body':
-            'Bạn vừa nhận được ${amount.toStringAsFixed(0)} VNĐ từ ví $senderUid.',
+            'Bạn vừa nhận được ${amount.toStringAsFixed(0)} VNĐ từ $senderName.',
         'timestamp': FieldValue.serverTimestamp(),
       });
     });
