@@ -2,7 +2,11 @@ import '../entities/category_entity.dart';
 import '../entities/transaction_entity.dart';
 
 abstract class BudgetRepository {
-  Stream<List<CategoryEntity>> watchBudgetCategories(String walletId);
+  Stream<List<CategoryEntity>> watchBudgetCategories(
+    String walletId, {
+    int? month,
+    int? year,
+  });
 
   Future<void> upsertBudgetCategory(CategoryEntity category);
 

@@ -10,8 +10,16 @@ class BudgetRepositoryImpl implements BudgetRepository {
   final BudgetRemoteDataSource remoteDataSource;
 
   @override
-  Stream<List<CategoryEntity>> watchBudgetCategories(String walletId) {
-    return remoteDataSource.watchBudgetCategories(walletId);
+  Stream<List<CategoryEntity>> watchBudgetCategories(
+    String walletId, {
+    int? month,
+    int? year,
+  }) {
+    return remoteDataSource.watchBudgetCategories(
+      walletId,
+      month: month,
+      year: year,
+    );
   }
 
   @override
@@ -25,6 +33,8 @@ class BudgetRepositoryImpl implements BudgetRepository {
         currentSpent: category.currentSpent,
         type: category.type,
         iconCodePoint: category.iconCodePoint,
+        month: category.month,
+        year: category.year,
         accentArgb: category.accentArgb,
       ),
     );

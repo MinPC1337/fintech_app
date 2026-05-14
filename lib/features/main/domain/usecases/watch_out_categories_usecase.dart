@@ -8,15 +8,25 @@ class WatchOutCategoriesUseCase {
 
   WatchOutCategoriesUseCase(this.walletRepository, this.budgetRepository);
 
-  Stream<List<CategoryEntity>> call(String userId) async* {
+  Stream<List<CategoryEntity>> call(
+    String userId, {
+    int? month,
+    int? year,
+  }) async* {
     try {
       final wallet = await walletRepository.getPrimaryWallet(userId);
       if (wallet != null) {
-        yield* budgetRepository.watchBudgetCategories(wallet.id).map(
-          (categories) => categories
-              .where((c) => c.type == CategoryType.outType)
-              .toList(),
-        );
+        yield* budgetRepository
+            .watchBudgetCategories(
+              wallet.id,
+              month: month ?? DateTime.now().month,
+              year: year ?? DateTime.now().year,
+            )
+            .map(
+              (categories) => categories
+                  .where((c) => c.type == CategoryType.outType)
+                  .toList(),
+            );
       } else {
         yield [];
       }

@@ -9,6 +9,8 @@ class CategoryModel extends CategoryEntity {
     required super.currentSpent,
     required super.type,
     super.iconCodePoint,
+    super.month,
+    super.year,
     super.accentArgb,
   });
 
@@ -19,8 +21,12 @@ class CategoryModel extends CategoryEntity {
       name: json['name'] ?? '',
       budgetLimit: (json['budgetLimit'] ?? 0).toDouble(),
       currentSpent: (json['currentSpent'] ?? 0).toDouble(),
-      type: json['type'] == 'outType' ? CategoryType.outType : CategoryType.inType,
+      type: json['type'] == 'outType'
+          ? CategoryType.outType
+          : CategoryType.inType,
       iconCodePoint: json['iconCodePoint'] as int?,
+      month: json['month'] as int?,
+      year: json['year'] as int?,
       accentArgb: json['accentArgb'] as int?,
     );
   }
@@ -34,6 +40,8 @@ class CategoryModel extends CategoryEntity {
       'currentSpent': currentSpent,
       'type': type == CategoryType.outType ? 'outType' : 'inType',
       if (iconCodePoint != null) 'iconCodePoint': iconCodePoint,
+      if (month != null) 'month': month,
+      if (year != null) 'year': year,
       if (accentArgb != null) 'accentArgb': accentArgb,
     };
   }

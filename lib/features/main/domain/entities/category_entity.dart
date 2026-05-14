@@ -1,9 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-enum CategoryType {
-  inType,
-  outType,
-}
+enum CategoryType { inType, outType }
 
 class CategoryEntity extends Equatable {
   final String id;
@@ -12,6 +9,8 @@ class CategoryEntity extends Equatable {
   final double budgetLimit;
   final double currentSpent;
   final CategoryType type;
+  final int? month;
+  final int? year;
 
   /// Code point Material Icons (lưu Firestore). Null = UI dùng icon mặc định.
   final int? iconCodePoint;
@@ -27,18 +26,22 @@ class CategoryEntity extends Equatable {
     required this.currentSpent,
     required this.type,
     this.iconCodePoint,
+    this.month,
+    this.year,
     this.accentArgb,
   });
 
   @override
   List<Object?> get props => [
-        id,
-        walletId,
-        name,
-        budgetLimit,
-        currentSpent,
-        type,
-        iconCodePoint,
-        accentArgb,
-      ];
+    id,
+    walletId,
+    name,
+    budgetLimit,
+    currentSpent,
+    type,
+    iconCodePoint,
+    month,
+    year,
+    accentArgb,
+  ];
 }

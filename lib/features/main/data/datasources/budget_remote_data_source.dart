@@ -4,7 +4,11 @@ import '../models/category_model.dart';
 import '../models/transaction_model.dart';
 
 abstract class BudgetRemoteDataSource {
-  Stream<List<CategoryModel>> watchBudgetCategories(String walletId);
+  Stream<List<CategoryModel>> watchBudgetCategories(
+    String walletId, {
+    int? month,
+    int? year,
+  });
 
   Future<void> upsertBudgetCategory(CategoryModel category);
 
@@ -24,12 +28,24 @@ class BudgetRemoteDataSourceImpl implements BudgetRemoteDataSource {
   final FirebaseFirestore firestore;
 
   CollectionReference<Map<String, dynamic>> _categoriesCol(String walletId) {
-    return firestore.collection('wallets').doc(walletId).collection('categories');
+    return firestore
+        .collection('wallets')
+        .doc(walletId)
+        .collection('categories');
   }
 
   @override
-  Stream<List<CategoryModel>> watchBudgetCategories(String walletId) {
-    return _categoriesCol(walletId).snapshots().map((snapshot) {
+  Stream<List<CategoryModel>> watchBudgetCategories(
+    String walletId, {
+    int? month,
+    int? year,
+  }) {
+    Query<Map<String, dynamic>> query = _categoriesCol(walletId);
+
+    if (month != null) query = query.where('month', isEqualTo: month);
+    if (year != null) query = query.where('year', isEqualTo: year);
+
+    return query.snapshots().map((snapshot) {
       final list = snapshot.docs
           .map(
             (doc) => CategoryModel.fromJson({
@@ -47,8 +63,7 @@ class BudgetRemoteDataSourceImpl implements BudgetRemoteDataSource {
   @override
   Future<void> upsertBudgetCategory(CategoryModel category) async {
     final col = _categoriesCol(category.walletId);
-    final docRef =
-        category.id.isEmpty ? col.doc() : col.doc(category.id);
+    final docRef = category.id.isEmpty ? col.doc() : col.doc(category.id);
 
     final data = Map<String, dynamic>.from(category.toJson());
     data['id'] = docRef.id;
@@ -81,17 +96,19 @@ class BudgetRemoteDataSourceImpl implements BudgetRemoteDataSource {
         .orderBy('timestamp', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        final Map<String, dynamic> data = Map<String, dynamic>.from(doc.data());
-        if (data['timestamp'] is Timestamp) {
-          data['timestamp'] = (data['timestamp'] as Timestamp)
-              .toDate()
-              .toIso8601String();
-        } else if (data['timestamp'] == null) {
-          data['timestamp'] = DateTime.now().toIso8601String();
-        }
-        return TransactionModel.fromJson({...data, 'id': doc.id});
-      }).toList();
-    });
+          return snapshot.docs.map((doc) {
+            final Map<String, dynamic> data = Map<String, dynamic>.from(
+              doc.data(),
+            );
+            if (data['timestamp'] is Timestamp) {
+              data['timestamp'] = (data['timestamp'] as Timestamp)
+                  .toDate()
+                  .toIso8601String();
+            } else if (data['timestamp'] == null) {
+              data['timestamp'] = DateTime.now().toIso8601String();
+            }
+            return TransactionModel.fromJson({...data, 'id': doc.id});
+          }).toList();
+        });
   }
 }
