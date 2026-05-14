@@ -854,13 +854,15 @@ class _HomePageState extends State<HomePage> {
                         builder: (_) => TransactionSuccessPage(
                           amount: tx.amount,
                           receiver: isIncome
-                              ? (tx.senderId ?? 'Ví MoMo')
+                              ? 'Ví cá nhân'
                               : (tx.receiverId ?? 'Hệ thống'),
+                          sender: isIncome ? (tx.senderId ?? 'Ví MoMo') : null,
                           categoryName: formatCategory(tx.categoryId),
                           timestamp: tx.timestamp,
                           note: tx.note,
                           isInternal: true,
                           isViewOnly: true,
+                          isIncome: isIncome,
                         ),
                       ),
                     );

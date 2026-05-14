@@ -149,10 +149,12 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
             builder: (_) => TransactionSuccessPage(
               amount: amount,
               receiver: 'Ví cá nhân',
+              sender: 'Ví MoMo',
               categoryName: 'Nạp tiền',
               timestamp: DateTime.now(),
               note: 'Nạp tiền vào ví từ MoMo',
               isInternal: true,
+              isIncome: true,
             ),
           ),
         );
