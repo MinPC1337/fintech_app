@@ -773,7 +773,8 @@ class _HomePageState extends State<HomePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => TransactionHistoryPage(userId: currentUser.uid),
+                    builder: (_) =>
+                        TransactionHistoryPage(userId: currentUser.uid),
                   ),
                 );
               },
@@ -836,22 +837,31 @@ class _HomePageState extends State<HomePage> {
                   amount:
                       '$sign${currencyFormatter.format(tx.amount).replaceAll('đ', '').trim()}',
                   onTap: () {
-                    String formatCategory(String categoryId) {
-                      switch (categoryId) {
-                        case 'deposit': return 'Nạp tiền';
-                        case 'internal_transfer': return 'Chuyển tiền nội bộ';
-                        case 'transfer': return 'Rút tiền';
+                    String formatCategory(String categoryName) {
+                      switch (categoryName) {
+                        case 'deposit':
+                          return 'Nạp tiền';
+                        case 'internal_transfer':
+                          return 'Chuyển tiền nội bộ';
+                        case 'transfer':
+                          return 'Rút tiền';
                         default:
-                          if (categoryId.isEmpty) return 'Chưa phân loại';
-                          return categoryId.replaceAll('_', ' ').replaceFirstMapped(
-                              RegExp(r'^[a-z]'), (m) => m.group(0)!.toUpperCase());
+                          if (categoryName.isEmpty) return 'Chưa phân loại';
+                          return categoryName
+                              .replaceAll('_', ' ')
+                              .replaceFirstMapped(
+                                RegExp(r'^[a-z]'),
+                                (m) => m.group(0)!.toUpperCase(),
+                              );
                       }
                     }
 
                     String formatWallet(String? id) {
                       if (id == null || id.isEmpty) return 'Ví MoMo';
                       if (id == currentUser.uid) {
-                        final name = currentUser.fullName.isNotEmpty ? currentUser.fullName : 'Người dùng';
+                        final name = currentUser.fullName.isNotEmpty
+                            ? currentUser.fullName
+                            : 'Người dùng';
                         return 'Ví cá nhân - $name';
                       }
                       return 'Ví cá nhân - $id';
@@ -862,8 +872,12 @@ class _HomePageState extends State<HomePage> {
                       MaterialPageRoute(
                         builder: (_) => TransactionSuccessPage(
                           amount: tx.amount,
-                          sender: isIncome ? formatWallet(tx.senderId) : formatWallet(currentUser.uid),
-                          receiver: isIncome ? formatWallet(currentUser.uid) : formatWallet(tx.receiverId),
+                          sender: isIncome
+                              ? formatWallet(tx.senderId)
+                              : formatWallet(currentUser.uid),
+                          receiver: isIncome
+                              ? formatWallet(currentUser.uid)
+                              : formatWallet(tx.receiverId),
                           categoryName: formatCategory(tx.categoryId),
                           timestamp: tx.timestamp,
                           note: tx.note,
@@ -897,94 +911,95 @@ class _HomePageState extends State<HomePage> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: kThemeSurfaceSecondary.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: color.withValues(alpha: 0.2), // Viền sáng màu đặc trưng
-          width: 1,
-        ),
-        boxShadow: [
-          // Shadow màu ở "đầu" viền thẻ (bên trái)
-          BoxShadow(
-            color: color.withValues(alpha: 0.15),
-            blurRadius: 12,
-            offset: const Offset(-4, 0), // Đẩy bóng về bên trái
+        decoration: BoxDecoration(
+          color: kThemeSurfaceSecondary.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: color.withValues(alpha: 0.2), // Viền sáng màu đặc trưng
+            width: 1,
           ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Icon biểu tượng với nền mờ
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+          boxShadow: [
+            // Shadow màu ở "đầu" viền thẻ (bên trái)
+            BoxShadow(
+              color: color.withValues(alpha: 0.15),
+              blurRadius: 12,
+              offset: const Offset(-4, 0), // Đẩy bóng về bên trái
             ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Icon biểu tượng với nền mờ
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: kTextPrimary.withValues(alpha: 0.9),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    time,
+                    style: TextStyle(
+                      color: kTextSecondary.withValues(alpha: 0.6),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Cột hiển thị số tiền
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  '$amount đ',
                   style: TextStyle(
-                    color: kTextPrimary.withValues(alpha: 0.9),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.3,
+                    color: isIncome ? kEmerald : kTextPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  time,
-                  style: TextStyle(
-                    color: kTextSecondary.withValues(alpha: 0.6),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
+                if (isIncome)
+                  Container(
+                    margin: const EdgeInsets.only(top: 2),
+                    height: 2,
+                    width: 20,
+                    decoration: BoxDecoration(
+                      color: kEmerald.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(1),
+                    ),
                   ),
-                ),
               ],
             ),
-          ),
-          const SizedBox(width: 8),
-          // Cột hiển thị số tiền
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '$amount đ',
-                style: TextStyle(
-                  color: isIncome ? kEmerald : kTextPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              if (isIncome)
-                Container(
-                  margin: const EdgeInsets.only(top: 2),
-                  height: 2,
-                  width: 20,
-                  decoration: BoxDecoration(
-                    color: kEmerald.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(1),
-                  ),
-                ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
-    ));
+    );
   }
 }
