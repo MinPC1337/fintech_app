@@ -12,9 +12,9 @@ class TransactionHistoryPage extends StatelessWidget {
 
   const TransactionHistoryPage({super.key, required this.userId});
 
-  String _formatCategory(String categoryId) {
+  String _formatCategory(String categoryName) {
     // Basic formatting for known system categories if name is not available
-    switch (categoryId) {
+    switch (categoryName) {
       case 'deposit':
         return 'Nạp tiền';
       case 'internal_transfer':
@@ -23,15 +23,22 @@ class TransactionHistoryPage extends StatelessWidget {
         return 'Rút tiền';
       default:
         // Attempt to format generic string by capitalizing
-        if (categoryId.isEmpty) return 'Chưa phân loại';
-        return categoryId.replaceAll('_', ' ').replaceFirstMapped(
-            RegExp(r'^[a-z]'), (match) => match.group(0)!.toUpperCase());
+        if (categoryName.isEmpty) return 'Chưa phân loại';
+        return categoryName
+            .replaceAll('_', ' ')
+            .replaceFirstMapped(
+              RegExp(r'^[a-z]'),
+              (match) => match.group(0)!.toUpperCase(),
+            );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
+    final currencyFormatter = NumberFormat.currency(
+      locale: 'vi_VN',
+      symbol: 'đ',
+    );
     final getTransactionsUseCase = sl<GetTransactionsStreamUseCase>();
 
     return Scaffold(
@@ -76,11 +83,15 @@ class TransactionHistoryPage extends StatelessWidget {
             itemBuilder: (context, index) {
               final tx = allTransactions[index];
 
-              final timeDisplay = DateFormat('dd/MM/yyyy HH:mm').format(tx.timestamp);
+              final timeDisplay = DateFormat(
+                'dd/MM/yyyy HH:mm',
+              ).format(tx.timestamp);
               final isIncome = tx.type == 'Income';
               final sign = isIncome ? '+' : '-';
               final color = isIncome ? kEmerald : kRose;
-              final icon = isIncome ? Icons.south_west_rounded : Icons.north_east_rounded;
+              final icon = isIncome
+                  ? Icons.south_west_rounded
+                  : Icons.north_east_rounded;
               final title = tx.note.isNotEmpty
                   ? tx.note
                   : (isIncome ? 'Nhận tiền' : 'Chuyển tiền');
@@ -104,9 +115,13 @@ class TransactionHistoryPage extends StatelessWidget {
                     MaterialPageRoute(
                       builder: (_) => TransactionSuccessPage(
                         amount: tx.amount,
-                        sender: isIncome ? formatWallet(tx.senderId, true) : formatWallet(userId, true),
-                        receiver: isIncome ? formatWallet(userId, false) : formatWallet(tx.receiverId, false),
-                        categoryName: _formatCategory(tx.categoryId),
+                        sender: isIncome
+                            ? formatWallet(tx.senderId, true)
+                            : formatWallet(userId, true),
+                        receiver: isIncome
+                            ? formatWallet(userId, false)
+                            : formatWallet(tx.receiverId, false),
+                        categoryName: _formatCategory(tx.categoryName),
                         timestamp: tx.timestamp,
                         note: tx.note,
                         isInternal: true,
