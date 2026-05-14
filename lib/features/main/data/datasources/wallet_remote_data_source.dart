@@ -6,7 +6,12 @@ abstract class WalletRemoteDataSource {
   Future<void> depositToWallet(String receiverUid, double amount);
   Future<WalletModel?> getPrimaryWallet(String userId);
   Stream<WalletModel?> getPrimaryWalletStream(String userId);
-  Future<void> transferOut(String senderUid, double amount, String targetPhone, String categoryId);
+  Future<void> transferOut(
+    String senderUid,
+    double amount,
+    String targetPhone,
+    String categoryId,
+  );
   Stream<List<TransactionModel>> getTransactionsStream(String userId);
 
   /// Chuyển tiền nội bộ từ user này sang user khác trong app
@@ -250,8 +255,6 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
         'balance': receiverBalance + amount,
       });
 
-      DateTime.now().toIso8601String();
-
       // Ghi giao dịch Expense cho sender (userId = senderUid)
       final senderTxRef = firestore.collection('transactions').doc();
       transaction.set(senderTxRef, {
@@ -305,8 +308,6 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
         'body':
             'Bạn vừa nhận được ${amount.toStringAsFixed(0)} VNĐ từ ví $senderUid.',
         'timestamp': FieldValue.serverTimestamp(),
-        'isRead': false,
-        'type': 'transaction',
       });
     });
   }

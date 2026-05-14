@@ -17,7 +17,7 @@ class CategoryDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String>(
-      value: selectedCategoryId,
+      initialValue: selectedCategoryId,
       dropdownColor: kSurface,
       style: const TextStyle(color: kTextPrimary, fontSize: 16),
       decoration: InputDecoration(
@@ -39,7 +39,9 @@ class CategoryDropdown extends StatelessWidget {
               if (cat.iconCodePoint != null)
                 Icon(
                   IconData(cat.iconCodePoint!, fontFamily: 'MaterialIcons'),
-                  color: cat.accentArgb != null ? Color(cat.accentArgb!) : kTextPrimary,
+                  color: cat.accentArgb != null
+                      ? Color(cat.accentArgb!)
+                      : kTextPrimary,
                   size: 20,
                 )
               else

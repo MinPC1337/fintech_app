@@ -27,6 +27,18 @@ class TransactionSuccessPage extends StatelessWidget {
     this.isViewOnly = false,
   });
 
+  String get _displayCategoryName {
+    // Chuyển đổi các ID hệ thống sang tên hiển thị thân thiện
+    switch (categoryName) {
+      case 'deposit':
+        return 'Nạp tiền';
+      case 'internal_transfer':
+        return 'Nhận tiền nội bộ';
+      default:
+        return categoryName;
+    }
+  }
+
   String _formatCurrency(double value) {
     final currency = NumberFormat.currency(locale: 'vi_VN', symbol: 'VNĐ');
     return currency.format(value);
@@ -47,7 +59,10 @@ class TransactionSuccessPage extends StatelessWidget {
               iconTheme: const IconThemeData(color: kTextPrimary),
               title: const Text(
                 'Chi tiết giao dịch',
-                style: TextStyle(color: kTextPrimary, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: kTextPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               centerTitle: true,
             )
@@ -151,7 +166,7 @@ class TransactionSuccessPage extends StatelessWidget {
                         ),
                         _buildDetailRow(
                           'Danh mục',
-                          categoryName,
+                          _displayCategoryName,
                           Icons.category_rounded,
                         ),
                         if (note.isNotEmpty) ...[
@@ -159,11 +174,7 @@ class TransactionSuccessPage extends StatelessWidget {
                             padding: EdgeInsets.symmetric(vertical: 12),
                             child: Divider(color: kBorder, height: 1),
                           ),
-                          _buildDetailRow(
-                            'Ghi chú',
-                            note,
-                            Icons.notes_rounded,
-                          ),
+                          _buildDetailRow('Ghi chú', note, Icons.notes_rounded),
                         ],
                       ],
                     ),
@@ -236,10 +247,7 @@ class TransactionSuccessPage extends StatelessWidget {
         const SizedBox(width: 12),
         Text(
           title,
-          style: const TextStyle(
-            color: kTextSecondary,
-            fontSize: 14,
-          ),
+          style: const TextStyle(color: kTextSecondary, fontSize: 14),
         ),
         const SizedBox(width: 16),
         Expanded(
