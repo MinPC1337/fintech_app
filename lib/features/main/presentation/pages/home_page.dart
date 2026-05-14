@@ -853,7 +853,9 @@ class _HomePageState extends State<HomePage> {
                       MaterialPageRoute(
                         builder: (_) => TransactionSuccessPage(
                           amount: tx.amount,
-                          receiver: isIncome ? tx.senderId : tx.receiverId,
+                          receiver: isIncome
+                              ? (tx.senderId ?? 'Ví MoMo')
+                              : (tx.receiverId ?? 'Hệ thống'),
                           categoryName: formatCategory(tx.categoryId),
                           timestamp: tx.timestamp,
                           note: tx.note,

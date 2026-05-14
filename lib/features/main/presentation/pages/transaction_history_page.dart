@@ -91,7 +91,9 @@ class TransactionHistoryPage extends StatelessWidget {
                     MaterialPageRoute(
                       builder: (_) => TransactionSuccessPage(
                         amount: tx.amount,
-                        receiver: isIncome ? tx.senderId : tx.receiverId,
+                        receiver: isIncome
+                            ? (tx.senderId ?? 'Ví MoMo')
+                            : (tx.receiverId ?? 'Hệ thống'),
                         categoryName: _formatCategory(tx.categoryId),
                         timestamp: tx.timestamp,
                         note: tx.note,
