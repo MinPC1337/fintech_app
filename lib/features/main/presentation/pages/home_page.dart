@@ -236,7 +236,7 @@ class _HomePageState extends State<HomePage> {
                         BlendMode.luminosity, // Hiệu ứng mix-blend-luminosity
                       ),
                       child: Image.asset(
-                        'assets/ic_launcher_round.png',
+                        'assets/app_icon.png',
                         width: 44,
                         height: 44,
                         fit: BoxFit.cover,
