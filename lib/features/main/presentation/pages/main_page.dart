@@ -233,23 +233,26 @@ class _MainPageState extends State<MainPage> {
       return;
     }
 
-    // 3. UID Firebase hoặc Deeplink ví cá nhân
-    // Hỗ trợ mã QR thuần (chỉ chứa UID) hoặc deeplink: fintech://receive?uid=...
-    String? extractedUid;
-    if (rawTrimmed.startsWith('fintech://receive?uid=')) {
-      extractedUid = rawTrimmed.replaceAll('fintech://receive?uid=', '');
-    } else if (rawTrimmed.length >= 20 &&
-        RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(rawTrimmed)) {
-      extractedUid = rawTrimmed;
+    // 3. Số tài khoản (10 số) hoặc Deeplink ví cá nhân
+    String? extractedAccount;
+    if (rawTrimmed.startsWith('fintech://receive?account=')) {
+      extractedAccount = rawTrimmed.replaceAll(
+        'fintech://receive?account=',
+        '',
+      );
+    } else if (RegExp(r'^\d{10}$').hasMatch(rawTrimmed)) {
+      extractedAccount = rawTrimmed;
     }
 
-    if (extractedUid != null && extractedUid.isNotEmpty) {
-      debugPrint('[MainPage] → ROUTE: SendToUserPage (UID = $extractedUid)');
+    if (extractedAccount != null && extractedAccount.isNotEmpty) {
+      debugPrint(
+        '[MainPage] → ROUTE: SendToUserPage (Acc = $extractedAccount)',
+      );
       if (!mounted) return;
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => SendToUserPage(initialReceiverUid: extractedUid),
+          builder: (_) => SendToUserPage(initialReceiverUid: extractedAccount),
         ),
       );
       return;

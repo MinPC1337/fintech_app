@@ -231,11 +231,23 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
   @override
   Future<void> transferToUser(
     String senderUid,
-    String receiverUid,
+    String targetAccountNumber,
     double amount,
     String categoryId,
   ) async {
-    // 1. Tìm ví chính của sender và receiver
+    // 1. Tìm receiverUid dựa trên Số tài khoản
+    final userQuery = await firestore
+        .collection('users')
+        .where('accountNumber', isEqualTo: targetAccountNumber)
+        .limit(1)
+        .get();
+
+    if (userQuery.docs.isEmpty) {
+      throw Exception('Không tìm thấy người nhận với số tài khoản này');
+    }
+    final receiverUid = userQuery.docs.first.id;
+
+    // 2. Tìm ví chính của sender và receiver
     final senderWalletDoc = await _getPrimaryWalletDoc(senderUid);
     if (senderWalletDoc == null) {
       throw Exception('Không tìm thấy ví cá nhân của bạn');
@@ -243,7 +255,7 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
 
     final receiverWalletDoc = await _getPrimaryWalletDoc(receiverUid);
     if (receiverWalletDoc == null) {
-      throw Exception('Không tìm thấy ví của người nhận. Kiểm tra lại UID.');
+      throw Exception('Không tìm thấy ví của người nhận.');
     }
 
     final senderName = await _getUserFullName(senderUid);

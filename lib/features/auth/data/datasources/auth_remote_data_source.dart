@@ -84,10 +84,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         fcmToken: '',
       );
 
-      await firestore
-          .collection('users')
-          .doc(userModel.uid)
-          .set(userModel.toJson());
+      // Tạo số tài khoản 10 số dựa trên hash của UID
+      final accountNumber = userModel.uid.hashCode
+          .abs()
+          .toString()
+          .padLeft(10, '0')
+          .substring(0, 10);
+      final userJson = userModel.toJson();
+      userJson['accountNumber'] = accountNumber;
+
+      await firestore.collection('users').doc(userModel.uid).set(userJson);
 
       // Tạo "Ví cá nhân" mặc định cho user
       final walletRef = firestore.collection('wallets').doc();

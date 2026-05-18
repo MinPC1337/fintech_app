@@ -15,13 +15,14 @@ class ReceiveMoneyPage extends StatelessWidget {
       return const Scaffold(body: Center(child: Text('Cần đăng nhập trước')));
     }
 
-    // Dữ liệu QR tĩnh: scheme nội bộ + uid
-    final String qrData = 'fintech://receive?uid=${user.uid}';
+    // Tạo số tài khoản dựa trên UID (giống logic ở AuthDataSource)
+    final String accountNumber = user.uid.hashCode
+        .abs()
+        .toString()
+        .padLeft(10, '0')
+        .substring(0, 10);
 
-    // Hiển thị UID rút ngắn (8 ký tự đầu + ... + 4 ký tự cuối)
-    final String shortUid = user.uid.length > 12
-        ? '${user.uid.substring(0, 8)}...${user.uid.substring(user.uid.length - 4)}'
-        : user.uid;
+    final String qrData = 'fintech://receive?account=$accountNumber';
 
     return Scaffold(
       backgroundColor: kBgColor,
@@ -116,7 +117,9 @@ class ReceiveMoneyPage extends StatelessWidget {
                         // UID rút gọn + nút copy
                         GestureDetector(
                           onTap: () {
-                            Clipboard.setData(ClipboardData(text: user.uid));
+                            Clipboard.setData(
+                              ClipboardData(text: accountNumber),
+                            );
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: const Text('Đã sao chép Mã ví!'),
@@ -150,7 +153,7 @@ class ReceiveMoneyPage extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  shortUid,
+                                  accountNumber,
                                   style: const TextStyle(
                                     color: kCyan,
                                     fontSize: 13,
@@ -217,7 +220,7 @@ class ReceiveMoneyPage extends StatelessWidget {
               // Nút sao chép toàn bộ UID
               OutlinedButton.icon(
                 onPressed: () {
-                  Clipboard.setData(ClipboardData(text: user.uid));
+                  Clipboard.setData(ClipboardData(text: accountNumber));
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: const Text('Đã sao chép Mã ví đầy đủ!'),

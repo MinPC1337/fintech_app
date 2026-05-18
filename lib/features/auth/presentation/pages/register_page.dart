@@ -214,11 +214,7 @@ class RegisterPage extends StatelessWidget {
               color: kBgColor,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Image.asset(
-              'assets/Futuristic Pro.png',
-              width: 48,
-              height: 48,
-            ),
+            child: Image.asset('assets/Icon.png', width: 48, height: 48),
           ),
         ),
         const SizedBox(height: 24),

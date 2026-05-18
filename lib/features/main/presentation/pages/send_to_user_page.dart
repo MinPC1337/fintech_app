@@ -41,7 +41,7 @@ class _SendToUserPageState extends State<SendToUserPage> {
       MaterialPageRoute(
         builder: (_) => const QrScannerPage(
           title: 'Quét QR ví',
-          hint: 'Quét mã QR ví của người nhận để tự động điền Mã ví',
+          hint: 'Quét mã QR ví của người nhận để tự động điền Số tài khoản',
         ),
       ),
     );
@@ -49,8 +49,11 @@ class _SendToUserPageState extends State<SendToUserPage> {
     if (result == null || result.isEmpty) return;
 
     final rawTrimmed = result.trim();
-    if (rawTrimmed.startsWith('fintech://receive?uid=')) {
-      _uidController.text = rawTrimmed.replaceAll('fintech://receive?uid=', '');
+    if (rawTrimmed.startsWith('fintech://receive?account=')) {
+      _uidController.text = rawTrimmed.replaceAll(
+        'fintech://receive?account=',
+        '',
+      );
     } else {
       _uidController.text = rawTrimmed;
     }
@@ -82,7 +85,7 @@ class _SendToUserPageState extends State<SendToUserPage> {
       showNotificationDialog(
         context,
         'Lỗi',
-        'Vui lòng nhập Mã ví người nhận',
+        'Vui lòng nhập Số tài khoản người nhận',
         kRose,
         Icons.error,
       );
@@ -146,20 +149,41 @@ class _SendToUserPageState extends State<SendToUserPage> {
         );
       },
       (_) async {
-        var receiverName = 'Người dùng';
+        String receiverName = 'Người dùng';
+        String senderName = 'Người dùng';
+
         try {
-          final doc = await FirebaseFirestore.instance
+          // 1. Tìm thông tin người nhận dựa trên Số tài khoản (receiverUid đang chứa STK)
+          final receiverQuery = await FirebaseFirestore.instance
               .collection('users')
-              .doc(receiverUid)
+              .where('accountNumber', isEqualTo: receiverUid)
+              .limit(1)
               .get();
-          final fn = doc.data()?['fullName'];
-          if (fn is String && fn.trim().isNotEmpty) {
-            receiverName = fn.trim();
+
+          if (receiverQuery.docs.isNotEmpty) {
+            final rData = receiverQuery.docs.first.data();
+            final rFullName = rData['fullName'] ?? 'Người dùng';
+            receiverName = '$rFullName ($receiverUid)';
+          }
+
+          // 2. Tìm thông tin người gửi (currentUser) từ Firestore để lấy fullName và STK
+          final senderDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUser!.uid)
+              .get();
+
+          if (senderDoc.exists) {
+            final sData = senderDoc.data();
+            final sFullName = sData?['fullName'] ?? 'Người dùng';
+            final sAcc = sData?['accountNumber'] ?? 'N/A';
+            senderName = '$sFullName ($sAcc)';
           }
         } catch (_) {
           // Giữ fallback "Người dùng"
         }
+
         if (!mounted) return;
+
         sl<LocalNotificationService>().showNotification(
           id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
           title: 'Chuyển tiền thành công',
@@ -170,12 +194,9 @@ class _SendToUserPageState extends State<SendToUserPage> {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) {
-              final name = currentUser?.displayName?.isNotEmpty == true
-                  ? currentUser!.displayName!
-                  : 'Người dùng';
               return TransactionSuccessPage(
                 amount: amount,
-                sender: 'Ví cá nhân - $name',
+                sender: 'Ví cá nhân - $senderName',
                 receiver: 'Ví cá nhân - $receiverName',
                 categoryName: _selectedCategoryName ?? 'Chưa phân loại',
                 timestamp: DateTime.now(),
@@ -269,8 +290,8 @@ class _SendToUserPageState extends State<SendToUserPage> {
 
               const SizedBox(height: 32),
 
-              // Mã ví người nhận
-              _buildLabel('Mã ví người nhận'),
+              // Số tài khoản người nhận
+              _buildLabel('Số tài khoản người nhận'),
               const SizedBox(height: 8),
               TextField(
                 controller: _uidController,
@@ -280,7 +301,7 @@ class _SendToUserPageState extends State<SendToUserPage> {
                   fontFamily: 'monospace',
                 ),
                 decoration: _inputDecoration(
-                  hint: 'Mã ví (UID) người nhận',
+                  hint: 'Nhập số tài khoản người nhận',
                   icon: Icons.wallet_outlined,
                   iconColor: kPurple,
                   scanAction: _scanWalletQr,

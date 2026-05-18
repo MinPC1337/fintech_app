@@ -463,7 +463,11 @@ class _HomePageState extends State<HomePage> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              currentUser.uid,
+                              currentUser.uid.hashCode
+                                  .abs()
+                                  .toString()
+                                  .padLeft(10, '0')
+                                  .substring(0, 10),
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.8),
                                 fontSize: 13,

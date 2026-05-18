@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -144,7 +145,21 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
         kRose,
         Icons.error_outline,
       ),
-      (_) {
+      (_) async {
+        String receiverName = 'Người dùng';
+        try {
+          final doc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUser!.uid)
+              .get();
+          if (doc.exists) {
+            final data = doc.data();
+            final name = data?['fullName'] ?? 'Người dùng';
+            final acc = data?['accountNumber'] ?? 'N/A';
+            receiverName = '$name ($acc)';
+          }
+        } catch (_) {}
+
         sl<LocalNotificationService>().showNotification(
           id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
           title: 'Nạp tiền thành công',
@@ -153,12 +168,9 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) {
-              final name = currentUser?.displayName?.isNotEmpty == true
-                  ? currentUser!.displayName!
-                  : 'Người dùng';
               return TransactionSuccessPage(
                 amount: amount,
-                receiver: 'Ví cá nhân - $name',
+                receiver: 'Ví cá nhân - $receiverName',
                 sender: 'Ví MoMo',
                 categoryName: 'Nạp tiền',
                 timestamp: DateTime.now(),

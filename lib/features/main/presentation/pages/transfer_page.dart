@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -166,7 +167,21 @@ class _TransferPageState extends State<TransferPage> {
           Icons.error_outline,
         );
       },
-      (_) {
+      (_) async {
+        String senderName = 'Người dùng';
+        try {
+          final doc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUser!.uid)
+              .get();
+          if (doc.exists) {
+            final data = doc.data();
+            final name = data?['fullName'] ?? 'Người dùng';
+            final acc = data?['accountNumber'] ?? 'N/A';
+            senderName = '$name ($acc)';
+          }
+        } catch (_) {}
+
         sl<LocalNotificationService>().showNotification(
           id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
           title: 'Rút tiền thành công',
@@ -176,12 +191,9 @@ class _TransferPageState extends State<TransferPage> {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) {
-              final name = currentUser?.displayName?.isNotEmpty == true
-                  ? currentUser!.displayName!
-                  : 'Người dùng';
               return TransactionSuccessPage(
                 amount: amount,
-                sender: 'Ví cá nhân - $name',
+                sender: 'Ví cá nhân - $senderName',
                 receiver: 'Ví MoMo - $phone',
                 categoryName: _selectedCategoryName ?? 'Chưa phân loại',
                 timestamp: DateTime.now(),
