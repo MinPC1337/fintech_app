@@ -338,6 +338,8 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
         'body':
             'Bạn vừa nhận được ${amount.toStringAsFixed(0)} VNĐ từ $senderName.',
         'timestamp': FieldValue.serverTimestamp(),
+        'isRead': false,
+        'type': 'transaction',
       });
     });
   }
