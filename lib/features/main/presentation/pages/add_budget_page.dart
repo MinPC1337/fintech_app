@@ -24,7 +24,7 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
   IconData _selectedIcon = Icons.shopping_bag_rounded;
 
   final List<Color> _palette = [
-    kCyan, kPurple, kEmerald, kRose,
+    kCyan, kPurple, kEmerald,
     const Color(0xFFF59E0B), // Amber
     const Color(0xFF6366F1), // Indigo
     const Color(0xFFD946EF), // Fuchsia

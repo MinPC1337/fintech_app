@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/wallet_model.dart';
 import '../models/transaction_model.dart';
 
@@ -262,85 +263,95 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
     final receiverName = await _getUserFullName(receiverUid);
 
     // 2. Chạy Firestore Transaction nguyên tử
-    await firestore.runTransaction((transaction) async {
-      final senderSnap = await transaction.get(senderWalletDoc.reference);
-      final receiverSnap = await transaction.get(receiverWalletDoc.reference);
+    debugPrint(
+      '[DB_UPDATE] Starting transaction: $senderUid -> $receiverUid amount: $amount',
+    );
+    await firestore
+        .runTransaction((transaction) async {
+          final senderSnap = await transaction.get(senderWalletDoc.reference);
+          final receiverSnap = await transaction.get(
+            receiverWalletDoc.reference,
+          );
 
-      if (!senderSnap.exists || !receiverSnap.exists) {
-        throw Exception('Ví không tồn tại');
-      }
+          if (!senderSnap.exists || !receiverSnap.exists) {
+            throw Exception('Ví không tồn tại');
+          }
 
-      final senderBalance = (senderSnap.data()?['balance'] ?? 0).toDouble();
-      if (senderBalance < amount) {
-        throw Exception('Số dư không đủ để thực hiện giao dịch');
-      }
+          final senderBalance = (senderSnap.data()?['balance'] ?? 0).toDouble();
+          if (senderBalance < amount) {
+            throw Exception('Số dư không đủ để thực hiện giao dịch');
+          }
 
-      final receiverBalance = (receiverSnap.data()?['balance'] ?? 0).toDouble();
+          final receiverBalance = (receiverSnap.data()?['balance'] ?? 0)
+              .toDouble();
 
-      // Cập nhật số dư cả hai ví
-      transaction.update(senderWalletDoc.reference, {
-        'balance': senderBalance - amount,
-      });
-      transaction.update(receiverWalletDoc.reference, {
-        'balance': receiverBalance + amount,
-      });
+          // Cập nhật số dư cả hai ví
+          transaction.update(senderWalletDoc.reference, {
+            'balance': senderBalance - amount,
+          });
+          transaction.update(receiverWalletDoc.reference, {
+            'balance': receiverBalance + amount,
+          });
 
-      // Ghi giao dịch Expense cho sender (userId = senderUid)
-      final senderTxRef = firestore.collection('transactions').doc();
-      transaction.set(senderTxRef, {
-        'id': senderTxRef.id,
-        'fromWalletId': senderWalletDoc.id,
-        'toWalletId': receiverWalletDoc.id,
-        'senderId': senderUid,
-        'receiverId': receiverUid,
-        'userId': senderUid, // Bản ghi này thuộc về sender
-        'amount': amount,
-        'categoryId': categoryId,
-        'timestamp': FieldValue.serverTimestamp(),
-        'type': 'Expense',
-        'note': 'Chuyển tiền đến $receiverName',
-      });
+          // Ghi giao dịch Expense cho sender (userId = senderUid)
+          final senderTxRef = firestore.collection('transactions').doc();
+          transaction.set(senderTxRef, {
+            'id': senderTxRef.id,
+            'fromWalletId': senderWalletDoc.id,
+            'toWalletId': receiverWalletDoc.id,
+            'senderId': senderUid,
+            'receiverId': receiverUid,
+            'userId': senderUid, // Bản ghi này thuộc về sender
+            'amount': amount,
+            'categoryId': categoryId,
+            'timestamp': FieldValue.serverTimestamp(),
+            'type': 'Expense',
+            'note': 'Chuyển tiền đến $receiverName',
+          });
 
-      // Ghi giao dịch Income cho receiver (userId = receiverUid)
-      final receiverTxRef = firestore.collection('transactions').doc();
-      transaction.set(receiverTxRef, {
-        'id': receiverTxRef.id,
-        'fromWalletId': senderWalletDoc.id,
-        'toWalletId': receiverWalletDoc.id,
-        'senderId': senderUid,
-        'receiverId': receiverUid,
-        'userId': receiverUid, // Bản ghi này thuộc về receiver
-        'amount': amount,
-        'categoryId': 'internal_transfer',
-        'timestamp': FieldValue.serverTimestamp(),
-        'type': 'Income',
-        'note': 'Nhận tiền từ $senderName',
-      });
+          // Ghi giao dịch Income cho receiver (userId = receiverUid)
+          final receiverTxRef = firestore.collection('transactions').doc();
+          transaction.set(receiverTxRef, {
+            'id': receiverTxRef.id,
+            'fromWalletId': senderWalletDoc.id,
+            'toWalletId': receiverWalletDoc.id,
+            'senderId': senderUid,
+            'receiverId': receiverUid,
+            'userId': receiverUid, // Bản ghi này thuộc về receiver
+            'amount': amount,
+            'categoryId': 'internal_transfer',
+            'timestamp': FieldValue.serverTimestamp(),
+            'type': 'Income',
+            'note': 'Nhận tiền từ $senderName',
+          });
 
-      // 4. Tạo thông báo cho cả hai bên
-      final senderNotifRef = firestore.collection('notifications').doc();
-      transaction.set(senderNotifRef, {
-        'id': senderNotifRef.id,
-        'userId': senderUid,
-        'title': 'Chuyển tiền thành công',
-        'body':
-            'Bạn đã chuyển ${amount.toStringAsFixed(0)} VNĐ đến $receiverName.',
-        'timestamp': FieldValue.serverTimestamp(),
-        'isRead': false,
-        'type': 'transaction',
-      });
+          // 4. Tạo thông báo cho cả hai bên
+          final senderNotifRef = firestore.collection('notifications').doc();
+          transaction.set(senderNotifRef, {
+            'id': senderNotifRef.id,
+            'userId': senderUid,
+            'title': 'Chuyển tiền thành công',
+            'body':
+                'Bạn đã chuyển ${amount.toStringAsFixed(0)} VNĐ đến $receiverName.',
+            'timestamp': FieldValue.serverTimestamp(),
+            'isRead': false,
+            'type': 'transaction',
+          });
 
-      final receiverNotifRef = firestore.collection('notifications').doc();
-      transaction.set(receiverNotifRef, {
-        'id': receiverNotifRef.id,
-        'userId': receiverUid,
-        'title': 'Nhận tiền thành công',
-        'body':
-            'Bạn vừa nhận được ${amount.toStringAsFixed(0)} VNĐ từ $senderName.',
-        'timestamp': FieldValue.serverTimestamp(),
-        'isRead': false,
-        'type': 'transaction',
-      });
-    });
+          final receiverNotifRef = firestore.collection('notifications').doc();
+          transaction.set(receiverNotifRef, {
+            'id': receiverNotifRef.id,
+            'userId': receiverUid,
+            'title': 'Nhận tiền thành công',
+            'body':
+                'Bạn vừa nhận được ${amount.toStringAsFixed(0)} VNĐ từ $senderName.',
+            'timestamp': FieldValue.serverTimestamp(),
+            'isRead': false,
+            'type': 'transaction',
+          });
+        })
+        .then(
+          (_) => debugPrint('[DB_UPDATE] Transaction committed successfully.'),
+        );
   }
 }
