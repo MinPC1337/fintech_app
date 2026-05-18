@@ -86,9 +86,11 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
     return Scaffold(
       backgroundColor: kBgColor,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: kBgColor,
+        iconTheme: const IconThemeData(color: kTextPrimary),
         title: Text(
           widget.category == null ? 'Thiết lập Ngân sách' : 'Sửa Ngân sách',
+          style: TextStyle(color: kTextPrimary, fontWeight: FontWeight.bold),
         ),
         elevation: 0,
       ),
@@ -323,7 +325,7 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
         elevation: 0,
       ),
       child: const Text(
-        'KÍCH HOẠT NGÂN SÁCH',
+        'LƯU NGÂN SÁCH',
         style: TextStyle(
           color: Colors.black,
           fontWeight: FontWeight.bold,

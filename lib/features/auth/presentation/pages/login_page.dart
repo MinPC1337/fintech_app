@@ -347,7 +347,7 @@ class _LoginPageState extends State<LoginPage> {
               color: kBgColor,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Image.asset('assets/app_icon.png', width: 48, height: 48),
+            child: Image.asset('assets/Icon.png', width: 48, height: 48),
           ),
         ),
         const SizedBox(height: 24),
