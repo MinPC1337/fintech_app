@@ -87,9 +87,9 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/Futuristic Pro_name.png
-    - assets/Futuristic Pro.png
-    - assets/ic_launcher_round.png
+    - assets/app_icon.png
+    - assets/Icon.png
+    - assets/BG.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

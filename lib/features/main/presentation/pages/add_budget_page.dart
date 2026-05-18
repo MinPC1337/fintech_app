@@ -72,7 +72,7 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
       currentSpent: widget.category?.currentSpent ?? 0,
       type: CategoryType.outType,
       iconCodePoint: _selectedIcon.codePoint,
-      accentArgb: _selectedColor.value,
+      accentArgb: _selectedColor.toARGB32(),
       month: _selectedMonth,
       year: _selectedYear,
     );
