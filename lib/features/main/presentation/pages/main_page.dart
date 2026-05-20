@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/services/push_notification_service.dart';
 import 'home_page.dart';
 import 'settings_page.dart';
 import 'qr_scanner_page.dart';
@@ -24,8 +23,6 @@ class _MainPageState extends State<MainPage> {
   @override
   void initState() {
     super.initState();
-    // Cập nhật FCM Token khi người dùng vào màn hình chính
-    PushNotificationService.updateToken();
   }
 
   final List<Widget> _pages = [
