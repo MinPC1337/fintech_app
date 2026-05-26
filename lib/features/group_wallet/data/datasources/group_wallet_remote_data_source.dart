@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../../../main/data/models/wallet_model.dart';
@@ -369,7 +371,7 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
         'categoryId': 'group_contribute',
         'timestamp': FieldValue.serverTimestamp(),
         'type': 'Expense',
-        'note': 'Nạp quỹ nhóm "$groupName"',
+        'note': 'Nạp vào quỹ nhóm "$groupName"',
         'walletId': walletId,
       });
 
@@ -473,27 +475,85 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
     });
   }
 
+  List<TransactionModel> _mapTransactionsFromSnapshot(
+    QuerySnapshot<Map<String, dynamic>> snapshot,
+  ) {
+    return snapshot.docs.map((doc) {
+      final data = Map<String, dynamic>.from(doc.data());
+      if (data['timestamp'] is Timestamp) {
+        data['timestamp'] = (data['timestamp'] as Timestamp)
+            .toDate()
+            .toIso8601String();
+      } else if (data['timestamp'] == null) {
+        data['timestamp'] = DateTime.now().toIso8601String();
+      }
+      return TransactionModel.fromJson({...data, 'id': doc.id});
+    }).toList();
+  }
+
   @override
   Stream<List<TransactionModel>> watchGroupTransactions(String walletId) {
-    return firestore
-        .collection('transactions')
-        .where('walletId', isEqualTo: walletId)
-        .orderBy('timestamp', descending: true)
-        .limit(50)
-        .snapshots()
-        .map((snapshot) {
-          return snapshot.docs.map((doc) {
-            final data = Map<String, dynamic>.from(doc.data());
-            if (data['timestamp'] is Timestamp) {
-              data['timestamp'] = (data['timestamp'] as Timestamp)
-                  .toDate()
-                  .toIso8601String();
-            } else if (data['timestamp'] == null) {
-              data['timestamp'] = DateTime.now().toIso8601String();
-            }
-            return TransactionModel.fromJson({...data, 'id': doc.id});
-          }).toList();
-        });
+    final transactionsCollection = firestore.collection('transactions');
+    final streams = [
+      transactionsCollection
+          .where('walletId', isEqualTo: walletId)
+          .orderBy('timestamp', descending: true)
+          .limit(50)
+          .snapshots(),
+      transactionsCollection
+          .where('fromWalletId', isEqualTo: walletId)
+          .orderBy('timestamp', descending: true)
+          .limit(50)
+          .snapshots(),
+      transactionsCollection
+          .where('toWalletId', isEqualTo: walletId)
+          .orderBy('timestamp', descending: true)
+          .limit(50)
+          .snapshots(),
+    ];
+
+    late final StreamController<List<TransactionModel>> controller;
+    controller = StreamController<List<TransactionModel>>(
+      onListen: () {
+        final latestResults = <int, List<TransactionModel>>{};
+        final subscriptions =
+            <StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>[];
+
+        void emitCombined() {
+          final combined = latestResults.values
+              .expand((transactions) => transactions)
+              .toList();
+          final uniqueTransactions = <String, TransactionModel>{};
+          for (final transaction in combined) {
+            uniqueTransactions[transaction.id] = transaction;
+          }
+          final sortedTransactions = uniqueTransactions.values.toList()
+            ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+          if (!controller.isClosed) {
+            controller.add(sortedTransactions);
+          }
+        }
+
+        for (var index = 0; index < streams.length; index++) {
+          final subscription = streams[index].listen((snapshot) {
+            latestResults[index] = _mapTransactionsFromSnapshot(snapshot);
+            emitCombined();
+          }, onError: controller.addError);
+          subscriptions.add(subscription);
+        }
+
+        controller.onCancel = () {
+          for (final subscription in subscriptions) {
+            subscription.cancel();
+          }
+        };
+      },
+      onPause: () {},
+      onResume: () {},
+      onCancel: () {},
+    );
+
+    return controller.stream;
   }
 
   // ─────────────────────────────────────────────

@@ -495,147 +495,176 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildMonthlySummary(auth_entity.User currentUser) {
-    return StreamBuilder<List<dynamic>>(
-      stream: getTransactionsStreamUseCase.call(currentUser.uid),
-      builder: (context, snapshot) {
-        final allTransactions = snapshot.data ?? [];
+    return StreamBuilder(
+      stream: getPrimaryWalletStreamUseCase.call(currentUser.uid),
+      builder: (context, walletSnap) {
+        String? primaryWalletId;
+        if (walletSnap.hasData) {
+          walletSnap.data!.fold((f) => null, (w) {
+            primaryWalletId = w?.id;
+          });
+        }
 
-        // Lọc giao dịch theo tháng/năm đã chọn
-        final monthlyTxs = allTransactions
-            .where(
-              (tx) =>
-                  tx.timestamp.month == _selectedMonth.month &&
-                  tx.timestamp.year == _selectedMonth.year,
-            )
-            .toList();
+        return StreamBuilder<List<dynamic>>(
+          stream: getTransactionsStreamUseCase.call(currentUser.uid),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const CircularProgressIndicator(color: kCyan);
+            }
+            if (snapshot.hasError) {
+              return Text(
+                'Lỗi: ${snapshot.error}',
+                style: const TextStyle(color: kRose),
+              );
+            }
 
-        final totalIncome = monthlyTxs
-            .where((tx) => tx.type == 'Income')
-            .fold(0.0, (sum, tx) => sum + tx.amount);
-        final totalExpense = monthlyTxs
-            .where((tx) => tx.type == 'Expense')
-            .fold(0.0, (sum, tx) => sum + tx.amount);
+            final allTransactions = snapshot.data ?? [];
+            final balanceTransactions = allTransactions.where((tx) {
+              if (primaryWalletId == null) return false;
+              return tx.toWalletId == primaryWalletId ||
+                  tx.fromWalletId == primaryWalletId;
+            }).toList();
 
-        // Tính toán tỉ lệ cho thanh Progress
-        final double total = totalIncome + totalExpense;
-        final double incomeRatio = total > 0 ? totalIncome / total : 0.0;
+            // Lọc giao dịch theo tháng/năm đã chọn
+            final monthlyTxs = balanceTransactions
+                .where(
+                  (tx) =>
+                      tx.timestamp.month == _selectedMonth.month &&
+                      tx.timestamp.year == _selectedMonth.year,
+                )
+                .toList();
 
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: kThemeSurfacePrimary.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Bộ chọn tháng
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'PHÂN TÍCH LUỒNG TIỀN',
-                    style: TextStyle(
-                      color: kTextSecondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: kCyan.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: kCyan.withValues(alpha: 0.2)),
-                    ),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          onPressed: () => _changeMonth(-1),
-                          icon: const Icon(
-                            Icons.chevron_left,
-                            color: kCyan,
-                            size: 18,
-                          ),
-                          visualDensity: VisualDensity.compact,
-                          constraints: const BoxConstraints(),
-                        ),
-                        Text(
-                          DateFormat('MM/yyyy').format(_selectedMonth),
-                          style: const TextStyle(
-                            color: kCyan,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => _changeMonth(1),
-                          icon: const Icon(
-                            Icons.chevron_right,
-                            color: kCyan,
-                            size: 18,
-                          ),
-                          visualDensity: VisualDensity.compact,
-                          constraints: const BoxConstraints(),
-                        ),
-                      ],
-                    ),
+            final totalIncome = monthlyTxs
+                .where((tx) => tx.toWalletId == primaryWalletId)
+                .fold(0.0, (sum, tx) => sum + tx.amount);
+            final totalExpense = monthlyTxs
+                .where((tx) => tx.fromWalletId == primaryWalletId)
+                .fold(0.0, (sum, tx) => sum + tx.amount);
+
+            // Tính toán tỉ lệ cho thanh Progress
+            final double total = totalIncome + totalExpense;
+            final double incomeRatio = total > 0 ? totalIncome / total : 0.0;
+
+            return Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: kThemeSurfacePrimary.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-              // Chỉ số Thu nhập & Chi tiêu
-              Row(
-                children: [
-                  _buildStatItem(
-                    label: 'THU NHẬP',
-                    amount: totalIncome,
-                    color: kEmerald,
-                    icon: Icons.arrow_downward_rounded,
-                  ),
-                  _buildStatItem(
-                    label: 'CHI TIÊU',
-                    amount: totalExpense,
-                    color: kRose,
-                    icon: Icons.arrow_upward_rounded,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              // Thanh tỉ lệ (Ratio Bar)
-              Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: SizedBox(
-                      height: 8,
-                      child: LinearProgressIndicator(
-                        value: incomeRatio,
-                        backgroundColor: kRose.withValues(alpha: 0.3),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          kEmerald,
+                  // Bộ chọn tháng
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'PHÂN TÍCH LUỒNG TIỀN',
+                        style: TextStyle(
+                          color: kTextSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.5,
                         ),
                       ),
-                    ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: kCyan.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: kCyan.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            IconButton(
+                              onPressed: () => _changeMonth(-1),
+                              icon: const Icon(
+                                Icons.chevron_left,
+                                color: kCyan,
+                                size: 18,
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              constraints: const BoxConstraints(),
+                            ),
+                            Text(
+                              DateFormat('MM/yyyy').format(_selectedMonth),
+                              style: const TextStyle(
+                                color: kCyan,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => _changeMonth(1),
+                              icon: const Icon(
+                                Icons.chevron_right,
+                                color: kCyan,
+                                size: 18,
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 24),
+                  // Chỉ số Thu nhập & Chi tiêu
+                  Row(
+                    children: [
+                      _buildStatItem(
+                        label: 'THU NHẬP',
+                        amount: totalIncome,
+                        color: kEmerald,
+                        icon: Icons.arrow_downward_rounded,
+                      ),
+                      _buildStatItem(
+                        label: 'CHI TIÊU',
+                        amount: totalExpense,
+                        color: kRose,
+                        icon: Icons.arrow_upward_rounded,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  // Thanh tỉ lệ (Ratio Bar)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: SizedBox(
+                          height: 8,
+                          child: LinearProgressIndicator(
+                            value: incomeRatio,
+                            backgroundColor: kRose.withValues(alpha: 0.3),
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              kEmerald,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  ),
                 ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -799,135 +828,151 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildTimelineSection(auth_entity.User currentUser) {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return StreamBuilder(
+      stream: getPrimaryWalletStreamUseCase.call(currentUser.uid),
+      builder: (context, walletSnap) {
+        String? primaryWalletId;
+        if (walletSnap.hasData) {
+          walletSnap.data!.fold((f) => null, (w) => primaryWalletId = w?.id);
+        }
+
+        return Column(
           children: [
-            const Text(
-              'GIAO DỊCH GẦN ĐÂY',
-              style: TextStyle(
-                color: kTextPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.0,
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        TransactionHistoryPage(userId: currentUser.uid),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'GIAO DỊCH GẦN ĐÂY',
+                  style: TextStyle(
+                    color: kTextPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
                   ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            TransactionHistoryPage(userId: currentUser.uid),
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    'XEM TẤT CẢ',
+                    style: TextStyle(
+                      color: kCyan,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            StreamBuilder<List<dynamic>>(
+              stream: getTransactionsStreamUseCase.call(currentUser.uid),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const CircularProgressIndicator(color: kCyan);
+                }
+                if (snapshot.hasError) {
+                  return Text(
+                    'Lỗi: ${snapshot.error}',
+                    style: const TextStyle(color: kRose),
+                  );
+                }
+
+                final allTransactions = snapshot.data ?? [];
+                final transactions = allTransactions
+                    .where((tx) {
+                      if (primaryWalletId == null) return false;
+                      return tx.toWalletId == primaryWalletId ||
+                          tx.fromWalletId == primaryWalletId;
+                    })
+                    .take(5)
+                    .toList();
+
+                if (transactions.isEmpty) {
+                  return const Text(
+                    'Chưa có giao dịch nào.',
+                    style: TextStyle(color: kTextSecondary),
+                  );
+                }
+                return StreamBuilder<List<CategoryEntity>>(
+                  stream: watchOutCategoriesUseCase.call(currentUser.uid),
+                  builder: (context, catSnapshot) {
+                    final walletCategories = catSnapshot.data ?? [];
+
+                    return Column(
+                      children: transactions.map((tx) {
+                        final timeDisplay = DateFormat(
+                          'dd/MM/yyyy HH:mm',
+                        ).format(tx.timestamp);
+                        final isIncome = tx.toWalletId == primaryWalletId;
+                        final sign = isIncome ? '+' : '-';
+
+                        return _buildTimelineItem(
+                          isIncome: isIncome,
+                          title: tx.note.isNotEmpty
+                              ? tx.note
+                              : (isIncome ? 'Nhận tiền' : 'Chuyển tiền'),
+                          time: timeDisplay,
+                          amount:
+                              '$sign${currencyFormatter.format(tx.amount).replaceAll('đ', '').trim()}',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => TransactionSuccessPage(
+                                  amount: tx.amount,
+                                  sender: isIncome
+                                      ? _formatWallet(
+                                          tx.senderId,
+                                          currentUser.uid,
+                                          currentUser.fullName,
+                                        )
+                                      : _formatWallet(
+                                          currentUser.uid,
+                                          currentUser.uid,
+                                          currentUser.fullName,
+                                        ),
+                                  receiver: isIncome
+                                      ? _formatWallet(
+                                          currentUser.uid,
+                                          currentUser.uid,
+                                          currentUser.fullName,
+                                        )
+                                      : _formatWallet(
+                                          tx.receiverId,
+                                          currentUser.uid,
+                                          currentUser.fullName,
+                                        ),
+                                  categoryName: _getCategoryLabel(
+                                    tx.categoryId,
+                                    walletCategories,
+                                  ),
+                                  timestamp: tx.timestamp,
+                                  note: tx.note,
+                                  isInternal: true,
+                                  isViewOnly: true,
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      }).toList(),
+                    );
+                  },
                 );
               },
-              child: const Text(
-                'XEM TẤT CẢ', // Micro-CTA màu Xanh Neon
-                style: TextStyle(
-                  color: kCyan,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
-                ),
-              ),
             ),
           ],
-        ),
-        const SizedBox(height: 16),
-        StreamBuilder<List<dynamic>>(
-          stream: getTransactionsStreamUseCase.call(currentUser.uid),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const CircularProgressIndicator(color: kCyan);
-            }
-            if (snapshot.hasError) {
-              return Text(
-                'Lỗi: ${snapshot.error}',
-                style: const TextStyle(color: kRose),
-              );
-            }
-
-            final allTransactions = snapshot.data ?? [];
-            if (allTransactions.isEmpty) {
-              return const Text(
-                'Chưa có giao dịch nào.',
-                style: TextStyle(color: kTextSecondary),
-              );
-            }
-
-            // Chỉ lấy 5 giao dịch mới nhất để hiển thị tại trang Home
-            final transactions = allTransactions.take(5).toList();
-            return StreamBuilder<List<CategoryEntity>>(
-              stream: watchOutCategoriesUseCase.call(currentUser.uid),
-              builder: (context, catSnapshot) {
-                final walletCategories = catSnapshot.data ?? [];
-
-                return Column(
-                  children: transactions.map((tx) {
-                    final timeDisplay = DateFormat(
-                      'dd/MM/yyyy HH:mm',
-                    ).format(tx.timestamp);
-                    final isIncome = tx.type == 'Income';
-                    final sign = isIncome ? '+' : '-';
-
-                    return _buildTimelineItem(
-                      isIncome: isIncome,
-                      title: tx.note.isNotEmpty
-                          ? tx.note
-                          : (isIncome ? 'Nhận tiền' : 'Chuyển tiền'),
-                      time: timeDisplay,
-                      amount:
-                          '$sign${currencyFormatter.format(tx.amount).replaceAll('đ', '').trim()}',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => TransactionSuccessPage(
-                              amount: tx.amount,
-                              sender: isIncome
-                                  ? _formatWallet(
-                                      tx.senderId,
-                                      currentUser.uid,
-                                      currentUser.fullName,
-                                    )
-                                  : _formatWallet(
-                                      currentUser.uid,
-                                      currentUser.uid,
-                                      currentUser.fullName,
-                                    ),
-                              receiver: isIncome
-                                  ? _formatWallet(
-                                      currentUser.uid,
-                                      currentUser.uid,
-                                      currentUser.fullName,
-                                    )
-                                  : _formatWallet(
-                                      tx.receiverId,
-                                      currentUser.uid,
-                                      currentUser.fullName,
-                                    ),
-                              categoryName: _getCategoryLabel(
-                                tx.categoryId,
-                                walletCategories,
-                              ),
-                              timestamp: tx.timestamp,
-                              note: tx.note,
-                              isInternal: true,
-                              isViewOnly: true,
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  }).toList(),
-                );
-              },
-            );
-          },
-        ),
-      ],
+        );
+      },
     );
   }
 

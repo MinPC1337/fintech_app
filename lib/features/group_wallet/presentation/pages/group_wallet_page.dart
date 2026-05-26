@@ -10,6 +10,7 @@ import 'package:fintech_app/features/auth/presentation/cubit/auth_state.dart';
 import 'package:fintech_app/features/group_wallet/presentation/cubit/group_wallet_cubit.dart';
 import 'package:fintech_app/features/group_wallet/presentation/cubit/group_wallet_state.dart';
 import 'package:fintech_app/features/group_wallet/presentation/pages/group_wallet_detail_page.dart';
+import 'package:fintech_app/features/group_wallet/presentation/pages/pending_invitations_page.dart';
 import 'package:fintech_app/features/main/domain/entities/wallet_entity.dart';
 
 class GroupWalletPage extends StatelessWidget {
@@ -215,6 +216,13 @@ class _GroupWalletView extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 26),
+                  if (loaded.pendingInvitations.isNotEmpty) ...[
+                    _InvitationSummaryCard(
+                      pendingCount: loaded.pendingInvitations.length,
+                      onTap: () => _openPendingInvitationsPage(context),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
                   const Text(
                     'DANH SÁCH VÍ',
                     style: TextStyle(
@@ -319,6 +327,70 @@ class _GroupWalletView extends StatelessWidget {
           value: groupCubit,
           child: GroupWalletDetailPage(walletId: wallet.id),
         ),
+      ),
+    );
+  }
+
+  void _openPendingInvitationsPage(BuildContext context) {
+    final groupCubit = context.read<GroupWalletCubit>();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (routeContext) => BlocProvider.value(
+          value: groupCubit,
+          child: const PendingInvitationsPage(),
+        ),
+      ),
+    );
+  }
+}
+
+class _InvitationSummaryCard extends StatelessWidget {
+  const _InvitationSummaryCard({
+    required this.pendingCount,
+    required this.onTap,
+  });
+
+  final int pendingCount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: kThemeSurfaceSecondary,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: kThemeBorderDefault),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Lời mời mới',
+                  style: const TextStyle(
+                    color: kTextPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Bạn có $pendingCount lời mời tham gia ví nhóm.',
+                  style: TextStyle(
+                    color: kTextSecondary.withValues(alpha: 0.85),
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          _SheetButton(label: 'Xem lời mời', color: kCyan, onTap: onTap),
+        ],
       ),
     );
   }
