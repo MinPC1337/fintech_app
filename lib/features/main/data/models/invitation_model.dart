@@ -7,6 +7,7 @@ class InvitationModel extends InvitationEntity {
     required super.senderId,
     required super.receiverEmail,
     required super.status,
+    super.createdAt,
   });
 
   factory InvitationModel.fromJson(Map<String, dynamic> json) {
@@ -15,10 +16,24 @@ class InvitationModel extends InvitationEntity {
       walletId: json['walletId'] ?? '',
       senderId: json['senderId'] ?? '',
       receiverEmail: json['receiverEmail'] ?? '',
-      status: json['status'] == 'accepted' 
-          ? InvitationStatus.accepted 
-          : InvitationStatus.pending,
+      status: _parseStatus(json['status']),
+      createdAt: json['createdAt'] != null
+          ? (json['createdAt'] is DateTime
+              ? json['createdAt'] as DateTime
+              : DateTime.tryParse(json['createdAt'].toString()))
+          : null,
     );
+  }
+
+  static InvitationStatus _parseStatus(dynamic value) {
+    switch (value) {
+      case 'accepted':
+        return InvitationStatus.accepted;
+      case 'rejected':
+        return InvitationStatus.rejected;
+      default:
+        return InvitationStatus.pending;
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -27,7 +42,8 @@ class InvitationModel extends InvitationEntity {
       'walletId': walletId,
       'senderId': senderId,
       'receiverEmail': receiverEmail,
-      'status': status == InvitationStatus.accepted ? 'accepted' : 'pending',
+      'status': status.name,
+      if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
     };
   }
 }

@@ -1,0 +1,408 @@
+import 'dart:async';
+
+import 'package:bloc/bloc.dart';
+import 'package:fintech_app/features/group_wallet/domain/usecases/accept_invitation_usecase.dart';
+import 'package:fintech_app/features/group_wallet/domain/usecases/close_group_wallet_usecase.dart';
+import 'package:fintech_app/features/group_wallet/domain/usecases/contribute_to_group_usecase.dart';
+import 'package:fintech_app/features/group_wallet/domain/usecases/create_group_wallet_usecase.dart';
+import 'package:fintech_app/features/group_wallet/domain/usecases/invite_member_usecase.dart';
+import 'package:fintech_app/features/group_wallet/domain/usecases/reject_invitation_usecase.dart';
+import 'package:fintech_app/features/group_wallet/domain/usecases/remove_member_usecase.dart';
+import 'package:fintech_app/features/group_wallet/domain/usecases/settle_debt_usecase.dart';
+import 'package:fintech_app/features/group_wallet/domain/usecases/split_expense_usecase.dart';
+import 'package:fintech_app/features/group_wallet/domain/usecases/watch_debts_usecase.dart';
+import 'package:fintech_app/features/group_wallet/domain/usecases/watch_group_transactions_usecase.dart';
+import 'package:fintech_app/features/group_wallet/domain/usecases/watch_group_wallet_detail_usecase.dart';
+import 'package:fintech_app/features/group_wallet/domain/usecases/watch_group_wallets_usecase.dart';
+import 'package:fintech_app/features/group_wallet/domain/usecases/watch_pending_invitations_usecase.dart';
+import 'package:fintech_app/features/group_wallet/domain/usecases/withdraw_from_group_usecase.dart';
+import 'package:fintech_app/features/main/domain/entities/debt_entity.dart';
+import 'package:fintech_app/features/main/domain/entities/invitation_entity.dart';
+import 'package:fintech_app/features/main/domain/entities/transaction_entity.dart';
+import 'package:fintech_app/features/main/domain/entities/wallet_entity.dart';
+import 'package:fintech_app/features/group_wallet/presentation/cubit/group_wallet_state.dart';
+
+class GroupWalletCubit extends Cubit<GroupWalletState> {
+  GroupWalletCubit({
+    required this.createGroupWalletUseCase,
+    required this.watchGroupWalletsUseCase,
+    required this.watchGroupWalletDetailUseCase,
+    required this.closeGroupWalletUseCase,
+    required this.inviteMemberUseCase,
+    required this.acceptInvitationUseCase,
+    required this.rejectInvitationUseCase,
+    required this.removeMemberUseCase,
+    required this.contributeToGroupUseCase,
+    required this.withdrawFromGroupUseCase,
+    required this.splitExpenseUseCase,
+    required this.settleDebtUseCase,
+    required this.watchGroupTransactionsUseCase,
+    required this.watchDebtsUseCase,
+    required this.watchPendingInvitationsUseCase,
+  }) : super(GroupWalletInitial());
+
+  final CreateGroupWalletUseCase createGroupWalletUseCase;
+  final WatchGroupWalletsUseCase watchGroupWalletsUseCase;
+  final WatchGroupWalletDetailUseCase watchGroupWalletDetailUseCase;
+  final CloseGroupWalletUseCase closeGroupWalletUseCase;
+  final InviteMemberUseCase inviteMemberUseCase;
+  final AcceptInvitationUseCase acceptInvitationUseCase;
+  final RejectInvitationUseCase rejectInvitationUseCase;
+  final RemoveMemberUseCase removeMemberUseCase;
+  final ContributeToGroupUseCase contributeToGroupUseCase;
+  final WithdrawFromGroupUseCase withdrawFromGroupUseCase;
+  final SplitExpenseUseCase splitExpenseUseCase;
+  final SettleDebtUseCase settleDebtUseCase;
+  final WatchGroupTransactionsUseCase watchGroupTransactionsUseCase;
+  final WatchDebtsUseCase watchDebtsUseCase;
+  final WatchPendingInvitationsUseCase watchPendingInvitationsUseCase;
+
+  StreamSubscription<List<WalletEntity>>? _walletsSubscription;
+  StreamSubscription<WalletEntity?>? _walletDetailSubscription;
+  StreamSubscription<List<TransactionEntity>>? _transactionsSubscription;
+  StreamSubscription<List<DebtEntity>>? _debtsSubscription;
+  StreamSubscription<List<InvitationEntity>>? _pendingInvitationsSubscription;
+
+  String? _userId;
+  String? _selectedWalletId;
+
+  final List<WalletEntity> _wallets = [];
+  WalletEntity? _selectedWallet;
+  final List<TransactionEntity> _transactions = [];
+  final List<DebtEntity> _debts = [];
+  final List<InvitationEntity> _pendingInvitations = [];
+  bool _isActionInProgress = false;
+
+  void start(String userId) {
+    _userId = userId;
+    emit(GroupWalletLoading());
+    _walletsSubscription?.cancel();
+    _pendingInvitationsSubscription?.cancel();
+    _walletsSubscription = watchGroupWalletsUseCase(userId).listen(
+      (wallets) {
+        _wallets
+          ..clear()
+          ..addAll(wallets);
+        if (_selectedWalletId != null &&
+            !_wallets.any((w) => w.id == _selectedWalletId)) {
+          _selectedWalletId = null;
+          _selectedWallet = null;
+          _cancelDetailsSubscriptions();
+        }
+        _emitLoaded();
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        emit(GroupWalletFailure(error.toString()));
+      },
+    );
+
+    _pendingInvitationsSubscription = watchPendingInvitationsUseCase(userId)
+        .listen(
+          (invites) {
+            _pendingInvitations
+              ..clear()
+              ..addAll(invites);
+            _emitLoaded();
+          },
+          onError: (Object error, StackTrace stackTrace) {
+            emit(GroupWalletFailure(error.toString()));
+          },
+        );
+  }
+
+  void selectWallet(String walletId) {
+    if (_selectedWalletId == walletId) {
+      return;
+    }
+    _selectedWalletId = walletId;
+    _listenSelectedWallet(walletId);
+    _listenTransactions(walletId);
+    _listenDebts(walletId);
+    _emitLoaded();
+  }
+
+  Future<bool> createGroupWallet(String name, int accentArgb) async {
+    if (_userId == null) return false;
+    _setActionInProgress(true);
+    final result = await createGroupWalletUseCase(name, _userId!, accentArgb);
+    _setActionInProgress(false);
+    return result.fold(
+      (failure) {
+        _setMessage(failure.message);
+        return false;
+      },
+      (wallet) {
+        _selectedWalletId = wallet.id;
+        _setMessage('Tạo ví nhóm thành công');
+        selectWallet(wallet.id);
+        return true;
+      },
+    );
+  }
+
+  Future<bool> inviteMember(String walletId, String receiverEmail) async {
+    if (_userId == null) return false;
+    _setActionInProgress(true);
+    final result = await inviteMemberUseCase(walletId, _userId!, receiverEmail);
+    _setActionInProgress(false);
+    return result.fold(
+      (failure) {
+        _setMessage(failure.message);
+        return false;
+      },
+      (_) {
+        _setMessage('Gửi lời mời thành công');
+        return true;
+      },
+    );
+  }
+
+  Future<bool> acceptInvitation(String invitationId) async {
+    _setActionInProgress(true);
+    final result = await acceptInvitationUseCase(invitationId, _userId ?? '');
+    _setActionInProgress(false);
+    return result.fold(
+      (failure) {
+        _setMessage(failure.message);
+        return false;
+      },
+      (_) {
+        _setMessage('Đã chấp nhận lời mời');
+        return true;
+      },
+    );
+  }
+
+  Future<bool> rejectInvitation(String invitationId) async {
+    _setActionInProgress(true);
+    final result = await rejectInvitationUseCase(invitationId);
+    _setActionInProgress(false);
+    return result.fold(
+      (failure) {
+        _setMessage(failure.message);
+        return false;
+      },
+      (_) {
+        _setMessage('Đã từ chối lời mời');
+        return true;
+      },
+    );
+  }
+
+  Future<bool> contributeToGroup(String walletId, double amount) async {
+    if (_userId == null) return false;
+    _setActionInProgress(true);
+    final result = await contributeToGroupUseCase(walletId, _userId!, amount);
+    _setActionInProgress(false);
+    return result.fold(
+      (failure) {
+        _setMessage(failure.message);
+        return false;
+      },
+      (_) {
+        _setMessage('Nạp quỹ nhóm thành công');
+        return true;
+      },
+    );
+  }
+
+  Future<bool> withdrawFromGroup(
+    String walletId,
+    double amount,
+    String note,
+  ) async {
+    if (_userId == null) return false;
+    _setActionInProgress(true);
+    final result = await withdrawFromGroupUseCase(
+      walletId,
+      _userId!,
+      amount,
+      note,
+    );
+    _setActionInProgress(false);
+    return result.fold(
+      (failure) {
+        _setMessage(failure.message);
+        return false;
+      },
+      (_) {
+        _setMessage('Rút tiền thành công');
+        return true;
+      },
+    );
+  }
+
+  Future<bool> splitExpense(
+    String walletId,
+    double totalAmount,
+    String note,
+    List<String> participantIds,
+  ) async {
+    if (_userId == null) return false;
+    _setActionInProgress(true);
+    final result = await splitExpenseUseCase(
+      walletId,
+      _userId!,
+      totalAmount,
+      note,
+      participantIds,
+    );
+    _setActionInProgress(false);
+    return result.fold(
+      (failure) {
+        _setMessage(failure.message);
+        return false;
+      },
+      (_) {
+        _setMessage('Chia tiền nhóm thành công');
+        return true;
+      },
+    );
+  }
+
+  Future<bool> settleDebt(String debtId) async {
+    if (_userId == null) return false;
+    _setActionInProgress(true);
+    final result = await settleDebtUseCase(debtId, _userId!);
+    _setActionInProgress(false);
+    return result.fold(
+      (failure) {
+        _setMessage(failure.message);
+        return false;
+      },
+      (_) {
+        _setMessage('Thanh toán nợ thành công');
+        return true;
+      },
+    );
+  }
+
+  Future<bool> closeGroupWallet(String walletId) async {
+    if (_userId == null) return false;
+    _setActionInProgress(true);
+    final result = await closeGroupWalletUseCase(walletId, _userId!);
+    _setActionInProgress(false);
+    return result.fold(
+      (failure) {
+        _setMessage(failure.message);
+        return false;
+      },
+      (_) {
+        _setMessage('Đã đóng ví nhóm');
+        return true;
+      },
+    );
+  }
+
+  Future<bool> removeMember(String walletId, String memberId) async {
+    if (_userId == null) return false;
+    _setActionInProgress(true);
+    final result = await removeMemberUseCase(walletId, memberId, _userId!);
+    _setActionInProgress(false);
+    return result.fold(
+      (failure) {
+        _setMessage(failure.message);
+        return false;
+      },
+      (_) {
+        _setMessage('Đã xoá thành viên');
+        return true;
+      },
+    );
+  }
+
+  void dismissMessage() {
+    final current = state;
+    if (current is GroupWalletLoaded && current.message != null) {
+      emit(current.copyWith(message: null));
+    }
+  }
+
+  void _listenSelectedWallet(String walletId) {
+    _walletDetailSubscription?.cancel();
+    _walletDetailSubscription = watchGroupWalletDetailUseCase(walletId).listen(
+      (wallet) {
+        _selectedWallet = wallet;
+        _emitLoaded();
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        emit(GroupWalletFailure(error.toString()));
+      },
+    );
+  }
+
+  void _listenTransactions(String walletId) {
+    _transactionsSubscription?.cancel();
+    _transactionsSubscription = watchGroupTransactionsUseCase(walletId).listen(
+      (transactions) {
+        _transactions
+          ..clear()
+          ..addAll(transactions);
+        _emitLoaded();
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        emit(GroupWalletFailure(error.toString()));
+      },
+    );
+  }
+
+  void _listenDebts(String walletId) {
+    _debtsSubscription?.cancel();
+    _debtsSubscription = watchDebtsUseCase(walletId).listen(
+      (debts) {
+        _debts
+          ..clear()
+          ..addAll(debts);
+        _emitLoaded();
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        emit(GroupWalletFailure(error.toString()));
+      },
+    );
+  }
+
+  void _emitLoaded({String? message}) {
+    emit(
+      GroupWalletLoaded(
+        wallets: List.unmodifiable(_wallets),
+        selectedWallet: _selectedWallet,
+        transactions: List.unmodifiable(_transactions),
+        debts: List.unmodifiable(_debts),
+        pendingInvitations: List.unmodifiable(_pendingInvitations),
+        isActionInProgress: _isActionInProgress,
+        message: message,
+      ),
+    );
+  }
+
+  void _cancelDetailsSubscriptions() {
+    _walletDetailSubscription?.cancel();
+    _transactionsSubscription?.cancel();
+    _debtsSubscription?.cancel();
+    _walletDetailSubscription = null;
+    _transactionsSubscription = null;
+    _debtsSubscription = null;
+    _selectedWallet = null;
+    _transactions.clear();
+    _debts.clear();
+  }
+
+  void _setActionInProgress(bool value) {
+    _isActionInProgress = value;
+    _emitLoaded();
+  }
+
+  void _setMessage(String message) {
+    _emitLoaded(message: message);
+  }
+
+  @override
+  Future<void> close() {
+    _walletsSubscription?.cancel();
+    _walletDetailSubscription?.cancel();
+    _transactionsSubscription?.cancel();
+    _debtsSubscription?.cancel();
+    _pendingInvitationsSubscription?.cancel();
+    return super.close();
+  }
+}

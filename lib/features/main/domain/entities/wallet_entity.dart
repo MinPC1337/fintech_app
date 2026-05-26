@@ -7,6 +7,9 @@ class WalletEntity extends Equatable {
   final String ownerId;
   final List<String> members;
   final bool isPersonal;
+  final int? accentArgb;
+  final DateTime? createdAt;
+  final String status; // "active" | "closed"
 
   const WalletEntity({
     required this.id,
@@ -15,6 +18,9 @@ class WalletEntity extends Equatable {
     required this.ownerId,
     required this.members,
     required this.isPersonal,
+    this.accentArgb,
+    this.createdAt,
+    this.status = 'active',
   });
 
   @override
@@ -25,5 +31,8 @@ class WalletEntity extends Equatable {
         ownerId,
         members,
         isPersonal,
+        accentArgb,
+        createdAt,
+        status,
       ];
 }

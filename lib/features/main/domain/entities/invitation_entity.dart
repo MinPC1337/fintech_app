@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 enum InvitationStatus {
   pending,
   accepted,
+  rejected,
 }
 
 class InvitationEntity extends Equatable {
@@ -11,6 +12,7 @@ class InvitationEntity extends Equatable {
   final String senderId;
   final String receiverEmail;
   final InvitationStatus status;
+  final DateTime? createdAt;
 
   const InvitationEntity({
     required this.id,
@@ -18,6 +20,7 @@ class InvitationEntity extends Equatable {
     required this.senderId,
     required this.receiverEmail,
     required this.status,
+    this.createdAt,
   });
 
   @override
@@ -27,5 +30,6 @@ class InvitationEntity extends Equatable {
         senderId,
         receiverEmail,
         status,
+        createdAt,
       ];
 }

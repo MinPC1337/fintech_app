@@ -7,7 +7,7 @@ import 'qr_scanner_page.dart';
 import 'transfer_page.dart';
 import 'send_to_user_page.dart';
 import 'budget_page.dart';
-import 'group_wallet_page.dart';
+import '../../../group_wallet/presentation/pages/group_wallet_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});

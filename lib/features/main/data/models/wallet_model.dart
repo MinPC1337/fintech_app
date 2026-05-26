@@ -8,6 +8,9 @@ class WalletModel extends WalletEntity {
     required super.ownerId,
     required super.members,
     required super.isPersonal,
+    super.accentArgb,
+    super.createdAt,
+    super.status,
   });
 
   factory WalletModel.fromJson(Map<String, dynamic> json) {
@@ -18,6 +21,13 @@ class WalletModel extends WalletEntity {
       ownerId: json['ownerId'] ?? '',
       members: List<String>.from(json['members'] ?? []),
       isPersonal: json['isPersonal'] ?? false,
+      accentArgb: json['accentArgb'] as int?,
+      createdAt: json['createdAt'] != null
+          ? (json['createdAt'] is DateTime
+              ? json['createdAt'] as DateTime
+              : DateTime.tryParse(json['createdAt'].toString()))
+          : null,
+      status: json['status'] ?? 'active',
     );
   }
 
@@ -29,6 +39,9 @@ class WalletModel extends WalletEntity {
       'ownerId': ownerId,
       'members': members,
       'isPersonal': isPersonal,
+      if (accentArgb != null) 'accentArgb': accentArgb,
+      if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
+      'status': status,
     };
   }
 }

@@ -26,6 +26,25 @@ import 'features/main/domain/usecases/get_transactions_stream_usecase.dart';
 import 'features/main/domain/usecases/transfer_to_user_usecase.dart';
 import 'features/main/domain/usecases/watch_out_categories_usecase.dart';
 import 'features/main/presentation/cubit/budget_cubit.dart';
+import 'features/group_wallet/data/datasources/group_wallet_remote_data_source.dart';
+import 'features/group_wallet/data/repositories/group_wallet_repository_impl.dart';
+import 'features/group_wallet/domain/repositories/group_wallet_repository.dart';
+import 'features/group_wallet/domain/usecases/accept_invitation_usecase.dart';
+import 'features/group_wallet/domain/usecases/close_group_wallet_usecase.dart';
+import 'features/group_wallet/domain/usecases/contribute_to_group_usecase.dart';
+import 'features/group_wallet/domain/usecases/create_group_wallet_usecase.dart';
+import 'features/group_wallet/domain/usecases/invite_member_usecase.dart';
+import 'features/group_wallet/domain/usecases/reject_invitation_usecase.dart';
+import 'features/group_wallet/domain/usecases/remove_member_usecase.dart';
+import 'features/group_wallet/domain/usecases/settle_debt_usecase.dart';
+import 'features/group_wallet/domain/usecases/split_expense_usecase.dart';
+import 'features/group_wallet/domain/usecases/watch_debts_usecase.dart';
+import 'features/group_wallet/domain/usecases/watch_group_transactions_usecase.dart';
+import 'features/group_wallet/domain/usecases/watch_group_wallet_detail_usecase.dart';
+import 'features/group_wallet/domain/usecases/watch_group_wallets_usecase.dart';
+import 'features/group_wallet/domain/usecases/watch_pending_invitations_usecase.dart';
+import 'features/group_wallet/domain/usecases/withdraw_from_group_usecase.dart';
+import 'features/group_wallet/presentation/cubit/group_wallet_cubit.dart';
 
 final sl = GetIt.instance; // sl: Service Locator
 
@@ -81,6 +100,56 @@ Future<void> init() async {
     () => WalletRemoteDataSourceImpl(firestore: sl()),
   );
 
+  sl.registerLazySingleton<CreateGroupWalletUseCase>(
+    () => CreateGroupWalletUseCase(sl()),
+  );
+  sl.registerLazySingleton<WatchGroupWalletsUseCase>(
+    () => WatchGroupWalletsUseCase(sl()),
+  );
+  sl.registerLazySingleton<WatchGroupWalletDetailUseCase>(
+    () => WatchGroupWalletDetailUseCase(sl()),
+  );
+  sl.registerLazySingleton<CloseGroupWalletUseCase>(
+    () => CloseGroupWalletUseCase(sl()),
+  );
+  sl.registerLazySingleton<InviteMemberUseCase>(
+    () => InviteMemberUseCase(sl()),
+  );
+  sl.registerLazySingleton<AcceptInvitationUseCase>(
+    () => AcceptInvitationUseCase(sl()),
+  );
+  sl.registerLazySingleton<RejectInvitationUseCase>(
+    () => RejectInvitationUseCase(sl()),
+  );
+  sl.registerLazySingleton<RemoveMemberUseCase>(
+    () => RemoveMemberUseCase(sl()),
+  );
+  sl.registerLazySingleton<ContributeToGroupUseCase>(
+    () => ContributeToGroupUseCase(sl()),
+  );
+  sl.registerLazySingleton<WithdrawFromGroupUseCase>(
+    () => WithdrawFromGroupUseCase(sl()),
+  );
+  sl.registerLazySingleton<SplitExpenseUseCase>(
+    () => SplitExpenseUseCase(sl()),
+  );
+  sl.registerLazySingleton<SettleDebtUseCase>(() => SettleDebtUseCase(sl()));
+  sl.registerLazySingleton<WatchGroupTransactionsUseCase>(
+    () => WatchGroupTransactionsUseCase(sl()),
+  );
+  sl.registerLazySingleton<WatchDebtsUseCase>(() => WatchDebtsUseCase(sl()));
+  sl.registerLazySingleton<WatchPendingInvitationsUseCase>(
+    () => WatchPendingInvitationsUseCase(sl()),
+  );
+
+  sl.registerLazySingleton<GroupWalletRepository>(
+    () => GroupWalletRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  sl.registerLazySingleton<GroupWalletRemoteDataSource>(
+    () => GroupWalletRemoteDataSourceImpl(firestore: sl()),
+  );
+
   sl.registerLazySingleton<BudgetRemoteDataSource>(
     () => BudgetRemoteDataSourceImpl(firestore: sl()),
   );
@@ -91,6 +160,26 @@ Future<void> init() async {
     () => BudgetCubit(
       getPrimaryWalletStreamUseCase: sl(),
       budgetRepository: sl(),
+    ),
+  );
+
+  sl.registerFactory(
+    () => GroupWalletCubit(
+      createGroupWalletUseCase: sl(),
+      watchGroupWalletsUseCase: sl(),
+      watchGroupWalletDetailUseCase: sl(),
+      closeGroupWalletUseCase: sl(),
+      inviteMemberUseCase: sl(),
+      acceptInvitationUseCase: sl(),
+      rejectInvitationUseCase: sl(),
+      removeMemberUseCase: sl(),
+      contributeToGroupUseCase: sl(),
+      withdrawFromGroupUseCase: sl(),
+      splitExpenseUseCase: sl(),
+      settleDebtUseCase: sl(),
+      watchGroupTransactionsUseCase: sl(),
+      watchDebtsUseCase: sl(),
+      watchPendingInvitationsUseCase: sl(),
     ),
   );
 
