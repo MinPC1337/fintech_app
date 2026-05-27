@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart' as firebase;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../../core/utils/imgbb_client.dart';
 
 abstract class AuthRemoteDataSource {
   Future<UserModel> login(String email, String password);
@@ -12,17 +15,20 @@ abstract class AuthRemoteDataSource {
     String avatarUrl,
     String fcmToken,
   );
+  Future<String> uploadAvatar(File file, {String? fileName});
   Future<void> resetPassword(String email);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final firebase.FirebaseAuth firebaseAuth;
   final FirebaseFirestore firestore;
+  final ImgbbClient imgbbClient;
 
   AuthRemoteDataSourceImpl({
     required this.firebaseAuth,
     required this.firestore,
-  });
+    ImgbbClient? imgbbClient,
+  }) : imgbbClient = imgbbClient ?? ImgbbClient(apiKey: '');
 
   @override
   Future<UserModel> login(String email, String password) async {
@@ -139,6 +145,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return UserModel.fromJson(doc.data()!);
     } catch (e) {
       throw const ServerFailure('Update profile failed');
+    }
+  }
+
+  @override
+  Future<String> uploadAvatar(File file, {String? fileName}) async {
+    try {
+      final url = await imgbbClient.uploadFile(file, name: fileName);
+      return url;
+    } catch (e) {
+      throw const ServerFailure('Upload avatar failed');
     }
   }
 

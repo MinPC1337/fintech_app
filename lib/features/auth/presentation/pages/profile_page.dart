@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/imgbb_client.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import '../../domain/entities/user.dart';
@@ -16,6 +20,12 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   late final TextEditingController fullNameController;
+  final _picker = ImagePicker();
+  String? _avatarUrl;
+  bool _isUploading = false;
+
+  // IMPORTANT: replace with your own Imgbb API key or inject securely.
+  static const _imgbbKey = '52dd149a8c2c1242940bd1e77b66cb15';
 
   @override
   void initState() {
@@ -23,6 +33,7 @@ class _ProfilePageState extends State<ProfilePage> {
     fullNameController = TextEditingController(
       text: widget.currentUser.fullName,
     );
+    _avatarUrl = widget.currentUser.avatarUrl;
   }
 
   @override
@@ -37,9 +48,38 @@ class _ProfilePageState extends State<ProfilePage> {
     context.read<AuthCubit>().updateProfile(
       widget.currentUser.uid,
       fullNameController.text.trim(),
-      widget.currentUser.avatarUrl,
+      _avatarUrl ?? widget.currentUser.avatarUrl,
       widget.currentUser.fcmToken,
     );
+  }
+
+  Future<void> _pickAndUploadAvatar() async {
+    final picked = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+    if (picked == null) return;
+
+    setState(() => _isUploading = true);
+    try {
+      final file = File(picked.path);
+      final client = ImgbbClient(apiKey: _imgbbKey);
+      final uploadedUrl = await client.uploadFile(file);
+      setState(() => _avatarUrl = uploadedUrl);
+      // Optionally immediately persist to backend
+      context.read<AuthCubit>().updateProfile(
+        widget.currentUser.uid,
+        fullNameController.text.trim(),
+        uploadedUrl,
+        widget.currentUser.fcmToken,
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Upload thất bại: $e')));
+    } finally {
+      setState(() => _isUploading = false);
+    }
   }
 
   @override
@@ -77,28 +117,46 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 // Avatar Section
                 Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [kCyan, kPurple],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
+                  child: GestureDetector(
+                    onTap: _isUploading ? null : _pickAndUploadAvatar,
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
-                        color: kBgColor,
+                        gradient: LinearGradient(
+                          colors: [kCyan, kPurple],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                       ),
-                      child: ClipOval(
-                        child: Image.asset(
-                          'assets/app_icon.png',
-                          width: 120,
-                          height: 120,
-                          fit: BoxFit.cover,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: kBgColor,
+                        ),
+                        child: ClipOval(
+                          child: _isUploading
+                              ? SizedBox(
+                                  width: 120,
+                                  height: 120,
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                )
+                              : (_avatarUrl == null || _avatarUrl!.isEmpty)
+                              ? Image.asset(
+                                  'assets/app_icon.png',
+                                  width: 120,
+                                  height: 120,
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.network(
+                                  _avatarUrl!,
+                                  width: 120,
+                                  height: 120,
+                                  fit: BoxFit.cover,
+                                ),
                         ),
                       ),
                     ),
