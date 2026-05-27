@@ -8,6 +8,7 @@ import '../../../../core/utils/imgbb_client.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import '../../domain/entities/user.dart';
+import '../../../../core/utils/dialog_utils.dart';
 
 class ProfilePage extends StatefulWidget {
   final User currentUser;
@@ -74,9 +75,13 @@ class _ProfilePageState extends State<ProfilePage> {
         widget.currentUser.fcmToken,
       );
     } catch (e) {
-      ScaffoldMessenger.of(
+      showNotificationDialog(
         context,
-      ).showSnackBar(SnackBar(content: Text('Upload thất bại: $e')));
+        'Lỗi',
+        'Upload ảnh thất bại. Vui lòng thử lại sau.',
+        kRose,
+        Icons.cloud_off_rounded,
+      );
     } finally {
       setState(() => _isUploading = false);
     }
@@ -98,13 +103,21 @@ class _ProfilePageState extends State<ProfilePage> {
       body: BlocConsumer<AuthCubit, AuthState>(
         listener: (context, state) {
           if (state is AuthSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Cập nhật hồ sơ thành công')),
+            showNotificationDialog(
+              context,
+              'Thành công',
+              'Thông tin hồ sơ của bạn đã được cập nhật.',
+              kEmerald,
+              Icons.check_circle_outline,
             );
           } else if (state is AuthError) {
-            ScaffoldMessenger.of(
+            showNotificationDialog(
               context,
-            ).showSnackBar(SnackBar(content: Text('Lỗi: ${state.message}')));
+              'Lỗi',
+              state.message,
+              kRose,
+              Icons.error_outline,
+            );
           }
         },
         builder: (context, state) {

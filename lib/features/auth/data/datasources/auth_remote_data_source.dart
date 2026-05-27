@@ -17,6 +17,7 @@ abstract class AuthRemoteDataSource {
   );
   Future<String> uploadAvatar(File file, {String? fileName});
   Future<void> resetPassword(String email);
+  Future<void> changePassword(String oldPassword, String newPassword);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -169,6 +170,31 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       throw ServerFailure(e.message ?? 'Lỗi Firebase không xác định');
     } catch (e) {
       throw const ServerFailure('Gửi email khôi phục thất bại');
+    }
+  }
+
+  @override
+  Future<void> changePassword(String oldPassword, String newPassword) async {
+    try {
+      final user = firebaseAuth.currentUser;
+      if (user == null || user.email == null) {
+        throw const ServerFailure('Không tìm thấy người dùng');
+      }
+
+      final credential = firebase.EmailAuthProvider.credential(
+        email: user.email!,
+        password: oldPassword,
+      );
+
+      await user.reauthenticateWithCredential(credential);
+      await user.updatePassword(newPassword);
+    } on firebase.FirebaseAuthException catch (e) {
+      if (e.code == 'wrong-password') {
+        throw const ValidationFailure('Mật khẩu cũ không chính xác');
+      }
+      throw ServerFailure(e.message ?? 'Lỗi đổi mật khẩu');
+    } catch (e) {
+      throw const ServerFailure('Đã xảy ra lỗi khi đổi mật khẩu');
     }
   }
 }

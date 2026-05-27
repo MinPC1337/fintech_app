@@ -12,6 +12,7 @@ import 'package:fintech_app/features/group_wallet/presentation/cubit/group_walle
 import 'package:fintech_app/features/group_wallet/presentation/pages/group_wallet_detail_page.dart';
 import 'package:fintech_app/features/group_wallet/presentation/pages/pending_invitations_page.dart';
 import 'package:fintech_app/features/main/domain/entities/wallet_entity.dart';
+import 'package:fintech_app/core/utils/dialog_utils.dart';
 
 class GroupWalletPage extends StatelessWidget {
   const GroupWalletPage({super.key});
@@ -60,16 +61,24 @@ class _GroupWalletView extends StatelessWidget {
 
     return BlocConsumer<GroupWalletCubit, GroupWalletState>(
       listenWhen: (previous, current) {
-        if (current is GroupWalletLoaded) {
-          return current.message != null && current.message!.isNotEmpty;
+        if (current is GroupWalletLoaded && current.message != null) {
+          if (previous is! GroupWalletLoaded) return true;
+          return current.message != previous.message;
         }
         return false;
       },
       listener: (context, state) {
         if (state is GroupWalletLoaded && state.message != null) {
-          ScaffoldMessenger.of(
+          // Chỉ hiển thị thông báo nếu trang này đang ở trên cùng (không bị Detail che)
+          if (!(ModalRoute.of(context)?.isCurrent ?? false)) return;
+
+          showNotificationDialog(
             context,
-          ).showSnackBar(SnackBar(content: Text(state.message!)));
+            'Thông báo',
+            state.message!,
+            kCyan,
+            Icons.info_outline,
+          );
           context.read<GroupWalletCubit>().dismissMessage();
         }
       },
@@ -413,11 +422,12 @@ class _CreateGroupSheetContentState extends State<_CreateGroupSheetContent> {
             onTap: () async {
               final name = nameController.text.trim();
               if (name.isEmpty) {
-                ScaffoldMessenger.of(widget.sheetContext).showSnackBar(
-                  const SnackBar(
-                    content: Text('Vui lòng nhập tên ví nhóm'),
-                    duration: Duration(seconds: 2),
-                  ),
+                showNotificationDialog(
+                  widget.sheetContext,
+                  'Lỗi',
+                  'Vui lòng nhập tên ví nhóm để bắt đầu.',
+                  kRose,
+                  Icons.warning_amber_rounded,
                 );
                 return;
               }

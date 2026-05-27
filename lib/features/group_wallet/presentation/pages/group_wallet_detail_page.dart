@@ -14,6 +14,7 @@ import 'package:fintech_app/features/main/domain/entities/debt_entity.dart';
 import 'package:fintech_app/features/main/domain/entities/invitation_entity.dart';
 import 'package:fintech_app/features/main/domain/entities/transaction_entity.dart';
 import 'package:fintech_app/features/main/domain/entities/wallet_entity.dart';
+import 'package:fintech_app/core/utils/dialog_utils.dart';
 
 class GroupWalletDetailPage extends StatefulWidget {
   const GroupWalletDetailPage({super.key, required this.walletId});
@@ -73,11 +74,26 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
         }
 
         return BlocConsumer<GroupWalletCubit, GroupWalletState>(
+          listenWhen: (previous, current) {
+            if (current is GroupWalletLoaded && current.message != null) {
+              if (previous is! GroupWalletLoaded) return true;
+              // Chỉ hiện Dialog nếu thông báo mới khác với thông báo cũ
+              return current.message != previous.message;
+            }
+            return false;
+          },
           listener: (context, state) {
             if (state is GroupWalletLoaded && state.message != null) {
-              ScaffoldMessenger.of(
+              // Chỉ hiển thị thông báo nếu người dùng đang thực sự ở trang chi tiết
+              if (!(ModalRoute.of(context)?.isCurrent ?? false)) return;
+
+              showNotificationDialog(
                 context,
-              ).showSnackBar(SnackBar(content: Text(state.message!)));
+                'Thành công',
+                state.message!,
+                kEmerald,
+                Icons.check_circle_outline,
+              );
               context.read<GroupWalletCubit>().dismissMessage();
             }
           },

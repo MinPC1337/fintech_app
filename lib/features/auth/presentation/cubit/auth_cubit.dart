@@ -73,6 +73,22 @@ class AuthCubit extends Cubit<AuthState> {
     );
   }
 
+  Future<void> changePassword(String oldPassword, String newPassword) async {
+    final currentState = state;
+    if (currentState is! AuthSuccess) return;
+    final user = currentState.user;
+
+    emit(AuthLoading());
+    final result = await loginUseCase.repository.changePassword(
+      oldPassword: oldPassword,
+      newPassword: newPassword,
+    );
+    result.fold(
+      (failure) => emit(AuthError(message: failure.message)),
+      (_) => emit(AuthPasswordChanged(user: user)),
+    );
+  }
+
   Future<void> logout() async {
     emit(AuthLoading());
     try {

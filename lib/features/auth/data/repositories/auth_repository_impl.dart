@@ -82,4 +82,21 @@ class AuthRepositoryImpl implements AuthRepository {
       );
     }
   }
+
+  @override
+  Future<Either<Failure, void>> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    try {
+      await remoteDataSource.changePassword(oldPassword, newPassword);
+      return const Right(null);
+    } on Failure catch (e) {
+      return Left(e);
+    } catch (e) {
+      return const Left(
+        ServerFailure('Đã xảy ra lỗi không xác định khi đổi mật khẩu.'),
+      );
+    }
+  }
 }

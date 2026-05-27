@@ -6,6 +6,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../auth/presentation/cubit/auth_state.dart';
 import '../../../auth/presentation/pages/login_page.dart';
+import '../../../auth/presentation/pages/profile_page.dart';
+import 'notifications_page.dart';
+import '../../../../core/utils/dialog_utils.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -33,243 +36,410 @@ class _SettingsPageState extends State<SettingsPage>
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: kBgColor,
-      body: SafeArea(
-        bottom: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. Khối Tiêu đề
-              const Text(
-                'Cài đặt',
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  color: kTextPrimary,
-                  letterSpacing: -1.2, // tracking-tight
+  void _showPasswordResetDialog(BuildContext context, AuthState authState) {
+    if (authState is! AuthSuccess) return;
+
+    final oldPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    bool isOldPasswordVerified = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: kBgColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+              side: BorderSide(color: kPurple.withValues(alpha: 0.2)),
+            ),
+            title: Row(
+              children: [
+                Icon(
+                  isOldPasswordVerified
+                      ? Icons.lock_open_rounded
+                      : Icons.lock_outline_rounded,
+                  color: kPurple,
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Đổi mật khẩu',
+                  style: TextStyle(
+                    color: kTextPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!isOldPasswordVerified) ...[
+                  const Text(
+                    'Vui lòng nhập mật khẩu hiện tại để tiếp tục.',
+                    style: TextStyle(color: kTextSecondary, fontSize: 13),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: oldPasswordController,
+                    obscureText: true,
+                    style: const TextStyle(color: kTextPrimary),
+                    decoration: InputDecoration(
+                      hintText: 'Mật khẩu cũ',
+                      hintStyle: const TextStyle(color: kTextSecondary),
+                      filled: true,
+                      fillColor: kThemeSurfaceSecondary,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ] else ...[
+                  const Text(
+                    'Nhập mật khẩu mới cho tài khoản của bạn.',
+                    style: TextStyle(color: kTextSecondary, fontSize: 13),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: newPasswordController,
+                    obscureText: true,
+                    style: const TextStyle(color: kTextPrimary),
+                    decoration: InputDecoration(
+                      hintText: 'Mật khẩu mới',
+                      hintStyle: const TextStyle(color: kTextSecondary),
+                      filled: true,
+                      fillColor: kThemeSurfaceSecondary,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: confirmPasswordController,
+                    obscureText: true,
+                    style: const TextStyle(color: kTextPrimary),
+                    decoration: InputDecoration(
+                      hintText: 'Xác nhận mật khẩu mới',
+                      hintStyle: const TextStyle(color: kTextSecondary),
+                      filled: true,
+                      fillColor: kThemeSurfaceSecondary,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text(
+                  'HỦY',
+                  style: TextStyle(color: kTextSecondary),
                 ),
               ),
-              const SizedBox(height: 32),
-
-              // 2. Thẻ Hồ sơ Cá nhân
-              _buildProfileCard(),
-              const SizedBox(height: 48),
-
-              // 3. Khối Danh mục Tùy chỉnh
-              _buildSettingsSection(
-                title: 'TÀI KHOẢN',
-                children: [
-                  _SettingsListItem(
-                    icon: Icons.person_outline,
-                    color: kCyan,
-                    text: 'Thông tin cá nhân',
-                    onTap: () {},
-                  ),
-                  _SettingsListItem(
-                    icon: Icons.lock_outline,
+              TextButton(
+                onPressed: () {
+                  if (!isOldPasswordVerified) {
+                    if (oldPasswordController.text.isNotEmpty) {
+                      setDialogState(() => isOldPasswordVerified = true);
+                    }
+                  } else {
+                    final newPass = newPasswordController.text;
+                    final confirmPass = confirmPasswordController.text;
+                    if (newPass.length >= 8 && newPass == confirmPass) {
+                      context.read<AuthCubit>().changePassword(
+                        oldPasswordController.text,
+                        newPass,
+                      );
+                      Navigator.pop(ctx);
+                    } else {
+                      showNotificationDialog(
+                        context,
+                        'Lỗi',
+                        'Mật khẩu không khớp hoặc quá ngắn (tối thiểu 8 ký tự).',
+                        kRose,
+                        Icons.warning_amber_rounded,
+                      );
+                    }
+                  }
+                },
+                child: Text(
+                  isOldPasswordVerified ? 'CẬP NHẬT' : 'TIẾP TỤC',
+                  style: const TextStyle(
                     color: kPurple,
-                    text: 'Bảo mật & Mật khẩu',
-                    onTap: () {},
+                    fontWeight: FontWeight.bold,
                   ),
-                  _SettingsListItem(
-                    icon: Icons.notifications_none_outlined,
-                    color: Colors.orange,
-                    text: 'Thông báo',
-                    onTap: () {},
-                  ),
-                ],
+                ),
               ),
-              const SizedBox(height: 32),
-              _buildSettingsSection(
-                title: 'GIAO DIỆN',
-                children: [
-                  _SettingsListItem(
-                    icon: Icons.palette_outlined,
-                    color: kEmerald,
-                    text: 'Tùy chỉnh chủ đề',
-                    onTap: () {},
-                  ),
-                  _SettingsListItem(
-                    icon: Icons.translate_outlined,
-                    color: kRose,
-                    text: 'Ngôn ngữ',
-                    onTap: () {},
-                  ),
-                ],
-              ),
-              const SizedBox(height: 48),
-
-              // 4. Khối Đăng xuất
-              _LogoutButton(),
-              const SizedBox(height: 120), // Padding for floating nav bar
             ],
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildProfileCard() {
-    return BlocBuilder<AuthCubit, AuthState>(
-      builder: (context, authState) {
-        String? displayName;
-        String? subtitle;
-        String? avatarUrl;
-        if (authState is AuthSuccess) {
-          displayName = authState.user.fullName;
-          subtitle = authState.user.email;
-          avatarUrl = authState.user.avatarUrl;
-        } else {
-          final firebaseUser = FirebaseAuth.instance.currentUser;
-          displayName = firebaseUser?.displayName ?? 'Nguyễn Văn A';
-          subtitle = firebaseUser?.email ?? 'không có email';
-          avatarUrl = null;
-        }
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state is AuthPasswordChanged) {
+          // Chỉ hiển thị thông báo nếu trang này đang ở trên cùng
+          if (!(ModalRoute.of(context)?.isCurrent ?? false)) return;
 
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(32),
-            boxShadow: [
-              BoxShadow(
-                color: kCyan.withValues(alpha: 0.1),
-                blurRadius: 30,
-                spreadRadius: 0,
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(32),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: kGlassBg,
-                  borderRadius: BorderRadius.circular(32),
-                  border: Border.all(color: kCyan.withValues(alpha: 0.2)),
-                ),
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    // Lõi năng lượng bên trong
-                    Positioned(
-                      top: -50,
-                      left: -50,
-                      child: Container(
-                        width: 150,
-                        height: 150,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: kCyan.withValues(alpha: 0.15),
+          showNotificationDialog(
+            context,
+            'Thành công',
+            'Chúc mừng! Mật khẩu đã được đổi thành công.',
+            kEmerald,
+            Icons.check_circle_outline,
+          );
+        } else if (state is AuthError) {
+          if (!(ModalRoute.of(context)?.isCurrent ?? false)) return;
+
+          showNotificationDialog(
+            context,
+            'Lỗi',
+            state.message,
+            kRose,
+            Icons.error_outline,
+          );
+        }
+      },
+      builder: (context, authState) {
+        return Stack(
+          children: [
+            Scaffold(
+              backgroundColor: kBgColor,
+              body: SafeArea(
+                bottom: false,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0,
+                    vertical: 16.0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 1. Khối Tiêu đề
+                      const Text(
+                        'Cài đặt',
+                        style: TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                          color: kTextPrimary,
+                          letterSpacing: -1.2, // tracking-tight
                         ),
                       ),
+                      const SizedBox(height: 32),
+
+                      // 2. Thẻ Hồ sơ Cá nhân
+                      _buildProfileCard(authState),
+                      const SizedBox(height: 48),
+
+                      // 3. Khối Danh mục Tùy chỉnh
+                      _buildSettingsSection(
+                        title: 'TÀI KHOẢN',
+                        children: [
+                          _SettingsListItem(
+                            icon: Icons.person_outline,
+                            color: kCyan,
+                            text: 'Thông tin cá nhân',
+                            onTap: () {
+                              if (authState is AuthSuccess) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ProfilePage(
+                                      currentUser: authState.user,
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                          _SettingsListItem(
+                            icon: Icons.lock_outline,
+                            color: kPurple,
+                            text: 'Bảo mật & Mật khẩu',
+                            onTap: () =>
+                                _showPasswordResetDialog(context, authState),
+                          ),
+                          _SettingsListItem(
+                            icon: Icons.notifications_none_outlined,
+                            color: Colors.orange,
+                            text: 'Thông báo',
+                            onTap: () {
+                              if (authState is AuthSuccess) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => NotificationsPage(
+                                      userId: authState.user.uid,
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                      _buildSettingsSection(
+                        title: 'GIAO DIỆN',
+                        children: [
+                          _SettingsListItem(
+                            icon: Icons.palette_outlined,
+                            color: kEmerald,
+                            text: 'Tùy chỉnh chủ đề',
+                            onTap: () {},
+                          ),
+                          _SettingsListItem(
+                            icon: Icons.translate_outlined,
+                            color: kRose,
+                            text: 'Ngôn ngữ',
+                            onTap: () {},
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 48),
+
+                      // 4. Khối Đăng xuất
+                      _LogoutButton(),
+                      const SizedBox(
+                        height: 120,
+                      ), // Padding for floating nav bar
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            if (authState is AuthLoading)
+              Container(
+                color: kBgColor.withValues(alpha: 0.7),
+                child: const Center(
+                  child: CircularProgressIndicator(color: kPurple),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildProfileCard(AuthState authState) {
+    String? displayName;
+    String? subtitle;
+    String? avatarUrl;
+    if (authState is AuthSuccess) {
+      displayName = authState.user.fullName;
+      subtitle = authState.user.email;
+      avatarUrl = authState.user.avatarUrl;
+    } else {
+      final firebaseUser = FirebaseAuth.instance.currentUser;
+      displayName = firebaseUser?.displayName ?? 'Người dùng';
+      subtitle = firebaseUser?.email ?? 'không có email';
+      avatarUrl = null;
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: kCyan.withValues(alpha: 0.1),
+            blurRadius: 30,
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(32),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: kGlassBg,
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(color: kCyan.withValues(alpha: 0.2)),
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Lõi năng lượng bên trong
+                Positioned(
+                  top: -50,
+                  left: -50,
+                  child: Container(
+                    width: 150,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: kCyan.withValues(alpha: 0.15),
                     ),
-                    Column(
+                  ),
+                ),
+                Column(
+                  children: [
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            // Avatar
-                            Container(
-                              padding: const EdgeInsets.all(2),
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  colors: [kCyan, kPurple],
-                                ),
-                              ),
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: kBgColor,
-                                ),
-                                child: ClipOval(
-                                  child:
-                                      (avatarUrl == null || avatarUrl.isEmpty)
-                                      ? Image.asset(
-                                          'assets/app_icon.png',
-                                          width: 56,
-                                          height: 56,
-                                        )
-                                      : Image.network(
-                                          avatarUrl,
-                                          width: 56,
-                                          height: 56,
-                                          fit: BoxFit.cover,
-                                        ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            // Tên & ID
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    displayName,
-                                    style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: kTextPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    subtitle,
-                                    style: TextStyle(
-                                      fontFamily: 'monospace', // font-mono
-                                      color: kTextSecondary,
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        // Huy hiệu xác thực
+                        // Avatar
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
+                          padding: const EdgeInsets.all(2),
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(colors: [kCyan, kPurple]),
                           ),
-                          decoration: BoxDecoration(
-                            color: kEmerald.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: kEmerald.withValues(alpha: 0.3),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: kBgColor,
+                            ),
+                            child: ClipOval(
+                              child: (avatarUrl == null || avatarUrl.isEmpty)
+                                  ? Image.asset(
+                                      'assets/app_icon.png',
+                                      width: 56,
+                                      height: 56,
+                                    )
+                                  : Image.network(
+                                      avatarUrl,
+                                      width: 56,
+                                      height: 56,
+                                      fit: BoxFit.cover,
+                                    ),
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                        ),
+                        const SizedBox(width: 16),
+                        // Tên & ID
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              FadeTransition(
-                                opacity: _pulseController,
-                                child: Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(
-                                    color: kEmerald,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(color: kEmerald, blurRadius: 4),
-                                    ],
-                                  ),
+                              Text(
+                                displayName,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: kTextPrimary,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'Đã xác thực',
-                                style: TextStyle(
-                                  color: kEmerald,
-                                  fontWeight: FontWeight.bold,
+                              const SizedBox(height: 4),
+                              Text(
+                                subtitle,
+                                style: const TextStyle(
+                                  fontFamily: 'monospace', // font-mono
+                                  color: kTextSecondary,
+                                  letterSpacing: 1.2,
                                 ),
                               ),
                             ],
@@ -277,13 +447,55 @@ class _SettingsPageState extends State<SettingsPage>
                         ),
                       ],
                     ),
+                    const SizedBox(height: 24),
+                    // Huy hiệu xác thực
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: kEmerald.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: kEmerald.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FadeTransition(
+                            opacity: _pulseController,
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: kEmerald,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(color: kEmerald, blurRadius: 4),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Đã xác thực',
+                            style: TextStyle(
+                              color: kEmerald,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-              ),
+              ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 

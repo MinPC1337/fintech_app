@@ -22,4 +22,9 @@ abstract class AuthRepository {
   });
 
   Future<Either<Failure, void>> resetPassword({required String email});
+
+  Future<Either<Failure, void>> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  });
 }

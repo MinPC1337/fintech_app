@@ -73,56 +73,10 @@ class _LoginPageState extends State<LoginPage> {
       listener: (context, state) {
         if (state is AuthSuccess) {
           _saveEmail(emailController.text.trim());
-          showDialog(
-            context: context,
-            barrierDismissible: false, // Không cho phép bấm ra ngoài để đóng
-            builder: (ctx) => Dialog(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: kBgColor,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: kEmerald.withValues(alpha: 0.3)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: kEmerald.withValues(alpha: 0.2),
-                      blurRadius: 20,
-                      spreadRadius: 5,
-                    ),
-                  ],
-                ),
-                child: const Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.check_circle_outline, color: kEmerald, size: 64),
-                    SizedBox(height: 16),
-                    Text(
-                      'Đăng nhập thành công!',
-                      style: TextStyle(
-                        color: kTextPrimary,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const MainPage()),
           );
-
-          // Đợi 1.5 giây sau đó tự động điều hướng
-          Future.delayed(const Duration(milliseconds: 1500), () {
-            if (context.mounted) {
-              Navigator.of(context).pop(); // Tắt hộp thoại thông báo
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const MainPage()),
-              );
-            }
-          });
         } else if (state is AuthPasswordResetSent) {
           showNotificationDialog(
             context,

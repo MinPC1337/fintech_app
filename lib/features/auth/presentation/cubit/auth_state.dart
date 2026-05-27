@@ -32,6 +32,10 @@ class AuthVerificationRequired extends AuthState {
 
 class AuthPasswordResetSent extends AuthState {}
 
+class AuthPasswordChanged extends AuthSuccess {
+  const AuthPasswordChanged({required super.user});
+}
+
 class AuthError extends AuthState {
   final String message;
 
