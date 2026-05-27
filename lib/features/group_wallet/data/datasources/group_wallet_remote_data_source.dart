@@ -107,7 +107,7 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
       'isPersonal': false,
       'status': 'active',
       'createdAt': FieldValue.serverTimestamp(),
-      'accentArgb': ?accentArgb,
+      'accentArgb': accentArgb,
     };
     await ref.set(data);
     debugPrint('[GROUP_WALLET] Created group wallet: ${ref.id}');
@@ -138,6 +138,8 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
               data['createdAt'] = (data['createdAt'] as Timestamp)
                   .toDate()
                   .toIso8601String();
+            } else {
+              data['createdAt'] = DateTime.now().toIso8601String();
             }
             return WalletModel.fromJson({...data, 'id': doc.id});
           }).toList();
@@ -153,6 +155,8 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
         data['createdAt'] = (data['createdAt'] as Timestamp)
             .toDate()
             .toIso8601String();
+      } else {
+        data['createdAt'] = DateTime.now().toIso8601String();
       }
       return WalletModel.fromJson({...data, 'id': doc.id});
     });
@@ -314,6 +318,8 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
                 data['createdAt'] = (data['createdAt'] as Timestamp)
                     .toDate()
                     .toIso8601String();
+              } else if (data['createdAt'] == null) {
+                data['createdAt'] = DateTime.now().toIso8601String();
               }
               return InvitationModel.fromJson({...data, 'id': doc.id});
             }).toList();
@@ -636,6 +642,8 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
               data['createdAt'] = (data['createdAt'] as Timestamp)
                   .toDate()
                   .toIso8601String();
+            } else if (data['createdAt'] == null) {
+              data['createdAt'] = DateTime.now().toIso8601String();
             }
             return DebtModel.fromJson({...data, 'id': doc.id});
           }).toList();

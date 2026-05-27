@@ -36,7 +36,12 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitialized) {
-      context.read<GroupWalletCubit>().selectWallet(widget.walletId);
+      // Chỉ gọi selectWallet nếu state hiện tại chưa có wallet này
+      final state = context.read<GroupWalletCubit>().state;
+      if (state is! GroupWalletLoaded ||
+          state.selectedWallet?.id != widget.walletId) {
+        context.read<GroupWalletCubit>().selectWallet(widget.walletId);
+      }
       _hasInitialized = true;
     }
   }
@@ -113,8 +118,21 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
             }
 
             final loaded = state as GroupWalletLoaded;
-            final wallet = loaded.selectedWallet;
+
+            // Tìm ví trong selectedWallet hoặc trong danh sách ví đã load một cách an toàn
+            WalletEntity? wallet = loaded.selectedWallet;
+
             if (wallet == null || wallet.id != widget.walletId) {
+              try {
+                wallet = loaded.wallets.firstWhere(
+                  (w) => w.id == widget.walletId,
+                );
+              } catch (_) {
+                wallet = null;
+              }
+            }
+
+            if (wallet == null) {
               return Scaffold(
                 backgroundColor: kBgColor,
                 appBar: AppBar(
@@ -140,18 +158,18 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
             final members = wallet.members;
             final walletTransactions = loaded.transactions.where((tx) {
               if (tx.type == 'Income') {
-                return tx.toWalletId == wallet.id;
+                return tx.toWalletId == wallet!.id;
               }
               if (tx.type == 'Expense') {
-                return tx.fromWalletId == wallet.id;
+                return tx.fromWalletId == wallet!.id;
               }
               return false;
             }).toList();
             final walletDebts = loaded.debts
-                .where((debt) => debt.walletId == wallet.id)
+                .where((debt) => debt.walletId == wallet!.id)
                 .toList();
             final walletInvitations = loaded.pendingInvitations
-                .where((invite) => invite.walletId == wallet.id)
+                .where((invite) => invite.walletId == wallet!.id)
                 .toList();
 
             return Scaffold(
@@ -264,21 +282,21 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                             icon: Icons.person_add_rounded,
                             color: kCyan,
                             onTap: () =>
-                                _showInviteMemberSheet(context, wallet.id),
+                                _showInviteMemberSheet(context, wallet!.id),
                           ),
                           _ActionChip(
                             label: 'Nạp quỹ',
                             icon: Icons.arrow_downward_rounded,
                             color: kEmerald,
                             onTap: () =>
-                                _showContributeSheet(context, wallet.id),
+                                _showContributeSheet(context, wallet!.id),
                           ),
                           _ActionChip(
                             label: 'Chia tiền',
                             icon: Icons.account_balance_outlined,
                             color: kPurple,
                             onTap: () =>
-                                _showSplitExpenseSheet(context, wallet),
+                                _showSplitExpenseSheet(context, wallet!),
                           ),
                           if (isOwner)
                             _ActionChip(
@@ -286,7 +304,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                               icon: Icons.arrow_upward_rounded,
                               color: kRose,
                               onTap: () =>
-                                  _showWithdrawSheet(context, wallet.id),
+                                  _showWithdrawSheet(context, wallet!.id),
                             ),
                           if (isOwner && wallet.status != 'closed')
                             _ActionChip(
@@ -294,7 +312,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                               icon: Icons.lock_open_rounded,
                               color: kTextSecondary,
                               onTap: () =>
-                                  _confirmCloseGroup(context, wallet.id),
+                                  _confirmCloseGroup(context, wallet!.id),
                             ),
                         ],
                       ),
@@ -316,7 +334,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                               MaterialPageRoute(
                                 builder: (_) => _GroupWalletMembersPage(
                                   members: members,
-                                  ownerId: wallet.ownerId,
+                                  ownerId: wallet!.ownerId,
                                 ),
                               ),
                             ),
@@ -341,13 +359,13 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                           itemBuilder: (context, index) {
                             return _MemberAvatarTile(
                               memberId: members[index],
-                              isOwner: members[index] == wallet.ownerId,
+                              isOwner: members[index] == wallet!.ownerId,
                               onTap: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => _GroupWalletMemberDetailPage(
                                     memberId: members[index],
-                                    ownerId: wallet.ownerId,
+                                    ownerId: wallet!.ownerId,
                                   ),
                                 ),
                               ),
@@ -371,7 +389,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                             .map(
                               (tx) => _TransactionTile(
                                 transaction: tx,
-                                walletId: wallet.id,
+                                walletId: wallet!.id,
                                 formatMoney: _formatMoney,
                               ),
                             ),
@@ -416,7 +434,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                         ...walletInvitations.map(
                           (invite) => _InvitationTile(
                             invitation: invite,
-                            walletName: wallet.name,
+                            walletName: wallet!.name,
                             onAccept: () => context
                                 .read<GroupWalletCubit>()
                                 .acceptInvitation(invite.id),
@@ -1337,7 +1355,12 @@ class _NeoField extends StatelessWidget {
           hintText: hint,
           hintStyle: TextStyle(color: kTextSecondary.withValues(alpha: 0.7)),
           prefixIconConstraints: const BoxConstraints(minWidth: 40),
-          prefixIcon: prefix == null ? null : Center(child: prefix),
+          prefixIcon: prefix,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+          isDense: true,
         ),
       ),
     );

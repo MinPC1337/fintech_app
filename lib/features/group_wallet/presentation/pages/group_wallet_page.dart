@@ -256,9 +256,7 @@ class _GroupWalletView extends StatelessWidget {
   }
 
   void _openCreateGroupSheet(BuildContext context) {
-    final nameController = TextEditingController();
     final groupCubit = context.read<GroupWalletCubit>();
-    Color selectedAccent = kCyan;
 
     showModalBottomSheet(
       context: context,
@@ -269,57 +267,17 @@ class _GroupWalletView extends StatelessWidget {
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
           ),
-          child: _SheetContainer(
-            title: 'Tạo ví nhóm',
-            child: StatefulBuilder(
-              builder: (context, setState) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _NeoField(
-                      controller: nameController,
-                      hint: 'Tên ví nhóm (vd: Nhà chung 2026)',
-                      prefix: Icon(
-                        Icons.group_rounded,
-                        color: selectedAccent,
-                        size: 18,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    _PaletteRow(
-                      selected: selectedAccent,
-                      onPick: (color) => setState(() => selectedAccent = color),
-                    ),
-                    const SizedBox(height: 16),
-                    _SheetButton(
-                      label: 'Tạo nhóm',
-                      color: selectedAccent,
-                      onTap: () async {
-                        final name = nameController.text.trim();
-                        if (name.isEmpty) return;
-                        final success = await groupCubit.createGroupWallet(
-                          name,
-                          selectedAccent.toARGB32(),
-                        );
-                        if (success && sheetContext.mounted) {
-                          Navigator.pop(sheetContext);
-                        }
-                      },
-                    ),
-                  ],
-                );
-              },
-            ),
+          child: _CreateGroupSheetContent(
+            groupCubit: groupCubit,
+            sheetContext: sheetContext,
           ),
         );
       },
-    ).whenComplete(nameController.dispose);
+    );
   }
 
   void _openWalletDetail(BuildContext context, WalletEntity wallet) {
     final groupCubit = context.read<GroupWalletCubit>();
-    groupCubit.selectWallet(wallet.id);
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -340,6 +298,139 @@ class _GroupWalletView extends StatelessWidget {
           value: groupCubit,
           child: const PendingInvitationsPage(),
         ),
+      ),
+    );
+  }
+}
+
+class _CreateGroupSheetContent extends StatefulWidget {
+  const _CreateGroupSheetContent({
+    required this.groupCubit,
+    required this.sheetContext,
+  });
+
+  final GroupWalletCubit groupCubit;
+  final BuildContext sheetContext;
+
+  @override
+  State<_CreateGroupSheetContent> createState() =>
+      _CreateGroupSheetContentState();
+}
+
+class _CreateGroupSheetContentState extends State<_CreateGroupSheetContent> {
+  late TextEditingController nameController;
+  Color selectedAccent = kCyan;
+
+  @override
+  void initState() {
+    super.initState();
+    nameController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _SheetContainer(
+      title: 'Tạo ví nhóm mới',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Mô tả
+          Text(
+            'Đặt tên ví nhóm để bắt đầu quản lý quỹ chung.',
+            style: TextStyle(
+              color: kTextSecondary.withValues(alpha: 0.8),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          _NeoField(
+            label: 'Tên ví nhóm',
+            controller: nameController,
+            hint: 'Ví dụ: Nhà chung 2026, Du lịch...',
+            prefix: Icon(Icons.group_rounded, color: selectedAccent, size: 18),
+          ),
+          const SizedBox(height: 28),
+
+          // Chọn màu
+          Text(
+            'Chọn màu sắc',
+            style: TextStyle(
+              color: kTextSecondary.withValues(alpha: 0.9),
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.03),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: selectedAccent.withValues(alpha: 0.2),
+                    border: Border.all(color: selectedAccent, width: 2),
+                  ),
+                  child: Icon(
+                    Icons.palette_rounded,
+                    color: selectedAccent,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _PaletteRow(
+                    selected: selectedAccent,
+                    onPick: (color) => setState(() => selectedAccent = color),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Nút tạo
+          _SheetButton(
+            label: 'Tạo ví nhóm',
+            color: selectedAccent,
+            onTap: () async {
+              final name = nameController.text.trim();
+              if (name.isEmpty) {
+                ScaffoldMessenger.of(widget.sheetContext).showSnackBar(
+                  const SnackBar(
+                    content: Text('Vui lòng nhập tên ví nhóm'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+                return;
+              }
+              final success = await widget.groupCubit.createGroupWallet(
+                name,
+                selectedAccent.toARGB32(),
+              );
+              if (success && widget.sheetContext.mounted) {
+                Navigator.pop(widget.sheetContext);
+              }
+            },
+          ),
+        ],
       ),
     );
   }
@@ -772,33 +863,57 @@ class _SheetContainer extends StatelessWidget {
 }
 
 class _NeoField extends StatelessWidget {
-  const _NeoField({required this.controller, required this.hint, this.prefix});
+  const _NeoField({
+    required this.controller,
+    required this.hint,
+    this.prefix,
+    this.label,
+  });
 
   final TextEditingController controller;
   final String hint;
   final Widget? prefix;
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+    return TextField(
+      controller: controller,
+      style: const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.w600,
+        fontSize: 16,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: TextField(
-        controller: controller,
-        style: const TextStyle(
-          color: kTextPrimary,
-          fontWeight: FontWeight.w700,
+      cursorColor: Colors.white,
+      cursorWidth: 2.5,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: kCyan, fontSize: 14),
+        hintText: hint,
+        hintStyle: TextStyle(
+          color: Colors.white.withValues(alpha: 0.35),
+          fontWeight: FontWeight.w400,
         ),
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          hintText: hint,
-          hintStyle: TextStyle(color: kTextSecondary.withValues(alpha: 0.7)),
-          prefixIconConstraints: const BoxConstraints(minWidth: 40),
-          prefixIcon: prefix == null ? null : Center(child: prefix),
+        floatingLabelBehavior: FloatingLabelBehavior.always,
+        prefixIcon: prefix,
+        prefixIconConstraints: const BoxConstraints(minWidth: 40),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        isDense: true,
+        filled: true,
+        fillColor: kThemeSurfaceSecondary.withValues(alpha: 0.6),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: kCyan.withValues(alpha: 0.8),
+            width: 1.5,
+          ),
         ),
       ),
     );
