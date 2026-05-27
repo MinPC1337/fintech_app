@@ -4,7 +4,9 @@ class InvitationModel extends InvitationEntity {
   const InvitationModel({
     required super.id,
     required super.walletId,
+    required super.walletName,
     required super.senderId,
+    required super.senderEmail,
     required super.receiverEmail,
     required super.status,
     super.createdAt,
@@ -14,13 +16,15 @@ class InvitationModel extends InvitationEntity {
     return InvitationModel(
       id: json['id'] ?? '',
       walletId: json['walletId'] ?? '',
+      walletName: json['walletName'] ?? '',
       senderId: json['senderId'] ?? '',
+      senderEmail: json['senderEmail'] ?? '',
       receiverEmail: json['receiverEmail'] ?? '',
       status: _parseStatus(json['status']),
       createdAt: json['createdAt'] != null
           ? (json['createdAt'] is DateTime
-              ? json['createdAt'] as DateTime
-              : DateTime.tryParse(json['createdAt'].toString()))
+                ? json['createdAt'] as DateTime
+                : DateTime.tryParse(json['createdAt'].toString()))
           : null,
     );
   }

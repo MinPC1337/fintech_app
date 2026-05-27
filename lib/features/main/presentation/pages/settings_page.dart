@@ -118,16 +118,16 @@ class _SettingsPageState extends State<SettingsPage>
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, authState) {
         String? displayName;
-        String? uid;
+        String? subtitle;
         String? avatarUrl;
         if (authState is AuthSuccess) {
           displayName = authState.user.fullName;
-          uid = authState.user.uid;
+          subtitle = authState.user.email;
           avatarUrl = authState.user.avatarUrl;
         } else {
           final firebaseUser = FirebaseAuth.instance.currentUser;
           displayName = firebaseUser?.displayName ?? 'Nguyễn Văn A';
-          uid = firebaseUser?.uid ?? 'ID: 2XF9-K4P1-L8D7';
+          subtitle = firebaseUser?.email ?? 'không có email';
           avatarUrl = null;
         }
 
@@ -221,9 +221,7 @@ class _SettingsPageState extends State<SettingsPage>
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    uid.length >= 12
-                                        ? uid.substring(0, 12)
-                                        : 'ID: 2XF9-K4P1-L8D7',
+                                    subtitle,
                                     style: TextStyle(
                                       fontFamily: 'monospace', // font-mono
                                       color: kTextSecondary,

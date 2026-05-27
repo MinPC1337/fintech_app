@@ -98,13 +98,8 @@ class PendingInvitationsPage extends StatelessWidget {
                         const SizedBox(height: 14),
                     itemBuilder: (context, index) {
                       final invite = invitations[index];
-                      final walletName = loaded.wallets
-                          .where((wallet) => wallet.id == invite.walletId)
-                          .map((wallet) => wallet.name)
-                          .firstWhere(
-                            (name) => name.isNotEmpty,
-                            orElse: () => invite.walletId,
-                          );
+                      final walletName =
+                          invite.walletName; // Sử dụng trực tiếp từ lời mời
 
                       return _InvitationCard(
                         invitation: invite,
@@ -151,7 +146,7 @@ class _InvitationCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            walletName,
+            'Lời mời tham gia nhóm "$walletName"',
             style: const TextStyle(
               color: kTextPrimary,
               fontWeight: FontWeight.bold,
@@ -160,7 +155,7 @@ class _InvitationCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'Từ: ${invitation.senderId}',
+            'Từ: ${invitation.senderEmail}',
             style: TextStyle(
               color: kTextSecondary.withValues(alpha: 0.85),
               fontSize: 13,

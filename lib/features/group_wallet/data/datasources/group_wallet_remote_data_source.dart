@@ -210,7 +210,9 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
       throw Exception('Đã gửi lời mời cho người dùng này');
     }
 
-    final senderName = await _getUserFullName(senderId);
+    final senderDoc = await firestore.collection('users').doc(senderId).get();
+    final senderEmail = senderDoc.data()?['email'] ?? '';
+    final senderName = senderDoc.data()?['fullName'] ?? 'Người dùng';
     final walletName = walletDoc.data()?['name'] ?? 'Ví nhóm';
 
     // Tạo invitation
@@ -218,7 +220,9 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
     await ref.set({
       'id': ref.id,
       'walletId': walletId,
+      'walletName': walletName, // Lưu thêm tên ví để hiển thị cho người nhận
       'senderId': senderId,
+      'senderEmail': senderEmail,
       'receiverEmail': receiverEmail,
       'status': 'pending',
       'createdAt': FieldValue.serverTimestamp(),

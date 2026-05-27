@@ -26,7 +26,7 @@ class RegisterPage extends StatelessWidget {
               showNotificationDialog(
                 context,
                 'Xác thực Email',
-                'Đăng ký thành công! Một email xác thực đã được gửi đến ${state.user.email}. Vui lòng kiểm tra hộp thư của bạn để hoàn tất.',
+                'Đăng ký thành công! Một email xác thực đã được gửi đến ${state.user.email}.\n\nLưu ý: Nếu không thấy trong Hộp thư đến, vui lòng kiểm tra cả thư mục Thư rác (Spam).',
                 kEmerald,
                 Icons.mark_email_unread_outlined,
                 onOkPressed: () {
