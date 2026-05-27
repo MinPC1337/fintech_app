@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../auth/presentation/cubit/auth_state.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -15,7 +16,6 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage>
     with TickerProviderStateMixin {
-  final User? currentUser = FirebaseAuth.instance.currentUser;
   late final AnimationController _pulseController;
 
   @override
@@ -115,92 +115,163 @@ class _SettingsPageState extends State<SettingsPage>
   }
 
   Widget _buildProfileCard() {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: kCyan.withValues(alpha: 0.1),
-            blurRadius: 30,
-            spreadRadius: 0,
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, authState) {
+        String? displayName;
+        String? uid;
+        String? avatarUrl;
+        if (authState is AuthSuccess) {
+          displayName = authState.user.fullName;
+          uid = authState.user.uid;
+          avatarUrl = authState.user.avatarUrl;
+        } else {
+          final firebaseUser = FirebaseAuth.instance.currentUser;
+          displayName = firebaseUser?.displayName ?? 'Nguyễn Văn A';
+          uid = firebaseUser?.uid ?? 'ID: 2XF9-K4P1-L8D7';
+          avatarUrl = null;
+        }
+
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: [
+              BoxShadow(
+                color: kCyan.withValues(alpha: 0.1),
+                blurRadius: 30,
+                spreadRadius: 0,
+              ),
+            ],
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: kGlassBg,
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(color: kCyan.withValues(alpha: 0.2)),
-            ),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                // Lõi năng lượng bên trong
-                Positioned(
-                  top: -50,
-                  left: -50,
-                  child: Container(
-                    width: 150,
-                    height: 150,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: kCyan.withValues(alpha: 0.15),
-                    ),
-                  ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(32),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: kGlassBg,
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(color: kCyan.withValues(alpha: 0.2)),
                 ),
-                Column(
+                child: Stack(
+                  clipBehavior: Clip.none,
                   children: [
-                    Row(
-                      children: [
-                        // Avatar
-                        Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(colors: [kCyan, kPurple]),
-                          ),
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: kBgColor,
-                            ),
-                            child: ClipOval(
-                              child: Image.asset(
-                                'assets/app_icon.png',
-                                width: 56,
-                                height: 56,
-                              ),
-                            ),
-                          ),
+                    // Lõi năng lượng bên trong
+                    Positioned(
+                      top: -50,
+                      left: -50,
+                      child: Container(
+                        width: 150,
+                        height: 150,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: kCyan.withValues(alpha: 0.15),
                         ),
-                        const SizedBox(width: 16),
-                        // Tên & ID
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                currentUser?.displayName ?? 'Nguyễn Văn A',
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: kTextPrimary,
+                      ),
+                    ),
+                    Column(
+                      children: [
+                        Row(
+                          children: [
+                            // Avatar
+                            Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  colors: [kCyan, kPurple],
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                currentUser?.uid.substring(0, 12) ??
-                                    'ID: 2XF9-K4P1-L8D7',
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: kBgColor,
+                                ),
+                                child: ClipOval(
+                                  child:
+                                      (avatarUrl == null || avatarUrl.isEmpty)
+                                      ? Image.asset(
+                                          'assets/app_icon.png',
+                                          width: 56,
+                                          height: 56,
+                                        )
+                                      : Image.network(
+                                          avatarUrl,
+                                          width: 56,
+                                          height: 56,
+                                          fit: BoxFit.cover,
+                                        ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            // Tên & ID
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    displayName,
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: kTextPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    uid.length >= 12
+                                        ? uid.substring(0, 12)
+                                        : 'ID: 2XF9-K4P1-L8D7',
+                                    style: TextStyle(
+                                      fontFamily: 'monospace', // font-mono
+                                      color: kTextSecondary,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        // Huy hiệu xác thực
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: kEmerald.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: kEmerald.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              FadeTransition(
+                                opacity: _pulseController,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: kEmerald,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(color: kEmerald, blurRadius: 4),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Đã xác thực',
                                 style: TextStyle(
-                                  fontFamily: 'monospace', // font-mono
-                                  color: kTextSecondary,
-                                  letterSpacing: 1.2,
+                                  color: kEmerald,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ],
@@ -208,55 +279,13 @@ class _SettingsPageState extends State<SettingsPage>
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
-                    // Huy hiệu xác thực
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: kEmerald.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: kEmerald.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          FadeTransition(
-                            opacity: _pulseController,
-                            child: Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: kEmerald,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(color: kEmerald, blurRadius: 4),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'Đã xác thực',
-                            style: TextStyle(
-                              color: kEmerald,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

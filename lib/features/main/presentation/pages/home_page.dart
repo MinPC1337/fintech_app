@@ -230,24 +230,38 @@ class _HomePageState extends State<HomePage> {
                     color: kBgColor, // Nền âm bản cắt vào viền
                   ),
                   child: ClipOval(
-                    child: ColorFiltered(
-                      colorFilter: const ColorFilter.mode(
-                        Colors.grey, // Ám màu môi trường
-                        BlendMode.luminosity, // Hiệu ứng mix-blend-luminosity
-                      ),
-                      child: Image.asset(
-                        'assets/app_icon.png',
-                        width: 44,
-                        height: 44,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(
-                              Icons.person_outline,
-                              color: Colors.white,
-                              size: 40,
+                    child: (currentUser.avatarUrl.isEmpty)
+                        ? ColorFiltered(
+                            colorFilter: const ColorFilter.mode(
+                              Colors.grey, // Ám màu môi trường
+                              BlendMode
+                                  .luminosity, // Hiệu ứng mix-blend-luminosity
                             ),
-                      ),
-                    ),
+                            child: Image.asset(
+                              'assets/app_icon.png',
+                              width: 44,
+                              height: 44,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(
+                                    Icons.person_outline,
+                                    color: Colors.white,
+                                    size: 40,
+                                  ),
+                            ),
+                          )
+                        : Image.network(
+                            currentUser.avatarUrl,
+                            width: 44,
+                            height: 44,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(
+                                  Icons.person_outline,
+                                  color: Colors.white,
+                                  size: 40,
+                                ),
+                          ),
                   ),
                 ),
               ),
