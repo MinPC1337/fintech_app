@@ -7,6 +7,7 @@ import 'package:fintech_app/features/group_wallet/domain/usecases/contribute_to_
 import 'package:fintech_app/features/group_wallet/domain/usecases/create_group_wallet_usecase.dart';
 import 'package:fintech_app/features/group_wallet/domain/usecases/invite_member_usecase.dart';
 import 'package:fintech_app/features/group_wallet/domain/usecases/reject_invitation_usecase.dart';
+import 'package:fintech_app/features/group_wallet/domain/usecases/remind_debt_usecase.dart';
 import 'package:fintech_app/features/group_wallet/domain/usecases/remove_member_usecase.dart';
 import 'package:fintech_app/features/group_wallet/domain/usecases/settle_debt_usecase.dart';
 import 'package:fintech_app/features/group_wallet/domain/usecases/split_expense_usecase.dart';
@@ -20,6 +21,7 @@ import 'package:fintech_app/features/main/domain/entities/debt_entity.dart';
 import 'package:fintech_app/features/main/domain/entities/invitation_entity.dart';
 import 'package:fintech_app/features/main/domain/entities/transaction_entity.dart';
 import 'package:fintech_app/features/main/domain/entities/wallet_entity.dart';
+import 'package:fintech_app/core/utils/push_debug.dart';
 import 'package:fintech_app/features/group_wallet/presentation/cubit/group_wallet_state.dart';
 
 class GroupWalletCubit extends Cubit<GroupWalletState> {
@@ -36,6 +38,7 @@ class GroupWalletCubit extends Cubit<GroupWalletState> {
     required this.withdrawFromGroupUseCase,
     required this.splitExpenseUseCase,
     required this.settleDebtUseCase,
+    required this.remindDebtUseCase,
     required this.watchGroupTransactionsUseCase,
     required this.watchDebtsUseCase,
     required this.watchPendingInvitationsUseCase,
@@ -53,6 +56,7 @@ class GroupWalletCubit extends Cubit<GroupWalletState> {
   final WithdrawFromGroupUseCase withdrawFromGroupUseCase;
   final SplitExpenseUseCase splitExpenseUseCase;
   final SettleDebtUseCase settleDebtUseCase;
+  final RemindDebtUseCase remindDebtUseCase;
   final WatchGroupTransactionsUseCase watchGroupTransactionsUseCase;
   final WatchDebtsUseCase watchDebtsUseCase;
   final WatchPendingInvitationsUseCase watchPendingInvitationsUseCase;
@@ -272,6 +276,26 @@ class GroupWalletCubit extends Cubit<GroupWalletState> {
       },
       (_) {
         _setMessage('Thanh toán nợ thành công');
+        return true;
+      },
+    );
+  }
+
+  Future<bool> remindDebt(String debtId) async {
+    if (_userId == null) return false;
+    PushDebug.log('UI Nhắc nợ tapped', 'debtId=$debtId');
+    _setActionInProgress(true);
+    final result = await remindDebtUseCase(debtId, _userId!);
+    _setActionInProgress(false);
+    return result.fold(
+      (failure) {
+        PushDebug.fail('UI Nhắc nợ', failure.message);
+        _setMessage(failure.message);
+        return false;
+      },
+      (_) {
+        PushDebug.ok('UI Nhắc nợ', 'thành công — xem log [Push] phía trên');
+        _setMessage('Đã gửi nhắc nợ');
         return true;
       },
     );

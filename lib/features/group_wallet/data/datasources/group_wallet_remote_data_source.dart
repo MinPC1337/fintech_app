@@ -6,6 +6,7 @@ import '../../../main/data/models/wallet_model.dart';
 import '../../../main/data/models/transaction_model.dart';
 import '../../../main/data/models/invitation_model.dart';
 import '../../../main/data/models/debt_model.dart';
+import '../../domain/entities/remind_debt_result.dart';
 
 abstract class GroupWalletRemoteDataSource {
   Future<WalletModel> createGroupWallet(
@@ -53,6 +54,7 @@ abstract class GroupWalletRemoteDataSource {
   );
   Stream<List<DebtModel>> watchDebts(String walletId);
   Future<void> settleDebt(String debtId, String borrowerId);
+  Future<RemindDebtResult> remindDebt(String debtId, String lenderId);
 }
 
 class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
@@ -761,5 +763,75 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
         'type': 'transaction',
       });
     });
+  }
+
+  static const _remindCooldownHours = 24;
+
+  @override
+  Future<RemindDebtResult> remindDebt(String debtId, String lenderId) async {
+    final debtDoc = await firestore.collection('debts').doc(debtId).get();
+    if (!debtDoc.exists) {
+      throw Exception('Khoản nợ không tồn tại');
+    }
+
+    final debtData = debtDoc.data()!;
+    if (debtData['lenderId'] != lenderId) {
+      throw Exception('Bạn không có quyền nhắc khoản nợ này');
+    }
+    if (debtData['isSettled'] == true) {
+      throw Exception('Khoản nợ đã được thanh toán');
+    }
+
+    final lastReminded = debtData['lastRemindedAt'];
+    if (lastReminded is Timestamp) {
+      final diff = DateTime.now().difference(lastReminded.toDate());
+      if (diff.inHours < _remindCooldownHours) {
+        final hoursLeft = _remindCooldownHours - diff.inHours;
+        throw Exception(
+          'Vui lòng đợi $hoursLeft giờ nữa trước khi nhắc lại',
+        );
+      }
+    }
+
+    final borrowerId = debtData['borrowerId'] as String;
+    final walletId = debtData['walletId'] as String;
+    final amount = (debtData['amount'] ?? 0).toDouble();
+
+    final lenderName = await _getUserFullName(lenderId);
+    String walletName = 'Ví nhóm';
+    final walletDoc = await firestore.collection('wallets').doc(walletId).get();
+    if (walletDoc.exists) {
+      walletName = walletDoc.data()?['name'] as String? ?? walletName;
+    }
+
+    final body =
+        '$lenderName nhắc bạn trả ${amount.toStringAsFixed(0)} VNĐ ($walletName)';
+    const title = 'Nhắc thanh toán nợ';
+
+    final notifRef = firestore.collection('notifications').doc();
+    await notifRef.set({
+      'id': notifRef.id,
+      'userId': borrowerId,
+      'title': title,
+      'body': body,
+      'timestamp': FieldValue.serverTimestamp(),
+      'isRead': false,
+      'type': 'debt_reminder',
+      'debtId': debtId,
+      'walletId': walletId,
+    });
+
+    await firestore.collection('debts').doc(debtId).update({
+      'lastRemindedAt': FieldValue.serverTimestamp(),
+    });
+
+    return RemindDebtResult(
+      notificationId: notifRef.id,
+      borrowerId: borrowerId,
+      title: title,
+      body: body,
+      debtId: debtId,
+      walletId: walletId,
+    );
   }
 }

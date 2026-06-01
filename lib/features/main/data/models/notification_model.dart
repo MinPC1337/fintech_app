@@ -6,7 +6,9 @@ class NotificationModel {
   final String body;
   final DateTime timestamp;
   final bool isRead;
-  final String type; // 'transaction', 'promotion', 'system'
+  final String type;
+  final String? debtId;
+  final String? walletId;
 
   NotificationModel({
     required this.id,
@@ -15,6 +17,8 @@ class NotificationModel {
     required this.timestamp,
     this.isRead = false,
     required this.type,
+    this.debtId,
+    this.walletId,
   });
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
@@ -27,6 +31,8 @@ class NotificationModel {
           : DateTime.now(),
       isRead: json['isRead'] ?? false,
       type: json['type'] ?? 'system',
+      debtId: json['debtId'] as String?,
+      walletId: json['walletId'] as String?,
     );
   }
 
@@ -38,6 +44,8 @@ class NotificationModel {
       'timestamp': FieldValue.serverTimestamp(),
       'isRead': isRead,
       'type': type,
+      if (debtId != null) 'debtId': debtId,
+      if (walletId != null) 'walletId': walletId,
     };
   }
 }

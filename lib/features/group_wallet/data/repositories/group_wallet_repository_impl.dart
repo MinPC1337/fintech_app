@@ -1,4 +1,5 @@
 import 'package:fintech_app/features/group_wallet/data/datasources/group_wallet_remote_data_source.dart';
+import 'package:fintech_app/features/group_wallet/domain/entities/remind_debt_result.dart';
 import 'package:fintech_app/features/group_wallet/domain/repositories/group_wallet_repository.dart';
 import 'package:fintech_app/features/main/domain/entities/debt_entity.dart';
 import 'package:fintech_app/features/main/domain/entities/invitation_entity.dart';
@@ -89,6 +90,11 @@ class GroupWalletRepositoryImpl implements GroupWalletRepository {
   @override
   Future<void> settleDebt(String debtId, String borrowerId) async {
     await remoteDataSource.settleDebt(debtId, borrowerId);
+  }
+
+  @override
+  Future<RemindDebtResult> remindDebt(String debtId, String lenderId) async {
+    return remoteDataSource.remindDebt(debtId, lenderId);
   }
 
   @override
