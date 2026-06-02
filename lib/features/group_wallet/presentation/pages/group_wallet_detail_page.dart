@@ -433,6 +433,13 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                                       .read<GroupWalletCubit>()
                                       .settleDebt(debt.id)
                                 : null,
+                            onRemind:
+                                debt.lenderId == authState.user.uid &&
+                                    !debt.isSettled
+                                ? () => context
+                                      .read<GroupWalletCubit>()
+                                      .remindDebt(debt.id)
+                                : null,
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -1039,12 +1046,14 @@ class _DebtTile extends StatelessWidget {
     required this.currentUserId,
     required this.formatMoney,
     this.onSettle,
+    this.onRemind,
   });
 
   final DebtEntity debt;
   final String currentUserId;
   final String Function(double) formatMoney;
   final VoidCallback? onSettle;
+  final VoidCallback? onRemind;
 
   @override
   Widget build(BuildContext context) {
@@ -1107,6 +1116,30 @@ class _DebtTile extends StatelessWidget {
               ],
             ),
           ),
+          if (onRemind != null) ...[
+            GestureDetector(
+              onTap: onRemind,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: kCyan.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Text(
+                  'Nhắc nợ',
+                  style: TextStyle(
+                    color: kCyan,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
           if (onSettle != null)
             GestureDetector(
               onTap: onSettle,
@@ -1124,6 +1157,7 @@ class _DebtTile extends StatelessWidget {
                   style: TextStyle(
                     color: kEmerald,
                     fontWeight: FontWeight.bold,
+                    fontSize: 12,
                   ),
                 ),
               ),

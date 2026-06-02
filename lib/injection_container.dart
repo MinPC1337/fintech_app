@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'features/auth/data/datasources/auth_remote_data_source.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
@@ -11,7 +12,11 @@ import 'features/auth/domain/usecases/update_profile_usecase.dart';
 import 'features/auth/domain/usecases/reset_password_usecase.dart';
 import 'features/auth/presentation/cubit/auth_cubit.dart';
 
+import 'core/config/push_config.dart';
+import 'core/network/push_api_client.dart';
 import 'core/services/local_notification_service.dart';
+import 'core/services/push_notification_service.dart';
+import 'core/utils/push_debug.dart';
 import 'features/main/data/datasources/notification_remote_data_source.dart';
 import 'features/main/data/datasources/wallet_remote_data_source.dart';
 import 'features/main/data/datasources/budget_remote_data_source.dart';
@@ -35,6 +40,7 @@ import 'features/group_wallet/domain/usecases/contribute_to_group_usecase.dart';
 import 'features/group_wallet/domain/usecases/create_group_wallet_usecase.dart';
 import 'features/group_wallet/domain/usecases/invite_member_usecase.dart';
 import 'features/group_wallet/domain/usecases/reject_invitation_usecase.dart';
+import 'features/group_wallet/domain/usecases/remind_debt_usecase.dart';
 import 'features/group_wallet/domain/usecases/remove_member_usecase.dart';
 import 'features/group_wallet/domain/usecases/settle_debt_usecase.dart';
 import 'features/group_wallet/domain/usecases/split_expense_usecase.dart';
@@ -64,6 +70,7 @@ Future<void> init() async {
       registerUseCase: sl(),
       updateProfileUseCase: sl(),
       resetPasswordUseCase: sl(),
+      pushNotificationService: sl(),
     ),
   );
 
@@ -134,6 +141,10 @@ Future<void> init() async {
     () => SplitExpenseUseCase(sl()),
   );
   sl.registerLazySingleton<SettleDebtUseCase>(() => SettleDebtUseCase(sl()));
+  sl.registerLazySingleton<RemindDebtUseCase>(
+    () => RemindDebtUseCase(sl(), sl()),
+  );
+  sl.registerLazySingleton(() => PushApiClient());
   sl.registerLazySingleton<WatchGroupTransactionsUseCase>(
     () => WatchGroupTransactionsUseCase(sl()),
   );
@@ -177,6 +188,7 @@ Future<void> init() async {
       withdrawFromGroupUseCase: sl(),
       splitExpenseUseCase: sl(),
       settleDebtUseCase: sl(),
+      remindDebtUseCase: sl(),
       watchGroupTransactionsUseCase: sl(),
       watchDebtsUseCase: sl(),
       watchPendingInvitationsUseCase: sl(),
@@ -187,6 +199,23 @@ Future<void> init() async {
   final localNotif = LocalNotificationService();
   await localNotif.init();
   sl.registerLazySingleton(() => localNotif);
+
+  final pushNotif = PushNotificationService(
+    messaging: FirebaseMessaging.instance,
+    firestore: sl(),
+    localNotificationService: localNotif,
+  );
+  await pushNotif.init();
+  sl.registerLazySingleton(() => pushNotif);
+
+  if (PushConfig.isConfigured) {
+    PushDebug.ok('PUSH_WORKER_URL', PushConfig.workerUrl);
+  } else {
+    PushDebug.warn(
+      'PUSH_WORKER_URL',
+      'Chưa cấu hình — chỉ có inbox Firestore, không push OS',
+    );
+  }
 
   //! Core
 

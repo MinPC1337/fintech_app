@@ -1,0 +1,10 @@
+name = "fintech-push"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+[vars]
+FIREBASE_PROJECT_ID = "fintechda-cfba5"
+
+# Secret (set via CLI, do not commit):
+# npx wrangler secret put FIREBASE_SERVICE_ACCOUNT_JSON
+# Paste the full service account JSON from Firebase Console.

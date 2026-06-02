@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../../core/services/push_notification_service.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
 import '../../domain/usecases/update_profile_usecase.dart';
@@ -11,12 +12,14 @@ class AuthCubit extends Cubit<AuthState> {
   final RegisterUseCase registerUseCase;
   final UpdateProfileUseCase updateProfileUseCase;
   final ResetPasswordUseCase resetPasswordUseCase;
+  final PushNotificationService pushNotificationService;
 
   AuthCubit({
     required this.loginUseCase,
     required this.registerUseCase,
     required this.updateProfileUseCase,
     required this.resetPasswordUseCase,
+    required this.pushNotificationService,
   }) : super(AuthInitial());
 
   Future<void> login(String email, String password) async {
@@ -92,6 +95,12 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> logout() async {
     emit(AuthLoading());
     try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        try {
+          await pushNotificationService.clearTokenForUser(uid);
+        } catch (_) {}
+      }
       await FirebaseAuth.instance.signOut();
       emit(AuthInitial());
     } catch (e) {

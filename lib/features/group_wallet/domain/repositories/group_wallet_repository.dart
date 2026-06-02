@@ -1,6 +1,7 @@
 import 'package:fintech_app/features/main/domain/entities/wallet_entity.dart';
 import 'package:fintech_app/features/main/domain/entities/invitation_entity.dart';
 import 'package:fintech_app/features/main/domain/entities/transaction_entity.dart';
+import 'package:fintech_app/features/group_wallet/domain/entities/remind_debt_result.dart';
 import 'package:fintech_app/features/main/domain/entities/debt_entity.dart';
 
 abstract class GroupWalletRepository {
@@ -26,4 +27,5 @@ abstract class GroupWalletRepository {
   Future<void> splitExpense(String walletId, String payerId, double totalAmount, String note, List<String> participantIds);
   Stream<List<DebtEntity>> watchDebts(String walletId);
   Future<void> settleDebt(String debtId, String borrowerId);
+  Future<RemindDebtResult> remindDebt(String debtId, String lenderId);
 }
