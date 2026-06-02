@@ -135,12 +135,12 @@ class TransactionHistoryPage extends StatelessWidget {
 
                             // Fallback to special transaction types
                             if (categoryId == 'deposit') return '💰';
-                            if (categoryId == 'internal_transfer') return '🔄';
+                            if (categoryId == 'internal_transfer') return '💳';
                             if (categoryId == 'transfer') return '💸';
 
                             // Fallback to category name pattern matching
                             final emoji = getEmojiForCategoryName(categoryId);
-                            if (emoji != '💳') {
+                            if (emoji != '🏦') {
                               return emoji; // Return if not default
                             }
 
