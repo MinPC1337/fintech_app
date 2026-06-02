@@ -1,3 +1,6 @@
 {
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "dart.flutterRunAdditionalArgs": [
+        "--dart-define=PUSH_WORKER_URL=https://fintech-push.nguyenvanminhbh2004.workers.dev"
+    ]
 }
