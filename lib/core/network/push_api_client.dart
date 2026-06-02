@@ -76,7 +76,8 @@ class PushApiClient {
         PushDebug.warn('Worker sendPush', 'Borrower không có FCM token trên thiết bị');
       }
       if (failed > 0) {
-        PushDebug.warn('Worker sendPush', 'FCM gửi thất bại $failed/${ sent + failed } tokens');
+        final failErrors = data?['failErrors'] as List<dynamic>?;
+        PushDebug.warn('Worker sendPush', 'FCM gửi thất bại $failed/${ sent + failed } tokens. Chi tiết lỗi: $failErrors');
       }
     } on DioException catch (e) {
       final status = e.response?.statusCode;

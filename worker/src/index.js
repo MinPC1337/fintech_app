@@ -140,6 +140,7 @@ async function handleSend(request, env) {
     let sent = 0;
     let failed = 0;
     const invalidDeviceIds = [];
+    const failErrors = [];
 
     for (const { token, deviceId } of tokens) {
       try {
@@ -152,6 +153,7 @@ async function handleSend(request, env) {
         sent++;
       } catch (e) {
         failed++;
+        failErrors.push({ deviceId, error: e.fcmBody || String(e) });
         if (isInvalidTokenError(e)) {
           invalidDeviceIds.push(deviceId);
         }
@@ -173,7 +175,7 @@ async function handleSend(request, env) {
       }
     }
 
-    return json({ sent, failed, skipped: false });
+    return json({ sent, failed, skipped: false, failErrors });
   } catch (e) {
     console.error('Unexpected error in handleSend', e);
     return json({ error: 'Internal server error', detail: String(e) }, 500);
