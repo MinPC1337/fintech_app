@@ -53,18 +53,9 @@ class TransactionHistoryPage extends StatelessWidget {
     final getPrimaryWalletUseCase = sl<GetPrimaryWalletStreamUseCase>();
     final watchCategoriesUseCase = sl<WatchOutCategoriesUseCase>();
 
-    return Scaffold(
-      backgroundColor: kBgColor,
-      appBar: AppBar(
-        backgroundColor: kBgColor,
-        title: const Text(
-          'Lịch sử giao dịch',
-          style: TextStyle(color: kTextPrimary),
-        ),
-        iconTheme: const IconThemeData(color: kTextPrimary),
-        elevation: 0,
-      ),
-      body: BlocBuilder<AuthCubit, AuthState>(
+    return Container(
+      color: kBgColor,
+      child: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, authState) {
           auth_entity.User? profileUser;
           if (authState is AuthSuccess) profileUser = authState.user;

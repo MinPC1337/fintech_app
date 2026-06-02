@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../injection_container.dart';
 import '../../data/models/notification_model.dart';
 import '../../data/datasources/notification_remote_data_source.dart';
+import 'transaction_history_page.dart';
 
 class NotificationsPage extends StatelessWidget {
   final String userId;
@@ -13,55 +14,80 @@ class NotificationsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: kBgColor,
-      appBar: AppBar(
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
         backgroundColor: kBgColor,
-        elevation: 0,
-        title: const Text('Thông báo', style: TextStyle(color: kTextPrimary)),
-        iconTheme: const IconThemeData(color: kTextPrimary),
-      ),
-      body: StreamBuilder<List<NotificationModel>>(
-        stream: sl<NotificationRemoteDataSource>().getNotificationsStream(
-          userId,
+        appBar: AppBar(
+          backgroundColor: kBgColor,
+          elevation: 0,
+          title: const Text('Thông báo', style: TextStyle(color: kTextPrimary)),
+          iconTheme: const IconThemeData(color: kTextPrimary),
+          bottom: const TabBar(
+            labelColor: kCyan,
+            unselectedLabelColor: kTextSecondary,
+            indicatorColor: kCyan,
+            dividerColor: Colors.transparent,
+            tabs: [
+              Tab(text: 'Biến động số dư'),
+              Tab(text: 'Thông báo'),
+            ],
+          ),
         ),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: kCyan));
-          }
-
-          final notifications = snapshot.data ?? [];
-
-          if (notifications.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.notifications_none_rounded,
-                    size: 64,
-                    color: kTextSecondary.withValues(alpha: 0.3),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Chưa có thông báo nào',
-                    style: TextStyle(color: kTextSecondary),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(24),
-            itemCount: notifications.length,
-            itemBuilder: (context, index) {
-              final item = notifications[index];
-              return _buildNotificationItem(context, item);
-            },
-          );
-        },
+        body: TabBarView(
+          children: [
+            TransactionHistoryPage(userId: userId),
+            _buildNotificationsTab(context),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildNotificationsTab(BuildContext context) {
+    return StreamBuilder<List<NotificationModel>>(
+      stream: sl<NotificationRemoteDataSource>().getNotificationsStream(
+        userId,
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: kCyan));
+        }
+
+        final allNotifications = snapshot.data ?? [];
+        final notifications = allNotifications
+            .where((n) => n.type != 'transaction')
+            .toList();
+
+        if (notifications.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.notifications_none_rounded,
+                  size: 64,
+                  color: kTextSecondary.withValues(alpha: 0.3),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Chưa có thông báo nào',
+                  style: TextStyle(color: kTextSecondary),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(24),
+          itemCount: notifications.length,
+          itemBuilder: (context, index) {
+            final item = notifications[index];
+            return _buildNotificationItem(context, item);
+          },
+        );
+      },
     );
   }
 
