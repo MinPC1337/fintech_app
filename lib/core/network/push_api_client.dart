@@ -63,10 +63,21 @@ class PushApiClient {
         ),
       );
 
+      final data = response.data;
+      final sent = data?['sent'] ?? 0;
+      final failed = data?['failed'] ?? 0;
+      final skipped = data?['skipped'] ?? false;
+      final reason = data?['reason'] ?? '';
       PushDebug.ok(
         'Worker sendPush',
-        'status=${response.statusCode} body=${response.data}',
+        'status=${response.statusCode} sent=$sent failed=$failed skipped=$skipped reason=$reason',
       );
+      if (sent == 0 && skipped == true) {
+        PushDebug.warn('Worker sendPush', 'Borrower không có FCM token trên thiết bị');
+      }
+      if (failed > 0) {
+        PushDebug.warn('Worker sendPush', 'FCM gửi thất bại $failed/${ sent + failed } tokens');
+      }
     } on DioException catch (e) {
       final status = e.response?.statusCode;
       final body = e.response?.data;
