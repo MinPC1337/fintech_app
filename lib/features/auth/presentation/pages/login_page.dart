@@ -8,6 +8,8 @@ import 'register_page.dart';
 import '../../../../features/main/presentation/pages/main_page.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/dialog_utils.dart';
+import '../../../../injection_container.dart';
+import '../../../../core/services/push_notification_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -73,6 +75,7 @@ class _LoginPageState extends State<LoginPage> {
       listener: (context, state) {
         if (state is AuthSuccess) {
           _saveEmail(emailController.text.trim());
+          sl<PushNotificationService>().syncTokenForUser(state.user.uid);
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const MainPage()),

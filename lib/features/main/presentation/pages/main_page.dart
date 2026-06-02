@@ -8,6 +8,9 @@ import 'transfer_page.dart';
 import 'send_to_user_page.dart';
 import 'budget_page.dart';
 import '../../../group_wallet/presentation/pages/group_wallet_page.dart';
+import '../../../../injection_container.dart';
+import '../../../../core/services/push_notification_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -23,6 +26,10 @@ class _MainPageState extends State<MainPage> {
   @override
   void initState() {
     super.initState();
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      sl<PushNotificationService>().syncTokenForUser(uid);
+    }
   }
 
   final List<Widget> _pages = [

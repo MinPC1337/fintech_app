@@ -66,7 +66,11 @@ class NotificationsPage extends StatelessWidget {
   }
 
   Widget _buildNotificationItem(BuildContext context, NotificationModel item) {
-    final Color accentColor = item.type == 'transaction' ? kCyan : kPurple;
+    final Color accentColor = switch (item.type) {
+      'transaction' => kCyan,
+      'debt_reminder' => kRose,
+      _ => kPurple,
+    };
 
     return GestureDetector(
       onTap: () {
@@ -101,9 +105,11 @@ class NotificationsPage extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      item.type == 'transaction'
-                          ? Icons.swap_horiz_rounded
-                          : Icons.notifications_active_outlined,
+                      switch (item.type) {
+                        'transaction' => Icons.swap_horiz_rounded,
+                        'debt_reminder' => Icons.currency_exchange_rounded,
+                        _ => Icons.notifications_active_outlined,
+                      },
                       color: accentColor,
                       size: 20,
                     ),
