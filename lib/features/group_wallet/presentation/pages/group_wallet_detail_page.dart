@@ -1055,6 +1055,20 @@ class _DebtTile extends StatelessWidget {
   final VoidCallback? onSettle;
   final VoidCallback? onRemind;
 
+  Future<String> _fetchDisplayName(String uid) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+      if (!doc.exists || doc.data() == null) return uid;
+      final data = doc.data()!;
+      final name = (data['fullName'] ?? data['displayName'] ?? data['name']);
+      if (name is String && name.isNotEmpty) return name;
+    } catch (_) {}
+    return uid;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isBorrower = debt.borrowerId == currentUserId;
@@ -1087,14 +1101,22 @@ class _DebtTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  isBorrower
-                      ? 'Bạn nợ ${debt.lenderId}'
-                      : 'Được ${debt.borrowerId} nợ',
-                  style: const TextStyle(
-                    color: kTextPrimary,
-                    fontWeight: FontWeight.bold,
+                FutureBuilder<String>(
+                  future: _fetchDisplayName(
+                    isBorrower ? debt.lenderId : debt.borrowerId,
                   ),
+                  builder: (context, snapshot) {
+                    final other =
+                        snapshot.data ??
+                        (isBorrower ? debt.lenderId : debt.borrowerId);
+                    return Text(
+                      isBorrower ? 'Bạn nợ $other' : 'Được $other nợ',
+                      style: const TextStyle(
+                        color: kTextPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 4),
                 Text(

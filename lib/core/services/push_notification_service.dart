@@ -91,6 +91,13 @@ class PushNotificationService {
     PushDebug.log('syncTokenForUser', 'uid=$uid');
     _currentUid = uid;
     try {
+      // Xoá token cũ để tránh rò rỉ thông báo khi chuyển tài khoản trên cùng thiết bị
+      try {
+        await _messaging.deleteToken();
+      } catch (e) {
+        PushDebug.warn('syncTokenForUser', 'deleteToken lỗi nhẹ: $e');
+      }
+
       final token = await _messaging.getToken();
       if (token == null) {
         PushDebug.warn('syncTokenForUser', 'getToken() returned null');
