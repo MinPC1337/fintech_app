@@ -104,7 +104,7 @@ Future<void> init() async {
   );
 
   sl.registerLazySingleton<WalletRemoteDataSource>(
-    () => WalletRemoteDataSourceImpl(firestore: sl()),
+    () => WalletRemoteDataSourceImpl(firestore: sl(), pushApiClient: sl()),
   );
 
   sl.registerLazySingleton<CreateGroupWalletUseCase>(

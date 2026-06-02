@@ -96,6 +96,8 @@ async function handleSend(request, env) {
         return json({ error: 'Debt already settled' }, 400);
       }
 
+    } else if (type === 'transaction') {
+      // Cho phép gửi thông báo giao dịch (biến động số dư)
     } else {
       return json({ error: 'Unsupported notification type' }, 400);
     }

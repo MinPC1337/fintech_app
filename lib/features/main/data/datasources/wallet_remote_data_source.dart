@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import '../../../../core/network/push_api_client.dart';
 import '../models/wallet_model.dart';
 import '../models/transaction_model.dart';
 
@@ -26,8 +27,9 @@ abstract class WalletRemoteDataSource {
 
 class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
   final FirebaseFirestore firestore;
+  final PushApiClient pushApiClient;
 
-  WalletRemoteDataSourceImpl({required this.firestore});
+  WalletRemoteDataSourceImpl({required this.firestore, required this.pushApiClient});
 
   Future<QueryDocumentSnapshot<Map<String, dynamic>>?> _getPrimaryWalletDoc(
     String userId,
@@ -108,6 +110,17 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
         'type': 'transaction',
       });
     });
+
+    try {
+      await pushApiClient.sendPush(
+        userId: receiverUid,
+        title: 'Nạp tiền thành công',
+        body: 'Bạn vừa nạp ${amount.toStringAsFixed(0)} VNĐ vào ví từ MoMo.',
+        type: 'transaction',
+      );
+    } catch (e) {
+      debugPrint('Failed to send push notification: $e');
+    }
   }
 
   @override
@@ -201,6 +214,17 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
         'type': 'transaction',
       });
     });
+
+    try {
+      await pushApiClient.sendPush(
+        userId: senderUid,
+        title: 'Rút tiền thành công',
+        body: 'Giao dịch rút ${amount.toStringAsFixed(0)} VNĐ về số $targetPhone đã hoàn tất.',
+        type: 'transaction',
+      );
+    } catch (e) {
+      debugPrint('Failed to send push notification: $e');
+    }
   }
 
   @override
@@ -351,7 +375,19 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
           });
         })
         .then(
-          (_) => debugPrint('[DB_UPDATE] Transaction committed successfully.'),
+          (_) async {
+            debugPrint('[DB_UPDATE] Transaction committed successfully.');
+            try {
+              await pushApiClient.sendPush(
+                userId: receiverUid,
+                title: 'Nhận tiền thành công',
+                body: 'Bạn vừa nhận được ${amount.toStringAsFixed(0)} VNĐ từ $senderName.',
+                type: 'transaction',
+              );
+            } catch (e) {
+              debugPrint('Failed to send push notification: $e');
+            }
+          },
         );
   }
 }
