@@ -12,11 +12,8 @@ class CategoryEntity extends Equatable {
   final int? month;
   final int? year;
 
-  /// Code point Material Icons (lưu Firestore). Null = UI dùng icon mặc định.
-  final int? iconCodePoint;
-
-  /// Màu accent ARGB 32-bit (vd `Color(0xFF22D3EE).value`). Null = theme mặc định.
-  final int? accentArgb;
+  /// Emoji for displaying the category. Null = UI uses default emoji based on category name.
+  final String? emoji;
 
   const CategoryEntity({
     required this.id,
@@ -25,10 +22,9 @@ class CategoryEntity extends Equatable {
     required this.budgetLimit,
     required this.currentSpent,
     required this.type,
-    this.iconCodePoint,
+    this.emoji,
     this.month,
     this.year,
-    this.accentArgb,
   });
 
   @override
@@ -39,9 +35,8 @@ class CategoryEntity extends Equatable {
     budgetLimit,
     currentSpent,
     type,
-    iconCodePoint,
+    emoji,
     month,
     year,
-    accentArgb,
   ];
 }

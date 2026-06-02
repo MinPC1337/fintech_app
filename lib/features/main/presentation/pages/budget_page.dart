@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/emoji_mapping.dart';
 import '../../../../injection_container.dart' as di;
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../auth/presentation/cubit/auth_state.dart';
@@ -18,20 +19,11 @@ String _formatBudgetMoney(double value) {
   return currency.format(value).replaceAll('đ', '').trim();
 }
 
-IconData _budgetCategoryIcon(CategoryEntity c) {
-  final p = c.iconCodePoint;
-  if (p != null) {
-    return IconData(p, fontFamily: 'MaterialIcons');
+String _budgetCategoryEmoji(CategoryEntity c) {
+  if (c.emoji != null) {
+    return c.emoji!;
   }
-  return Icons.category_rounded;
-}
-
-Color _budgetCategoryAccent(CategoryEntity c) {
-  final a = c.accentArgb;
-  if (a != null) {
-    return Color(a);
-  }
-  return kCyan;
+  return getEmojiForCategoryName(c.name);
 }
 
 void _navigateToBudgetForm(
@@ -516,9 +508,8 @@ class _CategoryCard extends StatelessWidget {
     final ratio = limit > 0 ? (spent / limit).clamp(0, 1).toDouble() : 0.0;
 
     final isOver = remaining < 0;
-    final baseAccent = _budgetCategoryAccent(cat);
-    final accent = isOver ? kRose : baseAccent;
-    final icon = _budgetCategoryIcon(cat);
+    final baseAccent = isOver ? kRose : kCyan;
+    final emoji = _budgetCategoryEmoji(cat);
 
     return GestureDetector(
       onTap: onEdit,
@@ -527,10 +518,10 @@ class _CategoryCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: kThemeGlassBase,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: accent.withValues(alpha: 0.18)),
+          border: Border.all(color: baseAccent.withValues(alpha: 0.18)),
           boxShadow: [
             BoxShadow(
-              color: accent.withValues(alpha: 0.12),
+              color: baseAccent.withValues(alpha: 0.12),
               blurRadius: 16,
               offset: const Offset(-4, 0),
             ),
@@ -551,9 +542,9 @@ class _CategoryCard extends StatelessWidget {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: accent.withValues(alpha: 0.12),
+                      color: baseAccent.withValues(alpha: 0.12),
                     ),
-                    child: Icon(icon, color: accent, size: 20),
+                    child: Text(emoji, style: const TextStyle(fontSize: 20)),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -574,14 +565,14 @@ class _CategoryCard extends StatelessWidget {
                             children: [
                               Icon(
                                 Icons.event_note_rounded,
-                                color: accent.withValues(alpha: 0.6),
+                                color: baseAccent.withValues(alpha: 0.6),
                                 size: 11,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 'Tháng ${cat.month}/${cat.year}',
                                 style: TextStyle(
-                                  color: accent.withValues(alpha: 0.7),
+                                  color: baseAccent.withValues(alpha: 0.7),
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -616,7 +607,7 @@ class _CategoryCard extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: ratio,
                     backgroundColor: Colors.white.withValues(alpha: 0.06),
-                    valueColor: AlwaysStoppedAnimation<Color>(accent),
+                    valueColor: AlwaysStoppedAnimation<Color>(baseAccent),
                   ),
                 ),
               ),
@@ -637,7 +628,7 @@ class _CategoryCard extends StatelessWidget {
                   Text(
                     '${(ratio * 100).round()}%',
                     style: TextStyle(
-                      color: accent,
+                      color: baseAccent,
                       fontSize: 11,
                       fontWeight: FontWeight.w900,
                     ),

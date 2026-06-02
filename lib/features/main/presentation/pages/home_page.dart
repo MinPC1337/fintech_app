@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../injection_container.dart';
-import '../../domain/entities/category_entity.dart';
 import '../../domain/usecases/get_primary_wallet_stream_usecase.dart';
 import 'momo_deposit_page.dart';
 import '../../data/datasources/notification_remote_data_source.dart';
@@ -13,7 +12,6 @@ import 'send_to_user_page.dart';
 import 'notifications_page.dart';
 import 'package:intl/intl.dart';
 import '../../domain/usecases/get_transactions_stream_usecase.dart';
-import 'transaction_success_page.dart';
 import '../../../auth/presentation/pages/profile_page.dart';
 import '../../../auth/domain/entities/user.dart' as auth_entity;
 import '../../../auth/presentation/cubit/auth_cubit.dart';
@@ -116,43 +114,6 @@ class _HomePageState extends State<HomePage> {
         );
       },
     );
-  }
-
-  String _getCategoryLabel(
-    String categoryId,
-    List<CategoryEntity> walletCategories,
-  ) {
-    switch (categoryId) {
-      case 'deposit':
-        return 'Nạp tiền';
-      case 'internal_transfer':
-        return 'Chuyển tiền nội bộ';
-      case 'transfer':
-        return 'Rút tiền';
-      default:
-        if (categoryId.isEmpty) return 'Chưa phân loại';
-        for (final c in walletCategories) {
-          if (c.id == categoryId) return c.name;
-        }
-        return categoryId
-            .replaceAll('_', ' ')
-            .replaceFirstMapped(
-              RegExp(r'^[a-z]'),
-              (match) => match.group(0)!.toUpperCase(),
-            );
-    }
-  }
-
-  String _formatWallet(
-    String? id,
-    String currentUserId,
-    String currentUserName,
-  ) {
-    if (id == null || id.isEmpty) return 'Ví MoMo';
-    if (id == currentUserId) {
-      return 'Ví cá nhân - ${currentUserName.isNotEmpty ? currentUserName : 'Người dùng'}';
-    }
-    return 'Ví cá nhân - $id';
   }
 
   String _getGreeting() {

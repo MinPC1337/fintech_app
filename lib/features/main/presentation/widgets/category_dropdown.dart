@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/emoji_mapping.dart';
 import '../../domain/entities/category_entity.dart';
 
 class CategoryDropdown extends StatelessWidget {
@@ -36,16 +37,13 @@ class CategoryDropdown extends StatelessWidget {
           value: cat.id,
           child: Row(
             children: [
-              if (cat.iconCodePoint != null)
-                Icon(
-                  IconData(cat.iconCodePoint!, fontFamily: 'MaterialIcons'),
-                  color: cat.accentArgb != null
-                      ? Color(cat.accentArgb!)
-                      : kTextPrimary,
-                  size: 20,
-                )
+              if (cat.emoji != null)
+                Text(cat.emoji!, style: const TextStyle(fontSize: 20))
               else
-                const Icon(Icons.category, color: kTextSecondary, size: 20),
+                Text(
+                  getEmojiForCategoryName(cat.name),
+                  style: const TextStyle(fontSize: 20),
+                ),
               const SizedBox(width: 12),
               Text(cat.name),
             ],

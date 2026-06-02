@@ -46,9 +46,7 @@ class NotificationsPage extends StatelessWidget {
 
   Widget _buildNotificationsTab(BuildContext context) {
     return StreamBuilder<List<NotificationModel>>(
-      stream: sl<NotificationRemoteDataSource>().getNotificationsStream(
-        userId,
-      ),
+      stream: sl<NotificationRemoteDataSource>().getNotificationsStream(userId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator(color: kCyan));
@@ -98,6 +96,18 @@ class NotificationsPage extends StatelessWidget {
       _ => kPurple,
     };
 
+    final String emojiIcon = switch (item.type) {
+      'transaction' => '💳',
+      'debt_reminder' => '⏰',
+      _ => '🔔',
+    };
+
+    final String typeLabel = switch (item.type) {
+      'transaction' => 'Biến động',
+      'debt_reminder' => 'Nhắc nợ',
+      _ => 'Thông báo',
+    };
+
     return GestureDetector(
       onTap: () {
         if (!item.isRead) {
@@ -107,84 +117,123 @@ class NotificationsPage extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: item.isRead ? kThemeGlassBase : kCyan.withValues(alpha: 0.05),
+          color: item.isRead
+              ? kThemeGlassBase
+              : accentColor.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: item.isRead
-                ? kThemeBorderDefault
-                : kCyan.withValues(alpha: 0.3),
+                ? kThemeBorderDefault.withValues(alpha: 0.1)
+                : accentColor.withValues(alpha: 0.3),
+            width: 0.5,
           ),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: IntrinsicHeight(
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: accentColor.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      switch (item.type) {
-                        'transaction' => Icons.swap_horiz_rounded,
-                        'debt_reminder' => Icons.currency_exchange_rounded,
-                        _ => Icons.notifications_active_outlined,
-                      },
-                      color: accentColor,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.title,
-                          style: TextStyle(
-                            color: kTextPrimary,
-                            fontWeight: item.isRead
-                                ? FontWeight.normal
-                                : FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          item.body,
-                          style: const TextStyle(
-                            color: kTextSecondary,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          DateFormat(
-                            'HH:mm - dd/MM/yyyy',
-                          ).format(item.timestamp),
-                          style: TextStyle(
-                            color: kTextSecondary.withValues(alpha: 0.5),
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  // Left accent border for unread
                   if (!item.isRead)
                     Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: kCyan,
-                        shape: BoxShape.circle,
+                      width: 4,
+                      decoration: BoxDecoration(color: accentColor),
+                    ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: accentColor.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: accentColor.withValues(alpha: 0.1),
+                              ),
+                            ),
+                            child: Text(
+                              emojiIcon,
+                              style: const TextStyle(fontSize: 20),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: accentColor.withValues(
+                                          alpha: 0.15,
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        typeLabel,
+                                        style: TextStyle(
+                                          color: accentColor,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      DateFormat(
+                                        'HH:mm - dd/MM/yyyy',
+                                      ).format(item.timestamp),
+                                      style: TextStyle(
+                                        color: kTextSecondary.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  item.title,
+                                  style: TextStyle(
+                                    color: kTextPrimary,
+                                    fontWeight: item.isRead
+                                        ? FontWeight.w500
+                                        : FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  item.body,
+                                  style: TextStyle(
+                                    color: kTextSecondary.withValues(
+                                      alpha: 0.9,
+                                    ),
+                                    fontSize: 13,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                  ),
                 ],
               ),
             ),

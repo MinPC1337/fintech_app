@@ -160,8 +160,7 @@ class BudgetCubit extends Cubit<BudgetState> {
     required String name,
     required double budgetLimit,
     required CategoryType type,
-    int? iconCodePoint,
-    int? accentArgb,
+    String? emoji,
   }) async {
     try {
       await _budgetRepository.upsertBudgetCategory(
@@ -172,8 +171,7 @@ class BudgetCubit extends Cubit<BudgetState> {
           budgetLimit: budgetLimit,
           currentSpent: 0,
           type: type,
-          iconCodePoint: iconCodePoint,
-          accentArgb: accentArgb,
+          emoji: emoji,
         ),
       );
       _clearSheetError();

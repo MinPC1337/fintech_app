@@ -8,10 +8,9 @@ class CategoryModel extends CategoryEntity {
     required super.budgetLimit,
     required super.currentSpent,
     required super.type,
-    super.iconCodePoint,
+    super.emoji,
     super.month,
     super.year,
-    super.accentArgb,
   });
 
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
@@ -24,10 +23,9 @@ class CategoryModel extends CategoryEntity {
       type: json['type'] == 'outType'
           ? CategoryType.outType
           : CategoryType.inType,
-      iconCodePoint: json['iconCodePoint'] as int?,
+      emoji: json['emoji'] as String?,
       month: json['month'] as int?,
       year: json['year'] as int?,
-      accentArgb: json['accentArgb'] as int?,
     );
   }
 
@@ -39,10 +37,9 @@ class CategoryModel extends CategoryEntity {
       'budgetLimit': budgetLimit,
       'currentSpent': currentSpent,
       'type': type == CategoryType.outType ? 'outType' : 'inType',
-      if (iconCodePoint != null) 'iconCodePoint': iconCodePoint,
+      if (emoji != null) 'emoji': emoji,
       if (month != null) 'month': month,
       if (year != null) 'year': year,
-      if (accentArgb != null) 'accentArgb': accentArgb,
     };
   }
 }

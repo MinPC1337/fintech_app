@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/emoji_mapping.dart';
 import '../../../../injection_container.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/repositories/budget_repository.dart';
@@ -20,31 +21,7 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
 
   int _selectedMonth = DateTime.now().month;
   int _selectedYear = DateTime.now().year;
-  Color _selectedColor = kCyan;
-  IconData _selectedIcon = Icons.shopping_bag_rounded;
-
-  final List<Color> _palette = [
-    kCyan, kPurple, kEmerald,
-    const Color(0xFFF59E0B), // Amber
-    const Color(0xFF6366F1), // Indigo
-    const Color(0xFFD946EF), // Fuchsia
-    const Color(0xFFF97316), // Orange
-    const Color(0xFF06B6D4), // Quantum Cyan
-    const Color(0xFF8B5CF6), // Violet
-  ];
-
-  final List<IconData> _icons = [
-    Icons.shopping_bag_rounded,
-    Icons.restaurant_rounded,
-    Icons.directions_car_rounded,
-    Icons.home_rounded,
-    Icons.movie_rounded,
-    Icons.fitness_center_rounded,
-    Icons.medical_services_rounded,
-    Icons.school_rounded,
-    Icons.flight_rounded,
-    Icons.electrical_services_rounded,
-  ];
+  String _selectedEmoji = predefinedEmojis[0];
 
   @override
   void initState() {
@@ -52,8 +29,8 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
     if (widget.category != null) {
       _nameController.text = widget.category!.name;
       _limitController.text = widget.category!.budgetLimit.toStringAsFixed(0);
-      if (widget.category!.accentArgb != null) {
-        _selectedColor = Color(widget.category!.accentArgb!);
+      if (widget.category!.emoji != null) {
+        _selectedEmoji = widget.category!.emoji!;
       }
     }
   }
@@ -71,8 +48,7 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
       budgetLimit: limit,
       currentSpent: widget.category?.currentSpent ?? 0,
       type: CategoryType.outType,
-      iconCodePoint: _selectedIcon.codePoint,
-      accentArgb: _selectedColor.toARGB32(),
+      emoji: _selectedEmoji,
       month: _selectedMonth,
       year: _selectedYear,
     );
@@ -129,11 +105,9 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
             ),
             const SizedBox(height: 32),
 
-            _buildSectionTitle('PHONG CÁCH'),
+            _buildSectionTitle('BIỂU TƯỢNG'),
             const SizedBox(height: 16),
-            _buildColorPicker(),
-            const SizedBox(height: 24),
-            _buildIconPicker(),
+            _buildEmojiPicker(),
 
             const SizedBox(height: 48),
             _buildSaveButton(),
@@ -173,7 +147,7 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
         hintText: hint,
         hintStyle: TextStyle(color: kTextSecondary.withValues(alpha: 0.4)),
         floatingLabelBehavior: FloatingLabelBehavior.always,
-        prefixIcon: Icon(icon, color: _selectedColor, size: 20),
+        prefixIcon: Icon(icon, color: kCyan, size: 20),
         suffixText: suffix,
         suffixStyle: const TextStyle(color: kTextSecondary),
         filled: true,
@@ -184,7 +158,7 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: _selectedColor, width: 1.5),
+          borderSide: const BorderSide(color: kCyan, width: 1.5),
         ),
       ),
     );
@@ -244,69 +218,33 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
     );
   }
 
-  Widget _buildColorPicker() {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: _palette.map((color) {
-        final isSelected = _selectedColor == color;
-        return GestureDetector(
-          onTap: () => setState(() => _selectedColor = color),
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isSelected ? color : Colors.transparent,
-                width: 2,
-              ),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.4),
-                        blurRadius: 10,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Center(
-              child: Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildIconPicker() {
+  Widget _buildEmojiPicker() {
     return SizedBox(
       height: 60,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: _icons.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 16),
+        itemCount: predefinedEmojis.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
-          final icon = _icons[index];
-          final isSelected = _selectedIcon == icon;
+          final emoji = predefinedEmojis[index];
+          final isSelected = _selectedEmoji == emoji;
           return GestureDetector(
-            onTap: () => setState(() => _selectedIcon = icon),
+            onTap: () => setState(() => _selectedEmoji = emoji),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isSelected ? _selectedColor : kThemeSurfaceSecondary,
+                color: isSelected
+                    ? kCyan.withValues(alpha: 0.2)
+                    : kThemeSurfaceSecondary,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected ? kCyan : Colors.transparent,
+                  width: 2,
+                ),
               ),
-              child: Icon(
-                icon,
-                color: isSelected ? Colors.black : kTextSecondary,
-                size: 24,
+              child: Center(
+                child: Text(emoji, style: const TextStyle(fontSize: 28)),
               ),
             ),
           );
@@ -319,7 +257,7 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
     return ElevatedButton(
       onPressed: _save,
       style: ElevatedButton.styleFrom(
-        backgroundColor: _selectedColor,
+        backgroundColor: kCyan,
         minimumSize: const Size(double.infinity, 56),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         elevation: 0,

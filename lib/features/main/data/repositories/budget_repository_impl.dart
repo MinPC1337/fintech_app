@@ -32,10 +32,9 @@ class BudgetRepositoryImpl implements BudgetRepository {
         budgetLimit: category.budgetLimit,
         currentSpent: category.currentSpent,
         type: category.type,
-        iconCodePoint: category.iconCodePoint,
+        emoji: category.emoji,
         month: category.month,
         year: category.year,
-        accentArgb: category.accentArgb,
       ),
     );
   }

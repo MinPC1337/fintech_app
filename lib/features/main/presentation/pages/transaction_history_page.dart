@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'dart:ui';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/emoji_mapping.dart';
 import '../../../../injection_container.dart';
 import '../../../auth/domain/entities/user.dart' as auth_entity;
 import '../../../auth/presentation/cubit/auth_cubit.dart';
@@ -119,12 +121,45 @@ class TransactionHistoryPage extends StatelessWidget {
                           final timeDisplay = DateFormat(
                             'dd/MM/yyyy HH:mm',
                           ).format(tx.timestamp);
+                          String getCategoryEmoji(
+                            String categoryId,
+                            List<CategoryEntity> walletCategories,
+                            bool isIncrease,
+                          ) {
+                            // Try to find category in the list
+                            for (final cat in walletCategories) {
+                              if (cat.id == categoryId && cat.emoji != null) {
+                                return cat.emoji!;
+                              }
+                            }
+
+                            // Fallback to special transaction types
+                            if (categoryId == 'deposit') return '💰';
+                            if (categoryId == 'internal_transfer') return '🔄';
+                            if (categoryId == 'transfer') return '💸';
+
+                            // Fallback to category name pattern matching
+                            final emoji = getEmojiForCategoryName(categoryId);
+                            if (emoji != '💳') {
+                              return emoji; // Return if not default
+                            }
+
+                            // Ultimate fallback based on transaction direction
+                            return getDefaultTransactionEmoji(isIncrease);
+                          }
+
                           final isIncrease = tx.toWalletId == primaryWalletId;
                           final sign = isIncrease ? '+' : '-';
-                          final color = isIncrease ? kEmerald : kRose;
-                          final icon = isIncrease
-                              ? Icons.south_west_rounded
-                              : Icons.north_east_rounded;
+                          // Changed red to TextPrimary for negative for elegance, but the user might want a subtle red or just white. Let's use kTextPrimary or kThemeTextPrimary. Actually, a neutral white for negative is very modern. Or maybe kRose. I will stick to kTextPrimary for negative (modern minimalist). Wait, let's use a subtle color for negative, maybe kThemeTextPrimary.
+                          final amountColor = isIncrease
+                              ? kEmerald
+                              : kTextPrimary;
+                          final emoji = getCategoryEmoji(
+                            tx.categoryId,
+                            walletCategories,
+                            isIncrease,
+                          );
+
                           final title = tx.note.isNotEmpty
                               ? tx.note
                               : (isIncrease ? 'Nhận tiền' : 'Chuyển tiền');
@@ -169,78 +204,92 @@ class TransactionHistoryPage extends StatelessWidget {
                             },
                             child: Container(
                               margin: const EdgeInsets.only(bottom: 16),
-                              padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: kThemeSurfaceSecondary.withValues(
-                                  alpha: 0.5,
-                                ),
-                                borderRadius: BorderRadius.circular(24),
+                                color: kThemeGlassBase,
+                                borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: color.withValues(alpha: 0.2),
-                                  width: 1,
+                                  color: kThemeBorderDefault,
+                                  width: 0.5,
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: color.withValues(alpha: 0.15),
-                                    blurRadius: 12,
-                                    offset: const Offset(-4, 0),
-                                  ),
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.1),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
                               ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: color.withValues(alpha: 0.1),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(icon, color: color, size: 24),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(20),
+                                child: BackdropFilter(
+                                  filter: ImageFilter.blur(
+                                    sigmaX: 10,
+                                    sigmaY: 10,
                                   ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Row(
                                       children: [
-                                        Text(
-                                          title,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            color: kTextPrimary.withValues(
-                                              alpha: 0.9,
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                (isIncrease
+                                                        ? kEmerald
+                                                        : kThemeSurfacePrimary)
+                                                    .withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(
+                                              16,
                                             ),
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
+                                            border: Border.all(
+                                              color:
+                                                  (isIncrease
+                                                          ? kEmerald
+                                                          : kTextSecondary)
+                                                      .withValues(alpha: 0.1),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            emoji,
+                                            style: const TextStyle(
+                                              fontSize: 22,
+                                            ),
                                           ),
                                         ),
-                                        const SizedBox(height: 4),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                title,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  color: kTextPrimary
+                                                      .withValues(alpha: 0.95),
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 6),
+                                              Text(
+                                                timeDisplay,
+                                                style: const TextStyle(
+                                                  color: kTextSecondary,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
                                         Text(
-                                          timeDisplay,
-                                          style: const TextStyle(
-                                            color: kTextSecondary,
-                                            fontSize: 13,
+                                          '$sign${currencyFormatter.format(tx.amount).replaceAll('đ', '').trim()}',
+                                          style: TextStyle(
+                                            color: amountColor,
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.w800,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    '$sign${currencyFormatter.format(tx.amount).replaceAll('đ', '').trim()}',
-                                    style: TextStyle(
-                                      color: color,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
                             ),
                           );
