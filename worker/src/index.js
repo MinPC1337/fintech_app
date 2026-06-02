@@ -1,7 +1,5 @@
 import * as jose from 'jose';
 
-const REMIND_COOLDOWN_MS = 24 * 60 * 60 * 1000;
-
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -19,144 +17,167 @@ export default {
 };
 
 async function handleSend(request, env) {
-  const projectId = env.FIREBASE_PROJECT_ID;
-  if (!projectId) {
-    return json({ error: 'FIREBASE_PROJECT_ID not configured' }, 500);
-  }
-
-  const serviceAccount = parseServiceAccount(env.FIREBASE_SERVICE_ACCOUNT_JSON);
-  if (!serviceAccount) {
-    return json({ error: 'FIREBASE_SERVICE_ACCOUNT_JSON secret missing' }, 500);
-  }
-
-  const authHeader = request.headers.get('Authorization') || '';
-  if (!authHeader.startsWith('Bearer ')) {
-    return json({ error: 'Unauthorized' }, 401);
-  }
-  const idToken = authHeader.slice(7);
-
-  let callerUid;
   try {
-    callerUid = await verifyFirebaseIdToken(idToken, projectId);
-  } catch (e) {
-    return json({ error: 'Invalid token', detail: String(e) }, 401);
-  }
-
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return json({ error: 'Invalid JSON body' }, 400);
-  }
-
-  const {
-    userId,
-    title,
-    body: messageBody,
-    type,
-    debtId,
-    walletId,
-    notificationId,
-  } = body;
-
-  if (!userId || !title || !messageBody || !type) {
-    return json({ error: 'Missing userId, title, body, or type' }, 400);
-  }
-
-  if (type === 'debt_reminder') {
-    if (!debtId) {
-      return json({ error: 'debtId required for debt_reminder' }, 400);
-    }
-    const debt = await getFirestoreDocument(
-      env,
-      serviceAccount,
-      projectId,
-      `debts/${debtId}`,
-    );
-    if (!debt) {
-      return json({ error: 'Debt not found' }, 404);
-    }
-    const fields = debt.fields || {};
-    const lenderId = getStringField(fields, 'lenderId');
-    const borrowerId = getStringField(fields, 'borrowerId');
-    const isSettled = getBoolField(fields, 'isSettled');
-
-    if (lenderId !== callerUid) {
-      return json({ error: 'Forbidden' }, 403);
-    }
-    if (borrowerId !== userId) {
-      return json({ error: 'userId must be borrower' }, 403);
-    }
-    if (isSettled) {
-      return json({ error: 'Debt already settled' }, 400);
+    const projectId = env.FIREBASE_PROJECT_ID;
+    if (!projectId) {
+      return json({ error: 'FIREBASE_PROJECT_ID not configured' }, 500);
     }
 
-    const lastReminded = getTimestampField(fields, 'lastRemindedAt');
-    if (lastReminded) {
-      const elapsed = Date.now() - lastReminded;
-      if (elapsed < REMIND_COOLDOWN_MS) {
-        return json({ error: 'Rate limited', retryAfterHours: 24 }, 429);
-      }
+    const serviceAccount = parseServiceAccount(env.FIREBASE_SERVICE_ACCOUNT_JSON);
+    if (!serviceAccount) {
+      return json({ error: 'FIREBASE_SERVICE_ACCOUNT_JSON secret missing' }, 500);
     }
-  } else {
-    return json({ error: 'Unsupported notification type' }, 400);
-  }
 
-  const userDoc = await getFirestoreDocument(
-    env,
-    serviceAccount,
-    projectId,
-    `users/${userId}`,
-  );
-  const tokens = extractFcmTokens(userDoc);
-  if (tokens.length === 0) {
-    return json({ sent: 0, failed: 0, skipped: true, reason: 'no_tokens' });
-  }
+    const authHeader = request.headers.get('Authorization') || '';
+    if (!authHeader.startsWith('Bearer ')) {
+      return json({ error: 'Unauthorized' }, 401);
+    }
+    const idToken = authHeader.slice(7);
 
-  const accessToken = await getGoogleAccessToken(serviceAccount, [
-    'https://www.googleapis.com/auth/firebase.messaging',
-  ]);
-
-  const dataPayload = {
-    type: String(type),
-    ...(debtId ? { debtId: String(debtId) } : {}),
-    ...(walletId ? { walletId: String(walletId) } : {}),
-    ...(notificationId ? { notificationId: String(notificationId) } : {}),
-  };
-
-  let sent = 0;
-  let failed = 0;
-  const invalidDeviceIds = [];
-
-  for (const { token, deviceId } of tokens) {
+    let callerUid;
     try {
-      await sendFcmV1(projectId, accessToken, {
-        token,
-        title,
-        body: messageBody,
-        data: dataPayload,
-      });
-      sent++;
+      callerUid = await verifyFirebaseIdToken(idToken, projectId);
     } catch (e) {
-      failed++;
-      if (isInvalidTokenError(e)) {
-        invalidDeviceIds.push(deviceId);
-      }
-      console.error('FCM send failed', deviceId, e);
+      return json({ error: 'Invalid token', detail: String(e) }, 401);
     }
-  }
 
-  if (invalidDeviceIds.length > 0) {
-    await removeInvalidTokens(
-      env,
-      serviceAccount,
-      projectId,
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: 'Invalid JSON body' }, 400);
+    }
+
+    const {
       userId,
-      invalidDeviceIds,
-    );
-  }
+      title,
+      body: messageBody,
+      type,
+      debtId,
+      walletId,
+      notificationId,
+    } = body;
 
-  return json({ sent, failed, skipped: false });
+    if (!userId || !title || !messageBody || !type) {
+      return json({ error: 'Missing userId, title, body, or type' }, 400);
+    }
+
+    if (type === 'debt_reminder') {
+      if (!debtId) {
+        return json({ error: 'debtId required for debt_reminder' }, 400);
+      }
+      let debt;
+      try {
+        debt = await getFirestoreDocument(
+          env,
+          serviceAccount,
+          projectId,
+          `debts/${debtId}`,
+        );
+      } catch (e) {
+        console.error('Failed to fetch debt document', debtId, e);
+        return json({ error: 'Failed to fetch debt', detail: String(e) }, 500);
+      }
+      if (!debt) {
+        return json({ error: 'Debt not found' }, 404);
+      }
+      const fields = debt.fields || {};
+      const lenderId = getStringField(fields, 'lenderId');
+      const borrowerId = getStringField(fields, 'borrowerId');
+      const isSettled = getBoolField(fields, 'isSettled');
+
+      if (lenderId !== callerUid) {
+        return json({ error: 'Forbidden' }, 403);
+      }
+      if (borrowerId !== userId) {
+        return json({ error: 'userId must be borrower' }, 403);
+      }
+      if (isSettled) {
+        return json({ error: 'Debt already settled' }, 400);
+      }
+
+    } else {
+      return json({ error: 'Unsupported notification type' }, 400);
+    }
+
+    let userDoc;
+    try {
+      userDoc = await getFirestoreDocument(
+        env,
+        serviceAccount,
+        projectId,
+        `users/${userId}`,
+      );
+    } catch (e) {
+      console.error('Failed to fetch user document', userId, e);
+      return json({ error: 'Failed to fetch user', detail: String(e) }, 500);
+    }
+    if (!userDoc) {
+      return json({ error: 'User not found', sent: 0, failed: 0 });
+    }
+    const tokens = extractFcmTokens(userDoc);
+    if (tokens.length === 0) {
+      return json({ sent: 0, failed: 0, skipped: true, reason: 'no_tokens' });
+    }
+
+    let accessToken;
+    try {
+      accessToken = await getGoogleAccessToken(serviceAccount, [
+        'https://www.googleapis.com/auth/firebase.messaging',
+      ]);
+    } catch (e) {
+      console.error('Failed to get access token', e);
+      return json({ error: 'Failed to authenticate with Google', detail: String(e) }, 500);
+    }
+
+    const dataPayload = {
+      type: String(type),
+      ...(debtId ? { debtId: String(debtId) } : {}),
+      ...(walletId ? { walletId: String(walletId) } : {}),
+      ...(notificationId ? { notificationId: String(notificationId) } : {}),
+    };
+
+    let sent = 0;
+    let failed = 0;
+    const invalidDeviceIds = [];
+
+    for (const { token, deviceId } of tokens) {
+      try {
+        await sendFcmV1(projectId, accessToken, {
+          token,
+          title,
+          body: messageBody,
+          data: dataPayload,
+        });
+        sent++;
+      } catch (e) {
+        failed++;
+        if (isInvalidTokenError(e)) {
+          invalidDeviceIds.push(deviceId);
+        }
+        console.error('FCM send failed', deviceId, e);
+      }
+    }
+
+    if (invalidDeviceIds.length > 0) {
+      try {
+        await removeInvalidTokens(
+          env,
+          serviceAccount,
+          projectId,
+          userId,
+          invalidDeviceIds,
+        );
+      } catch (e) {
+        console.error('Failed to remove invalid tokens', e);
+      }
+    }
+
+    return json({ sent, failed, skipped: false });
+  } catch (e) {
+    console.error('Unexpected error in handleSend', e);
+    return json({ error: 'Internal server error', detail: String(e) }, 500);
+  }
 }
 
 function parseServiceAccount(raw) {
@@ -215,7 +236,7 @@ async function getGoogleAccessToken(serviceAccount, scopes) {
 
 async function getFirestoreDocument(env, serviceAccount, projectId, path) {
   const accessToken = await getGoogleAccessToken(serviceAccount, [
-    'https://www.googleapis.com/auth.datastore',
+    'https://www.googleapis.com/auth/cloud-platform',
   ]);
   const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${path}`;
   const resp = await fetch(url, {
@@ -299,7 +320,7 @@ async function removeInvalidTokens(
   deviceIds,
 ) {
   const accessToken = await getGoogleAccessToken(serviceAccount, [
-    'https://www.googleapis.com/auth.datastore',
+    'https://www.googleapis.com/auth/cloud-platform',
   ]);
   for (const deviceId of deviceIds) {
     const patchUrl =
