@@ -765,7 +765,7 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
     });
   }
 
-  static const _remindCooldownHours = 24;
+  static const _remindCooldownHours = 0;
 
   @override
   Future<RemindDebtResult> remindDebt(String debtId, String lenderId) async {
@@ -787,9 +787,7 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
       final diff = DateTime.now().difference(lastReminded.toDate());
       if (diff.inHours < _remindCooldownHours) {
         final hoursLeft = _remindCooldownHours - diff.inHours;
-        throw Exception(
-          'Vui lòng đợi $hoursLeft giờ nữa trước khi nhắc lại',
-        );
+        throw Exception('Vui lòng đợi $hoursLeft giờ nữa trước khi nhắc lại');
       }
     }
 
