@@ -14,6 +14,7 @@ import '../../domain/usecases/get_transactions_stream_usecase.dart';
 import '../../domain/usecases/get_primary_wallet_stream_usecase.dart';
 import '../../domain/usecases/watch_out_categories_usecase.dart';
 import 'transaction_success_page.dart';
+import '../../data/datasources/notification_remote_data_source.dart';
 
 String _categoryDisplayLabel(
   String categoryId,
@@ -40,10 +41,25 @@ String _categoryDisplayLabel(
   }
 }
 
-class TransactionHistoryPage extends StatelessWidget {
+class TransactionHistoryPage extends StatefulWidget {
   final String userId;
 
   const TransactionHistoryPage({super.key, required this.userId});
+
+  @override
+  State<TransactionHistoryPage> createState() => _TransactionHistoryPageState();
+}
+
+class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Mark all transaction-type notifications as read when opening this tab
+    sl<NotificationRemoteDataSource>().markAllAsReadForUserAndType(
+      widget.userId,
+      'transaction',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +79,7 @@ class TransactionHistoryPage extends StatelessWidget {
           if (authState is AuthSuccess) profileUser = authState.user;
 
           return StreamBuilder(
-            stream: getPrimaryWalletUseCase.call(userId),
+            stream: getPrimaryWalletUseCase.call(widget.userId),
             builder: (context, walletSnapshot) {
               String? primaryWalletId;
               if (walletSnapshot.hasData) {
@@ -74,7 +90,7 @@ class TransactionHistoryPage extends StatelessWidget {
               }
 
               return StreamBuilder<List<dynamic>>(
-                stream: getTransactionsUseCase.call(userId),
+                stream: getTransactionsUseCase.call(widget.userId),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
@@ -106,7 +122,7 @@ class TransactionHistoryPage extends StatelessWidget {
                   }
 
                   return StreamBuilder<List<CategoryEntity>>(
-                    stream: watchCategoriesUseCase.call(userId),
+                    stream: watchCategoriesUseCase.call(widget.userId),
                     builder: (context, catSnapshot) {
                       final walletCategories = catSnapshot.data ?? [];
 
@@ -166,7 +182,7 @@ class TransactionHistoryPage extends StatelessWidget {
 
                           String formatWallet(String? id) {
                             if (id == null || id.isEmpty) return 'Ví MoMo';
-                            if (id == userId) {
+                            if (id == widget.userId) {
                               final name =
                                   profileUser != null &&
                                       profileUser.fullName.isNotEmpty
@@ -186,9 +202,9 @@ class TransactionHistoryPage extends StatelessWidget {
                                     amount: tx.amount,
                                     sender: isIncrease
                                         ? formatWallet(tx.senderId)
-                                        : formatWallet(userId),
+                                        : formatWallet(widget.userId),
                                     receiver: isIncrease
-                                        ? formatWallet(userId)
+                                        ? formatWallet(widget.userId)
                                         : formatWallet(tx.receiverId),
                                     categoryName: _categoryDisplayLabel(
                                       tx.categoryId,

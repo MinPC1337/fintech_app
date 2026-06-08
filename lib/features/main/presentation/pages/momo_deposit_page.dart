@@ -10,6 +10,7 @@ import '../../../../injection_container.dart';
 import '../../domain/usecases/deposit_usecase.dart';
 import '../../data/datasources/momo_api_service.dart';
 import '../../../../core/services/local_notification_service.dart';
+import '../../../../core/config/push_config.dart';
 import 'transaction_success_page.dart';
 
 class MomoDepositPage extends StatefulWidget {
@@ -160,11 +161,14 @@ class _MomoDepositPageState extends State<MomoDepositPage> {
           }
         } catch (_) {}
 
-        sl<LocalNotificationService>().showNotification(
-          id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          title: 'Nạp tiền thành công',
-          body: 'Bạn vừa nạp ${amount.toStringAsFixed(0)} VNĐ vào ví từ MoMo.',
-        );
+        if (!PushConfig.isConfigured) {
+          sl<LocalNotificationService>().showNotification(
+            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            title: 'Nạp tiền thành công',
+            body:
+                'Bạn vừa nạp ${amount.toStringAsFixed(0)} VNĐ vào ví từ MoMo.',
+          );
+        }
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) {

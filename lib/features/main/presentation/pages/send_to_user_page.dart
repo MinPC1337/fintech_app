@@ -9,6 +9,7 @@ import '../../domain/entities/category_entity.dart';
 import '../../domain/usecases/transfer_to_user_usecase.dart';
 import '../../domain/usecases/watch_out_categories_usecase.dart';
 import '../../../../core/services/local_notification_service.dart';
+import '../../../../core/config/push_config.dart';
 import '../widgets/category_dropdown.dart';
 import 'qr_scanner_page.dart';
 import 'transaction_success_page.dart';
@@ -184,12 +185,14 @@ class _SendToUserPageState extends State<SendToUserPage> {
 
         if (!mounted) return;
 
-        sl<LocalNotificationService>().showNotification(
-          id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          title: 'Chuyển tiền thành công',
-          body:
-              'Bạn đã chuyển ${amount.toStringAsFixed(0)} VNĐ đến $receiverName.',
-        );
+        if (!PushConfig.isConfigured) {
+          sl<LocalNotificationService>().showNotification(
+            id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            title: 'Chuyển tiền thành công',
+            body:
+                'Bạn đã chuyển ${amount.toStringAsFixed(0)} VNĐ đến $receiverName.',
+          );
+        }
 
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(

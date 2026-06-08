@@ -37,4 +37,23 @@ class NotificationRemoteDataSource {
       'isRead': true,
     });
   }
+
+  /// Đánh dấu tất cả thông báo của một `type` cụ thể cho user là đã đọc
+  Future<void> markAllAsReadForUserAndType(String userId, String type) async {
+    final snapshot = await firestore
+        .collection('notifications')
+        .where('userId', isEqualTo: userId)
+        .where('type', isEqualTo: type)
+        .where('isRead', isEqualTo: false)
+        .get();
+
+    if (snapshot.docs.isEmpty) return;
+
+    final batch = firestore.batch();
+    for (final doc in snapshot.docs) {
+      batch.update(doc.reference, {'isRead': true});
+    }
+
+    await batch.commit();
+  }
 }
