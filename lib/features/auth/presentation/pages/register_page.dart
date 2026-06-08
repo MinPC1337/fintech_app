@@ -209,12 +209,12 @@ class RegisterPage extends StatelessWidget {
             gradient: const LinearGradient(colors: [kCyan, kPurple]),
           ),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(0),
             decoration: BoxDecoration(
               color: kBgColor,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Image.asset('assets/Icon.png', width: 48, height: 48),
+            child: Image.asset('assets/Icon.png', width: 80, height: 80),
           ),
         ),
         const SizedBox(height: 24),
