@@ -6,10 +6,14 @@ import 'action_card.dart';
 
 class MessageBubble extends StatelessWidget {
   final ChatMessage message;
+  final String? userAvatarUrl;
+  final String aiAvatarAsset;
 
   const MessageBubble({
     super.key,
     required this.message,
+    this.userAvatarUrl,
+    this.aiAvatarAsset = 'assets/robot.png',
   });
 
   @override
@@ -19,21 +23,25 @@ class MessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
-        crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: isUser
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+            mainAxisAlignment: isUser
+                ? MainAxisAlignment.end
+                : MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              if (!isUser) ...[
-                _buildAvatar(),
-                const SizedBox(width: 8),
-              ],
+              if (!isUser) ...[_buildAvatar(), const SizedBox(width: 8)],
               Flexible(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
-                    gradient: isUser 
+                    gradient: isUser
                         ? const LinearGradient(colors: [kCyan, kPurple])
                         : null,
                     color: isUser ? null : kThemeSurfaceSecondary,
@@ -43,7 +51,9 @@ class MessageBubble extends StatelessWidget {
                       bottomLeft: Radius.circular(isUser ? 20 : 4),
                       bottomRight: Radius.circular(isUser ? 4 : 20),
                     ),
-                    border: isUser ? null : Border.all(color: kThemeBorderDefault),
+                    border: isUser
+                        ? null
+                        : Border.all(color: kThemeBorderDefault),
                   ),
                   child: Text(
                     message.content,
@@ -66,7 +76,8 @@ class MessageBubble extends StatelessWidget {
               padding: const EdgeInsets.only(left: 48, top: 4),
               child: ActionCard(
                 action: message.action!,
-                onExecute: () => NavigationCommandHandler.handle(context, message.action!),
+                onExecute: () =>
+                    NavigationCommandHandler.handle(context, message.action!),
               ),
             ),
           ],
@@ -76,20 +87,47 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _buildAvatar({bool isUser = false}) {
+    final double size = 32;
+
+    if (isUser) {
+      if (userAvatarUrl != null && userAvatarUrl!.isNotEmpty) {
+        return Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            image: DecorationImage(
+              image: NetworkImage(userAvatarUrl!),
+              fit: BoxFit.cover,
+            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+          ),
+        );
+      }
+
+      return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withValues(alpha: 0.2),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+        ),
+        child: Icon(Icons.person, size: 18, color: Colors.white),
+      );
+    }
+
+    // Assistant / AI avatar from asset
     return Container(
-      width: 32,
-      height: 32,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: isUser ? Colors.white.withValues(alpha: 0.2) : kThemeSurfaceSecondary,
-        border: Border.all(
-          color: isUser ? Colors.white.withValues(alpha: 0.5) : kCyan.withValues(alpha: 0.5),
+        image: DecorationImage(
+          image: AssetImage(aiAvatarAsset),
+          fit: BoxFit.cover,
         ),
-      ),
-      child: Icon(
-        isUser ? Icons.person : Icons.smart_toy,
-        size: 18,
-        color: isUser ? Colors.white : kCyan,
+        border: Border.all(color: kCyan.withValues(alpha: 0.5)),
       ),
     );
   }

@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../injection_container.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../auth/presentation/cubit/auth_state.dart';
 import '../cubit/chat_cubit.dart';
 import '../cubit/chat_state.dart';
 import '../widgets/message_bubble.dart';
@@ -119,7 +121,19 @@ class _ChatPageState extends State<ChatPage> {
                           ),
                         );
                       }
-                      return MessageBubble(message: messages[index]);
+                      // Get avatar URL from AuthCubit (app user) or fallback to Firebase user photoURL
+                      final authState = context.read<AuthCubit>().state;
+                      String? avatarUrl;
+                      if (authState is AuthSuccess) {
+                        avatarUrl = authState.user.avatarUrl;
+                      } else {
+                        avatarUrl = FirebaseAuth.instance.currentUser?.photoURL;
+                      }
+
+                      return MessageBubble(
+                        message: messages[index],
+                        userAvatarUrl: avatarUrl,
+                      );
                     },
                   ),
                 ),
@@ -154,7 +168,7 @@ class _ChatPageState extends State<ChatPage> {
                     shape: BoxShape.circle,
                     border: Border.all(color: kCyan.withValues(alpha: 0.3)),
                   ),
-                  child: const Icon(Icons.smart_toy, color: kCyan, size: 20),
+                  child: Image.asset('assets/robot.png', width: 32, height: 32),
                 ),
                 const SizedBox(width: 12),
                 const Column(
