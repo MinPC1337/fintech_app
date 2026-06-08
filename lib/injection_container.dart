@@ -52,6 +52,15 @@ import 'features/group_wallet/domain/usecases/watch_pending_invitations_usecase.
 import 'features/group_wallet/domain/usecases/withdraw_from_group_usecase.dart';
 import 'features/group_wallet/presentation/cubit/group_wallet_cubit.dart';
 
+import 'features/ai_chat/data/datasources/chat_history_data_source.dart';
+import 'features/ai_chat/data/datasources/gemini_remote_data_source.dart';
+import 'features/ai_chat/data/repositories/chat_repository_impl.dart';
+import 'features/ai_chat/domain/repositories/chat_repository.dart';
+import 'features/ai_chat/domain/usecases/clear_chat_history_usecase.dart';
+import 'features/ai_chat/domain/usecases/get_chat_history_usecase.dart';
+import 'features/ai_chat/domain/usecases/send_message_usecase.dart';
+import 'features/ai_chat/presentation/cubit/chat_cubit.dart';
+
 final sl = GetIt.instance; // sl: Service Locator
 
 Future<void> init() async {
@@ -192,6 +201,37 @@ Future<void> init() async {
       watchGroupTransactionsUseCase: sl(),
       watchDebtsUseCase: sl(),
       watchPendingInvitationsUseCase: sl(),
+    ),
+  );
+
+  //! Features - AI Chatbot
+  // Data Sources
+  sl.registerLazySingleton<GeminiRemoteDataSource>(
+    () => GeminiRemoteDataSourceImpl(firebaseAuth: sl()),
+  );
+  sl.registerLazySingleton<ChatHistoryDataSource>(
+    () => ChatHistoryDataSourceImpl(firestore: sl()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<ChatRepository>(
+    () => ChatRepositoryImpl(
+      geminiDataSource: sl(),
+      chatHistoryDataSource: sl(),
+    ),
+  );
+
+  // UseCases
+  sl.registerLazySingleton(() => SendMessageUseCase(sl()));
+  sl.registerLazySingleton(() => GetChatHistoryUseCase(sl()));
+  sl.registerLazySingleton(() => ClearChatHistoryUseCase(sl()));
+
+  // Cubit
+  sl.registerFactory(
+    () => ChatCubit(
+      sendMessageUseCase: sl(),
+      getChatHistoryUseCase: sl(),
+      clearChatHistoryUseCase: sl(),
     ),
   );
 

@@ -55,6 +55,7 @@ dependencies:
   firebase_messaging: ^16.2.0
   flutter_background_service: ^5.0.0
   flutter_local_notifications: ^21.0.0
+  firebase_ai: ^3.0.0
 
 dev_dependencies:
   flutter_test:
@@ -91,6 +92,7 @@ flutter:
     - assets/app_icon.png
     - assets/Icon.png
     - assets/BG.png
+    - assets/robot.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

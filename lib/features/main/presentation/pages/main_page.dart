@@ -11,6 +11,7 @@ import '../../../group_wallet/presentation/pages/group_wallet_page.dart';
 import '../../../../injection_container.dart';
 import '../../../../core/services/push_notification_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../ai_chat/presentation/pages/chat_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -46,6 +47,36 @@ class _MainPageState extends State<MainPage> {
       // Cho phép nội dung tràn xuống dưới thanh điều hướng lơ lửng
       extendBody: true,
       body: IndexedStack(index: _currentIndex, children: _pages),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 0), // Nâng lên khỏi bottom bar
+        child: FloatingActionButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ChatPage()),
+            );
+          },
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            alignment: Alignment.center,
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(colors: [kCyan, kPurple]),
+              boxShadow: [
+                BoxShadow(
+                  color: kCyan.withValues(alpha: 0.5),
+                  blurRadius: 15,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Image.asset('assets/robot.png', width: 38, height: 38),
+          ),
+        ),
+      ),
       bottomNavigationBar: _buildFloatingNavBar(),
     );
   }

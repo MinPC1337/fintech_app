@@ -26,7 +26,7 @@ class FintechApp extends StatelessWidget {
     return MaterialApp(
       navigatorKey: rootNavigatorKey,
       debugShowCheckedModeBanner: false,
-      title: 'Futuristic Pro',
+      title: 'Smart Finance',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
