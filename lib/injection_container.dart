@@ -52,13 +52,19 @@ import 'features/group_wallet/domain/usecases/watch_pending_invitations_usecase.
 import 'features/group_wallet/domain/usecases/withdraw_from_group_usecase.dart';
 import 'features/group_wallet/presentation/cubit/group_wallet_cubit.dart';
 
+import 'package:google_generative_ai/google_generative_ai.dart';
 import 'features/ai_chat/data/datasources/chat_history_data_source.dart';
 import 'features/ai_chat/data/datasources/gemini_remote_data_source.dart';
+import 'features/ai_chat/data/datasources/gemini_session_manager.dart';
+import 'features/ai_chat/data/datasources/user_context_builder.dart';
 import 'features/ai_chat/data/repositories/chat_repository_impl.dart';
 import 'features/ai_chat/domain/repositories/chat_repository.dart';
 import 'features/ai_chat/domain/usecases/clear_chat_history_usecase.dart';
 import 'features/ai_chat/domain/usecases/get_chat_history_usecase.dart';
 import 'features/ai_chat/domain/usecases/send_message_usecase.dart';
+import 'features/ai_chat/domain/usecases/watch_sessions_usecase.dart';
+import 'features/ai_chat/domain/usecases/create_session_usecase.dart';
+import 'features/ai_chat/domain/usecases/delete_session_usecase.dart';
 import 'features/ai_chat/presentation/cubit/chat_cubit.dart';
 
 final sl = GetIt.instance; // sl: Service Locator
@@ -205,9 +211,31 @@ Future<void> init() async {
   );
 
   //! Features - AI Chatbot
+  // Gemini API key
+  const geminiApiKey = 'AIzaSyDQszR4ovyRbeEVoH_toXOrxUITdZ6COj4';
+
+  // Gemini GenerativeModel (singleton — tạo một lần, dùng lại)
+  final geminiModel = GenerativeModel(
+    model: 'gemini-2.5-flash',
+    apiKey: geminiApiKey,
+    systemInstruction: Content.system(GeminiRemoteDataSourceImpl.systemPrompt),
+    generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+  );
+
+  // GeminiSessionManager — singleton, giữ in-memory cache
+  sl.registerLazySingleton(() => GeminiSessionManager(model: geminiModel));
+
+  // UserContextBuilder — singleton, build context thực tế của user
+  sl.registerLazySingleton(
+    () => UserContextBuilder(firestore: sl()),
+  );
+
   // Data Sources
   sl.registerLazySingleton<GeminiRemoteDataSource>(
-    () => GeminiRemoteDataSourceImpl(firebaseAuth: sl()),
+    () => GeminiRemoteDataSourceImpl(
+      sessionManager: sl(),
+      userContextBuilder: sl(),
+    ),
   );
   sl.registerLazySingleton<ChatHistoryDataSource>(
     () => ChatHistoryDataSourceImpl(firestore: sl()),
@@ -215,16 +243,17 @@ Future<void> init() async {
 
   // Repository
   sl.registerLazySingleton<ChatRepository>(
-    () => ChatRepositoryImpl(
-      geminiDataSource: sl(),
-      chatHistoryDataSource: sl(),
-    ),
+    () =>
+        ChatRepositoryImpl(geminiDataSource: sl(), chatHistoryDataSource: sl()),
   );
 
   // UseCases
   sl.registerLazySingleton(() => SendMessageUseCase(sl()));
   sl.registerLazySingleton(() => GetChatHistoryUseCase(sl()));
   sl.registerLazySingleton(() => ClearChatHistoryUseCase(sl()));
+  sl.registerLazySingleton(() => WatchSessionsUseCase(sl()));
+  sl.registerLazySingleton(() => CreateSessionUseCase(sl()));
+  sl.registerLazySingleton(() => DeleteSessionUseCase(sl()));
 
   // Cubit
   sl.registerFactory(
@@ -232,6 +261,9 @@ Future<void> init() async {
       sendMessageUseCase: sl(),
       getChatHistoryUseCase: sl(),
       clearChatHistoryUseCase: sl(),
+      watchSessionsUseCase: sl(),
+      createSessionUseCase: sl(),
+      deleteSessionUseCase: sl(),
     ),
   );
 

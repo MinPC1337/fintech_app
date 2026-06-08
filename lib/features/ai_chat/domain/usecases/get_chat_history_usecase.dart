@@ -7,7 +7,7 @@ class GetChatHistoryUseCase {
 
   GetChatHistoryUseCase(this.repository);
 
-  Stream<List<ChatMessage>> call(String userId) {
-    return repository.watchChatHistory(userId);
+  Stream<List<ChatMessage>> call(String userId, String sessionId) {
+    return repository.watchChatHistory(userId, sessionId);
   }
 }

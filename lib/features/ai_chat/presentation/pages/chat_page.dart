@@ -10,7 +10,7 @@ import '../cubit/chat_cubit.dart';
 import '../cubit/chat_state.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/typing_indicator.dart';
-import '../utils/navigation_command_handler.dart';
+
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
@@ -67,14 +67,11 @@ class _ChatPageState extends State<ChatPage> {
       value: _chatCubit,
       child: Scaffold(
         backgroundColor: kBgColor,
+        drawer: _buildDrawer(),
         appBar: _buildAppBar(context),
         body: BlocConsumer<ChatCubit, ChatState>(
           listener: (context, state) {
-            if (state is ChatActionRequested) {
-              // Thực thi navigation
-              NavigationCommandHandler.handle(context, state.action);
-            }
-            if (state is ChatLoaded || state is ChatActionRequested) {
+            if (state is ChatLoaded || state is ChatLoading) {
               Future.delayed(
                 const Duration(milliseconds: 100),
                 _scrollToBottom,
@@ -87,19 +84,19 @@ class _ChatPageState extends State<ChatPage> {
 
             if (state is ChatLoaded) {
               messages = state.messages;
-            } else if (state is ChatActionRequested) {
-              messages = state.messages;
             } else if (state is ChatLoading) {
-              // Lấy list cũ ra từ _chatCubit._currentMessages?
-              // Không thể truy cập private, vậy nên state should emit old messages if we want to retain them.
-              // Tuy nhiên do dùng Stream Firestore, khi loading nó vẫn sẽ hiển thị UI message trống nếu chưa có.
-              // Để UI mượt, chúng ta lấy message hiện tại lưu ở _chatCubit
+              messages = state.messages;
               isLoading = true;
             } else if (state is ChatError) {
-              return Center(
-                child: Text(
-                  'Lỗi: \${state.message}',
-                  style: const TextStyle(color: kRose),
+              messages = state.messages;
+              // Vẫn hiển thị danh sách cũ kèm toast lỗi hoặc hiện text lỗi nhỏ
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Lỗi: \${state.message}',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  backgroundColor: kRose,
                 ),
               );
             }
@@ -155,51 +152,186 @@ class _ChatPageState extends State<ChatPage> {
           child: AppBar(
             backgroundColor: kGlassBg,
             elevation: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new, color: kTextPrimary),
-              onPressed: () => Navigator.pop(context),
-            ),
-            title: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: kCyan.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: kCyan.withValues(alpha: 0.3)),
-                  ),
-                  child: Image.asset('assets/robot.png', width: 32, height: 32),
-                ),
-                const SizedBox(width: 12),
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            iconTheme: const IconThemeData(
+              color: kTextPrimary,
+            ), // Màu icon menu
+            title: BlocBuilder<ChatCubit, ChatState>(
+              builder: (context, state) {
+                String title = 'AI Trợ lý';
+                if (state is ChatLoaded ||
+                    state is ChatLoading ||
+                    state is ChatError) {
+                  final s = state as dynamic;
+                  if (s.sessions.isNotEmpty && s.currentSessionId != null) {
+                    dynamic currentSession;
+                    for (final session in (s.sessions as List)) {
+                      if ((session as dynamic).id == s.currentSessionId) {
+                        currentSession = session;
+                        break;
+                      }
+                    }
+                    if (currentSession != null) {
+                      title = currentSession.title;
+                    }
+                  }
+                }
+
+                return Row(
                   children: [
-                    Text(
-                      'AI Trợ lý',
-                      style: TextStyle(
-                        color: kTextPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: kCyan.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: kCyan.withValues(alpha: 0.3)),
+                      ),
+                      child: Image.asset(
+                        'assets/robot.png',
+                        width: 24,
+                        height: 24,
                       ),
                     ),
-                    Text(
-                      'Smart Finance Assistant',
-                      style: TextStyle(color: kTextSecondary, fontSize: 12),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: kTextPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Text(
+                            'Smart Finance AI Assistant',
+                            style: TextStyle(
+                              color: kTextSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
-                ),
-              ],
+                );
+              },
             ),
             actions: [
               IconButton(
                 icon: const Icon(Icons.delete_sweep_outlined, color: kRose),
-                tooltip: 'Xóa lịch sử chat',
+                tooltip: 'Xóa lịch sử phiên này',
                 onPressed: () {
                   _chatCubit.clearHistory();
                 },
               ),
+              IconButton(
+                icon: const Icon(Icons.close, color: kTextPrimary),
+                onPressed: () => Navigator.pop(context),
+              ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDrawer() {
+    return Drawer(
+      backgroundColor: kBgColor,
+      child: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context); // close drawer
+                  _chatCubit.createNewSession();
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Trò chuyện mới'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kThemeSurfaceSecondary,
+                  foregroundColor: kTextPrimary,
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: kThemeBorderDefault),
+                  ),
+                ),
+              ),
+            ),
+            const Divider(color: kThemeBorderDefault),
+            Expanded(
+              child: BlocBuilder<ChatCubit, ChatState>(
+                builder: (context, state) {
+                  List<dynamic> sessions = [];
+                  String? currentId;
+
+                  if (state is ChatLoaded ||
+                      state is ChatLoading ||
+                      state is ChatError) {
+                    final s = state as dynamic;
+                    sessions = s.sessions;
+                    currentId = s.currentSessionId;
+                  }
+
+                  if (sessions.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        'Chưa có phiên chat nào',
+                        style: TextStyle(color: kTextSecondary),
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    itemCount: sessions.length,
+                    itemBuilder: (context, index) {
+                      final session = sessions[index];
+                      final isSelected = session.id == currentId;
+
+                      return ListTile(
+                        selected: isSelected,
+                        selectedTileColor: kCyan.withValues(alpha: 0.1),
+                        leading: const Icon(
+                          Icons.chat_bubble_outline,
+                          color: kTextSecondary,
+                        ),
+                        title: Text(
+                          session.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: isSelected ? kCyan : kTextPrimary,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: kTextSecondary,
+                            size: 20,
+                          ),
+                          onPressed: () => _chatCubit.deleteSession(session.id),
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _chatCubit.switchSession(session.id);
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

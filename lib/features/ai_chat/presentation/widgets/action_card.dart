@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/ai_action.dart';
 
-class ActionCard extends StatelessWidget {
+class ActionCard extends StatefulWidget {
   final AIAction action;
   final VoidCallback onExecute;
 
@@ -13,14 +13,21 @@ class ActionCard extends StatelessWidget {
   });
 
   @override
+  State<ActionCard> createState() => _ActionCardState();
+}
+
+class _ActionCardState extends State<ActionCard> {
+  bool _isExecuted = false;
+
+  @override
   Widget build(BuildContext context) {
-    if (action.type == AIActionType.none) return const SizedBox.shrink();
+    if (widget.action.type == AIActionType.none) return const SizedBox.shrink();
 
     String title = 'Thực thi hành động';
     IconData icon = Icons.play_circle_fill_rounded;
     Color color = kCyan;
 
-    switch (action.type) {
+    switch (widget.action.type) {
       case AIActionType.openDeposit:
         title = 'Nạp tiền ngay';
         icon = Icons.account_balance_wallet;
@@ -60,8 +67,38 @@ class ActionCard extends StatelessWidget {
         break;
     }
 
+    // Nếu đã thực hiện → hiển thị trạng thái "đã mở"
+    if (_isExecuted) {
+      return Container(
+        margin: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: kThemeSurfaceSecondary,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: kThemeBorderDefault),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check_circle_outline, color: kTextSecondary, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              'Đã mở: $title',
+              style: const TextStyle(
+                color: kTextSecondary,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return GestureDetector(
-      onTap: onExecute,
+      onTap: () {
+        setState(() => _isExecuted = true);
+        widget.onExecute();
+      },
       child: Container(
         margin: const EdgeInsets.only(top: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

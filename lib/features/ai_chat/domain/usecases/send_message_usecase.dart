@@ -13,7 +13,8 @@ class SendMessageUseCase {
     required String message,
     required List<ChatMessage> history,
     required String userId,
+    required String sessionId,
   }) {
-    return repository.sendMessage(message, history, userId);
+    return repository.sendMessage(message, history, userId, sessionId);
   }
 }

@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import '../../domain/entities/ai_action.dart';
 import '../../domain/entities/chat_message.dart';
+import '../../domain/entities/chat_session.dart';
 
 abstract class ChatState extends Equatable {
   const ChatState();
@@ -11,32 +11,51 @@ abstract class ChatState extends Equatable {
 
 class ChatInitial extends ChatState {}
 
-class ChatLoading extends ChatState {}
-
-class ChatLoaded extends ChatState {
+class ChatLoading extends ChatState {
+  final List<ChatSession> sessions;
+  final String? currentSessionId;
   final List<ChatMessage> messages;
 
-  const ChatLoaded(this.messages);
+  const ChatLoading({
+    this.sessions = const [],
+    this.currentSessionId,
+    this.messages = const [],
+  });
 
   @override
-  List<Object?> get props => [messages];
+  List<Object?> get props => [sessions, currentSessionId, messages];
+}
+
+class ChatLoaded extends ChatState {
+  final List<ChatSession> sessions;
+  final String? currentSessionId;
+  final List<ChatMessage> messages;
+
+  const ChatLoaded({
+    required this.sessions,
+    this.currentSessionId,
+    required this.messages,
+  });
+
+  @override
+  List<Object?> get props => [sessions, currentSessionId, messages];
 }
 
 class ChatError extends ChatState {
   final String message;
-
-  const ChatError(this.message);
-
-  @override
-  List<Object?> get props => [message];
-}
-
-class ChatActionRequested extends ChatState {
-  final AIAction action;
+  final List<ChatSession> sessions;
+  final String? currentSessionId;
   final List<ChatMessage> messages;
 
-  const ChatActionRequested(this.action, this.messages);
+  const ChatError({
+    required this.message,
+    this.sessions = const [],
+    this.currentSessionId,
+    this.messages = const [],
+  });
 
   @override
-  List<Object?> get props => [action, messages];
+  List<Object?> get props => [message, sessions, currentSessionId, messages];
 }
+
+

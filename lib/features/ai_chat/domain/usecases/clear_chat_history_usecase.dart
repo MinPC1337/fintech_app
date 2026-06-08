@@ -8,7 +8,7 @@ class ClearChatHistoryUseCase {
 
   ClearChatHistoryUseCase(this.repository);
 
-  Future<Either<Failure, void>> call(String userId) {
-    return repository.clearHistory(userId);
+  Future<Either<Failure, void>> call(String userId, String sessionId) {
+    return repository.clearHistory(userId, sessionId);
   }
 }

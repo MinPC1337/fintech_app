@@ -55,7 +55,7 @@ dependencies:
   firebase_messaging: ^16.2.0
   flutter_background_service: ^5.0.0
   flutter_local_notifications: ^21.0.0
-  firebase_ai: ^3.0.0
+  google_generative_ai: ^0.4.6
 
 dev_dependencies:
   flutter_test:
