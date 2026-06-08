@@ -79,25 +79,14 @@ class _SendToUserPageState extends State<SendToUserPage> {
   void _handleSend() async {
     if (currentUser == null) return;
 
-    final receiverUid = _uidController.text.trim();
+    final receiverAccountNumber = _uidController.text.trim();
     final amountText = _amountController.text.trim();
 
-    if (receiverUid.isEmpty) {
+    if (receiverAccountNumber.isEmpty) {
       showNotificationDialog(
         context,
         'Lỗi',
         'Vui lòng nhập Số tài khoản người nhận',
-        kRose,
-        Icons.error,
-      );
-      return;
-    }
-
-    if (receiverUid == currentUser!.uid) {
-      showNotificationDialog(
-        context,
-        'Lỗi',
-        'Không thể chuyển tiền cho chính mình',
         kRose,
         Icons.error,
       );
@@ -132,7 +121,7 @@ class _SendToUserPageState extends State<SendToUserPage> {
     final useCase = sl<TransferToUserUseCase>();
     final result = await useCase.call(
       currentUser!.uid,
-      receiverUid,
+      receiverAccountNumber,
       amount,
       _selectedCategoryId!,
     );
@@ -154,17 +143,17 @@ class _SendToUserPageState extends State<SendToUserPage> {
         String senderName = 'Người dùng';
 
         try {
-          // 1. Tìm thông tin người nhận dựa trên Số tài khoản (receiverUid đang chứa STK)
+          // 1. Tìm thông tin người nhận dựa trên Số tài khoản (receiverAccountNumber đang chứa STK)
           final receiverQuery = await FirebaseFirestore.instance
               .collection('users')
-              .where('accountNumber', isEqualTo: receiverUid)
+              .where('accountNumber', isEqualTo: receiverAccountNumber)
               .limit(1)
               .get();
 
           if (receiverQuery.docs.isNotEmpty) {
             final rData = receiverQuery.docs.first.data();
             final rFullName = rData['fullName'] ?? 'Người dùng';
-            receiverName = '$rFullName ($receiverUid)';
+            receiverName = '$rFullName ($receiverAccountNumber)';
           }
 
           // 2. Tìm thông tin người gửi (currentUser) từ Firestore để lấy fullName và STK

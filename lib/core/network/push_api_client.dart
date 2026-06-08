@@ -49,9 +49,9 @@ class PushApiClient {
           'title': title,
           'body': body,
           'type': type,
-          if (debtId != null) 'debtId': debtId,
-          if (walletId != null) 'walletId': walletId,
-          if (notificationId != null) 'notificationId': notificationId,
+          'debtId': ?debtId,
+          'walletId': ?walletId,
+          'notificationId': ?notificationId,
         },
         options: Options(
           headers: {
@@ -73,11 +73,17 @@ class PushApiClient {
         'status=${response.statusCode} sent=$sent failed=$failed skipped=$skipped reason=$reason',
       );
       if (sent == 0 && skipped == true) {
-        PushDebug.warn('Worker sendPush', 'Borrower không có FCM token trên thiết bị');
+        PushDebug.warn(
+          'Worker sendPush',
+          'Borrower không có FCM token trên thiết bị',
+        );
       }
       if (failed > 0) {
         final failErrors = data?['failErrors'] as List<dynamic>?;
-        PushDebug.warn('Worker sendPush', 'FCM gửi thất bại $failed/${ sent + failed } tokens. Chi tiết lỗi: $failErrors');
+        PushDebug.warn(
+          'Worker sendPush',
+          'FCM gửi thất bại $failed/${sent + failed} tokens. Chi tiết lỗi: $failErrors',
+        );
       }
     } on DioException catch (e) {
       final status = e.response?.statusCode;
