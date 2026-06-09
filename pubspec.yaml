@@ -56,6 +56,7 @@ dependencies:
   flutter_background_service: ^5.0.0
   flutter_local_notifications: ^21.0.0
   google_generative_ai: ^0.4.6
+  flutter_dotenv: ^5.0.4
 
 dev_dependencies:
   flutter_test:
@@ -94,6 +95,7 @@ flutter:
     - assets/BG.png
     - assets/robot.png
     - assets/ai/
+    - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

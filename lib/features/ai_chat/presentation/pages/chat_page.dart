@@ -83,6 +83,15 @@ class _ChatPageState extends State<ChatPage> {
       return 'Yêu cầu đã hết thời gian chờ. Vui lòng thử lại.';
     }
 
+    if (lower.contains('high demand') ||
+        lower.contains('503') ||
+        lower.contains('server error') ||
+        lower.contains('unavailable') ||
+        lower.contains('temporarily unavailable') ||
+        lower.contains('spikes in demand')) {
+      return 'Dịch vụ chatbot hiện đang quá tải hoặc tạm ngưng. Vui lòng thử lại sau vài phút.';
+    }
+
     if (lower.contains('empty response') ||
         lower.contains('empty response from ai') ||
         lower.contains('empty message')) {
@@ -96,7 +105,7 @@ class _ChatPageState extends State<ChatPage> {
       return 'Đã xảy ra lỗi khi xử lý phản hồi từ chatbot. Vui lòng thử lại.';
     }
 
-    return rawMessage;
+    return 'Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.';
   }
 
   @override

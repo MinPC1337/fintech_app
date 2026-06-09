@@ -53,6 +53,7 @@ import 'features/group_wallet/domain/usecases/withdraw_from_group_usecase.dart';
 import 'features/group_wallet/presentation/cubit/group_wallet_cubit.dart';
 
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'features/ai_chat/data/datasources/ai_function_definitions.dart';
 import 'features/ai_chat/data/datasources/ai_function_handler.dart';
 import 'features/ai_chat/data/datasources/chat_history_data_source.dart';
@@ -213,8 +214,11 @@ Future<void> init() async {
   );
 
   //! Features - AI Chatbot
-  // Gemini API key
-  const geminiApiKey = 'AIzaSyDQszR4ovyRbeEVoH_toXOrxUITdZ6COj4';
+  // Gemini API key read from .env
+  final geminiApiKey = dotenv.env['GEMINI_API_KEY']?.trim();
+  if (geminiApiKey == null || geminiApiKey.isEmpty) {
+    throw Exception('GEMINI_API_KEY must be set in the .env file');
+  }
 
   // Build system prompt từ knowledge base asset (async)
   final systemPromptText = await GeminiRemoteDataSourceImpl.buildSystemPrompt();
@@ -227,7 +231,7 @@ Future<void> init() async {
 
   final geminiModels = [
     GenerativeModel(
-      model: 'gemini-3.0-flash', // Ưu tiên 1: model mới nhất
+      model: 'gemini-3.5-flash', // Ưu tiên 1: model mới nhất
       apiKey: geminiApiKey,
       systemInstruction: systemInstruction,
       tools: [appDataTool],

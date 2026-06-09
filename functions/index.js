@@ -38,7 +38,7 @@ exports.uploadAvatar = functions.https.onRequest((req, res) => {
         const commaIndex = base64.indexOf(',');
         if (commaIndex !== -1) base64 = base64.slice(commaIndex + 1);
 
-        const imgbbKey = process.env.IMGBB_KEY || '52dd149a8c2c1242940bd1e77b66cb15';
+        const imgbbKey = process.env.IMGBB_KEY;
         const url = `https://api.imgbb.com/1/upload?key=${imgbbKey}`;
 
         try {
