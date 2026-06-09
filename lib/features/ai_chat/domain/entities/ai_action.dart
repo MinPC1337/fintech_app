@@ -33,9 +33,19 @@ class AIAction extends Equatable {
   @override
   List<Object?> get props => [type, targetRoute, params];
 
-  /// Parse action type từ string trả về bởi AI.
+  /// Parse action type từ string trả về bởi AI hoặc Firestore.
   static AIActionType parseType(String? actionStr) {
     if (actionStr == null) return AIActionType.none;
+
+    // 1. Thử parse trực tiếp từ enum name (camelCase — khi đọc từ Firestore)
+    //    VD: 'openDeposit', 'openTransfer', 'navigate', 'none', ...
+    try {
+      return AIActionType.values.byName(actionStr);
+    } catch (_) {
+      // fallthrough — thử parse dạng AI trả về (snake_case/short)
+    }
+
+    // 2. Parse từ string AI trả về (snake_case hoặc dạng ngắn)
     switch (actionStr.toLowerCase()) {
       case 'navigate':
         return AIActionType.navigate;

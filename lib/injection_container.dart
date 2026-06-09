@@ -53,6 +53,8 @@ import 'features/group_wallet/domain/usecases/withdraw_from_group_usecase.dart';
 import 'features/group_wallet/presentation/cubit/group_wallet_cubit.dart';
 
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'features/ai_chat/data/datasources/ai_function_definitions.dart';
+import 'features/ai_chat/data/datasources/ai_function_handler.dart';
 import 'features/ai_chat/data/datasources/chat_history_data_source.dart';
 import 'features/ai_chat/data/datasources/gemini_remote_data_source.dart';
 import 'features/ai_chat/data/datasources/gemini_session_manager.dart';
@@ -214,27 +216,57 @@ Future<void> init() async {
   // Gemini API key
   const geminiApiKey = 'AIzaSyDQszR4ovyRbeEVoH_toXOrxUITdZ6COj4';
 
-  // Gemini GenerativeModel (singleton — tạo một lần, dùng lại)
-  final geminiModel = GenerativeModel(
-    model: 'gemini-2.5-flash',
-    apiKey: geminiApiKey,
-    systemInstruction: Content.system(GeminiRemoteDataSourceImpl.systemPrompt),
-    generationConfig: GenerationConfig(responseMimeType: 'application/json'),
-  );
+  // Build system prompt từ knowledge base asset (async)
+  final systemPromptText = await GeminiRemoteDataSourceImpl.buildSystemPrompt();
 
-  // GeminiSessionManager — singleton, giữ in-memory cache
-  sl.registerLazySingleton(() => GeminiSessionManager(model: geminiModel));
+  // Gemini fallback chain: danh sách model theo thứ tự ưu tiên
+  // Khi model đầu bị quota/rate-limit → tự động chuyển sang model tiếp theo
+  // Function Calling tool được inject vào tất cả models để AI query dữ liệu thực tế
+  final systemInstruction = Content.system(systemPromptText);
+  final appDataTool = AiFunctionDefinitions.appDataTool;
+
+  final geminiModels = [
+    GenerativeModel(
+      model: 'gemini-3.0-flash', // Ưu tiên 1: model mới nhất
+      apiKey: geminiApiKey,
+      systemInstruction: systemInstruction,
+      tools: [appDataTool],
+    ),
+    GenerativeModel(
+      model: 'gemini-2.5-flash', // Ưu tiên 2: stable fallback
+      apiKey: geminiApiKey,
+      systemInstruction: systemInstruction,
+      tools: [appDataTool],
+    ),
+    GenerativeModel(
+      model: 'gemini-2.0-flash', // Ưu tiên 3: ổn định, free 1500 req/ngày
+      apiKey: geminiApiKey,
+      systemInstruction: systemInstruction,
+      tools: [appDataTool],
+    ),
+    GenerativeModel(
+      model: 'gemini-2.5-pro', // Ưu tiên 4: model nhỏ nhất, ít quota
+      apiKey: geminiApiKey,
+      systemInstruction: systemInstruction,
+      tools: [appDataTool],
+    ),
+  ];
+
+  // GeminiSessionManager — singleton, giữ in-memory cache + fallback chain
+  sl.registerLazySingleton(() => GeminiSessionManager(models: geminiModels));
 
   // UserContextBuilder — singleton, build context thực tế của user
-  sl.registerLazySingleton(
-    () => UserContextBuilder(firestore: sl()),
-  );
+  sl.registerLazySingleton(() => UserContextBuilder(firestore: sl()));
+
+  // AiFunctionHandler — thực thi Firestore queries khi AI gọi function
+  sl.registerLazySingleton(() => AiFunctionHandler(firestore: sl()));
 
   // Data Sources
   sl.registerLazySingleton<GeminiRemoteDataSource>(
     () => GeminiRemoteDataSourceImpl(
       sessionManager: sl(),
       userContextBuilder: sl(),
+      functionHandler: sl(),
     ),
   );
   sl.registerLazySingleton<ChatHistoryDataSource>(

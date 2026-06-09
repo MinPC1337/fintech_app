@@ -11,7 +11,6 @@ import '../cubit/chat_state.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/typing_indicator.dart';
 
-
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
 
@@ -61,6 +60,45 @@ class _ChatPageState extends State<ChatPage> {
     _chatCubit.sendMessage(text);
   }
 
+  String _friendlyErrorMessage(String rawMessage) {
+    final lower = rawMessage.toLowerCase();
+
+    if (lower.contains('socketexception') ||
+        lower.contains('failed host lookup') ||
+        lower.contains('network') ||
+        lower.contains('connection') ||
+        lower.contains('internet')) {
+      return 'Không thể kết nối mạng. Vui lòng kiểm tra Internet và thử lại.';
+    }
+
+    if (lower.contains('quota') ||
+        lower.contains('rate limit') ||
+        lower.contains('resource_exhausted') ||
+        lower.contains('429') ||
+        lower.contains('throttl')) {
+      return 'Dịch vụ chatbot đang quá tải hoặc đã hết hạn mức. Vui lòng thử lại sau vài phút.';
+    }
+
+    if (lower.contains('timeout')) {
+      return 'Yêu cầu đã hết thời gian chờ. Vui lòng thử lại.';
+    }
+
+    if (lower.contains('empty response') ||
+        lower.contains('empty response from ai') ||
+        lower.contains('empty message')) {
+      return 'Chatbot không trả lời được. Vui lòng thử lại.';
+    }
+
+    if (lower.contains('json') ||
+        lower.contains('unexpected character') ||
+        lower.contains('format exception') ||
+        lower.contains('invalid json')) {
+      return 'Đã xảy ra lỗi khi xử lý phản hồi từ chatbot. Vui lòng thử lại.';
+    }
+
+    return rawMessage;
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider.value(
@@ -71,7 +109,9 @@ class _ChatPageState extends State<ChatPage> {
         appBar: _buildAppBar(context),
         body: BlocConsumer<ChatCubit, ChatState>(
           listener: (context, state) {
-            if (state is ChatLoaded || state is ChatLoading) {
+            if (state is ChatLoaded ||
+                state is ChatLoading ||
+                state is ChatError) {
               Future.delayed(
                 const Duration(milliseconds: 100),
                 _scrollToBottom,
@@ -80,26 +120,23 @@ class _ChatPageState extends State<ChatPage> {
           },
           builder: (context, state) {
             List<dynamic> messages = [];
-            bool isLoading = false;
+            bool isTyping = false;
+            String? errorMessage;
 
             if (state is ChatLoaded) {
               messages = state.messages;
             } else if (state is ChatLoading) {
               messages = state.messages;
-              isLoading = true;
+              isTyping = state.isTyping;
             } else if (state is ChatError) {
               messages = state.messages;
-              // Vẫn hiển thị danh sách cũ kèm toast lỗi hoặc hiện text lỗi nhỏ
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Lỗi: \${state.message}',
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  backgroundColor: kRose,
-                ),
-              );
+              errorMessage = _friendlyErrorMessage(state.message);
             }
+
+            final itemCount =
+                messages.length +
+                (isTyping ? 1 : 0) +
+                (errorMessage != null ? 1 : 0);
 
             return Column(
               children: [
@@ -107,14 +144,47 @@ class _ChatPageState extends State<ChatPage> {
                   child: ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    itemCount: messages.length + (isLoading ? 1 : 0),
+                    itemCount: itemCount,
                     itemBuilder: (context, index) {
-                      if (index == messages.length) {
+                      if (index == messages.length && isTyping) {
                         return const Padding(
                           padding: EdgeInsets.only(left: 16, bottom: 8),
                           child: Align(
                             alignment: Alignment.centerLeft,
                             child: TypingIndicator(),
+                          ),
+                        );
+                      }
+
+                      if (errorMessage != null &&
+                          index == messages.length + (isTyping ? 1 : 0)) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: kRose.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: kRose.withOpacity(0.2),
+                                ),
+                              ),
+                              child: Text(
+                                'Lỗi: $errorMessage',
+                                style: const TextStyle(
+                                  color: kRose,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
                           ),
                         );
                       }

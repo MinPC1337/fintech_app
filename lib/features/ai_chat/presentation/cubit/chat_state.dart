@@ -15,15 +15,17 @@ class ChatLoading extends ChatState {
   final List<ChatSession> sessions;
   final String? currentSessionId;
   final List<ChatMessage> messages;
+  final bool isTyping;
 
   const ChatLoading({
     this.sessions = const [],
     this.currentSessionId,
     this.messages = const [],
+    this.isTyping = false,
   });
 
   @override
-  List<Object?> get props => [sessions, currentSessionId, messages];
+  List<Object?> get props => [sessions, currentSessionId, messages, isTyping];
 }
 
 class ChatLoaded extends ChatState {
@@ -57,5 +59,3 @@ class ChatError extends ChatState {
   @override
   List<Object?> get props => [message, sessions, currentSessionId, messages];
 }
-
-

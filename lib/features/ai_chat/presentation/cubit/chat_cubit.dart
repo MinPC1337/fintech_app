@@ -38,86 +38,106 @@ class ChatCubit extends Cubit<ChatState> {
   void init(String userId) {
     _currentUserId = userId;
     _sessionsSubscription?.cancel();
-    
-    emit(ChatLoading(
-      sessions: _currentSessions, 
-      currentSessionId: _currentSessionId, 
-      messages: _currentMessages
-    ));
-    
+
+    emit(
+      ChatLoading(
+        sessions: _currentSessions,
+        currentSessionId: _currentSessionId,
+        messages: _currentMessages,
+        isTyping: false,
+      ),
+    );
+
     _sessionsSubscription = watchSessionsUseCase(userId).listen(
       (sessions) {
         _currentSessions = sessions;
-        
+
         // Nếu chưa có session nào được chọn, chọn session đầu tiên
         // Nếu danh sách trống, tạo session mới
         if (sessions.isEmpty) {
           createNewSession();
-        } else if (_currentSessionId == null || !sessions.any((s) => s.id == _currentSessionId)) {
+        } else if (_currentSessionId == null ||
+            !sessions.any((s) => s.id == _currentSessionId)) {
           switchSession(sessions.first.id);
         } else {
           _emitLoaded();
         }
       },
       onError: (e) {
-        emit(ChatError(
-          message: e.toString(),
-          sessions: _currentSessions,
-          currentSessionId: _currentSessionId,
-          messages: _currentMessages,
-        ));
+        emit(
+          ChatError(
+            message: e.toString(),
+            sessions: _currentSessions,
+            currentSessionId: _currentSessionId,
+            messages: _currentMessages,
+          ),
+        );
       },
     );
   }
 
   void _watchMessages(String sessionId) {
     if (_currentUserId == null) return;
-    
+
     _messagesSubscription?.cancel();
-    _messagesSubscription = getChatHistoryUseCase(_currentUserId!, sessionId).listen(
-      (messages) {
-        _currentMessages = messages;
-        _emitLoaded();
-      },
-      onError: (e) {
-        emit(ChatError(
-          message: e.toString(),
-          sessions: _currentSessions,
-          currentSessionId: _currentSessionId,
-          messages: _currentMessages,
-        ));
-      },
-    );
+    _messagesSubscription = getChatHistoryUseCase(_currentUserId!, sessionId)
+        .listen(
+          (messages) {
+            _currentMessages = messages;
+            _emitLoaded();
+          },
+          onError: (e) {
+            emit(
+              ChatError(
+                message: e.toString(),
+                sessions: _currentSessions,
+                currentSessionId: _currentSessionId,
+                messages: _currentMessages,
+              ),
+            );
+          },
+        );
   }
 
   void switchSession(String sessionId) {
     _currentSessionId = sessionId;
     _currentMessages = []; // Xóa tin nhắn cũ trước khi load tin mới
-    emit(ChatLoading(
-      sessions: _currentSessions, 
-      currentSessionId: _currentSessionId, 
-      messages: _currentMessages
-    ));
+    emit(
+      ChatLoading(
+        sessions: _currentSessions,
+        currentSessionId: _currentSessionId,
+        messages: _currentMessages,
+        isTyping: false,
+      ),
+    );
     _watchMessages(sessionId);
   }
 
   Future<void> createNewSession() async {
     if (_currentUserId == null) return;
-    
-    emit(ChatLoading(
-      sessions: _currentSessions, 
-      currentSessionId: _currentSessionId, 
-      messages: _currentMessages
-    ));
-    
-    final result = await createSessionUseCase(_currentUserId!, 'Trò chuyện mới');
-    result.fold(
-      (failure) => emit(ChatError(
-        message: failure.message,
+
+    emit(
+      ChatLoading(
         sessions: _currentSessions,
         currentSessionId: _currentSessionId,
         messages: _currentMessages,
-      )),
+        isTyping: false,
+      ),
+    );
+
+    final result = await createSessionUseCase(
+      _currentUserId!,
+      'Trò chuyện mới',
+    );
+    result.fold(
+      (failure) => emit(
+        ChatError(
+          message: failure.message,
+          sessions: _currentSessions,
+          currentSessionId: _currentSessionId,
+          messages: _currentMessages,
+        ),
+      ),
       (session) {
         switchSession(session.id);
       },
@@ -126,21 +146,26 @@ class ChatCubit extends Cubit<ChatState> {
 
   Future<void> deleteSession(String sessionId) async {
     if (_currentUserId == null) return;
-    
-    emit(ChatLoading(
-      sessions: _currentSessions, 
-      currentSessionId: _currentSessionId, 
-      messages: _currentMessages
-    ));
-    
-    final result = await deleteSessionUseCase(_currentUserId!, sessionId);
-    result.fold(
-      (failure) => emit(ChatError(
-        message: failure.message,
+
+    emit(
+      ChatLoading(
         sessions: _currentSessions,
         currentSessionId: _currentSessionId,
         messages: _currentMessages,
-      )),
+        isTyping: false,
+      ),
+    );
+
+    final result = await deleteSessionUseCase(_currentUserId!, sessionId);
+    result.fold(
+      (failure) => emit(
+        ChatError(
+          message: failure.message,
+          sessions: _currentSessions,
+          currentSessionId: _currentSessionId,
+          messages: _currentMessages,
+        ),
+      ),
       (_) {
         // Stream session sẽ tự động cập nhật và gọi lại switchSession nếu cần
       },
@@ -148,14 +173,21 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   Future<void> sendMessage(String text) async {
-    if (_currentUserId == null || _currentSessionId == null || text.trim().isEmpty) return;
+    if (_currentUserId == null ||
+        _currentSessionId == null ||
+        text.trim().isEmpty) {
+      return;
+    }
 
-    emit(ChatLoading(
-      sessions: _currentSessions,
-      currentSessionId: _currentSessionId,
-      messages: _currentMessages,
-    ));
-    
+    emit(
+      ChatLoading(
+        sessions: _currentSessions,
+        currentSessionId: _currentSessionId,
+        messages: _currentMessages,
+        isTyping: true,
+      ),
+    );
+
     final result = await sendMessageUseCase(
       message: text,
       history: _currentMessages,
@@ -165,13 +197,14 @@ class ChatCubit extends Cubit<ChatState> {
 
     result.fold(
       (failure) {
-        emit(ChatError(
-          message: failure.message,
-          sessions: _currentSessions,
-          currentSessionId: _currentSessionId,
-          messages: _currentMessages,
-        ));
-        _emitLoaded();
+        emit(
+          ChatError(
+            message: failure.message,
+            sessions: _currentSessions,
+            currentSessionId: _currentSessionId,
+            messages: _currentMessages,
+          ),
+        );
       },
       (_) {
         // Firestore stream tự cập nhật tin nhắn (bao gồm action field)
@@ -182,22 +215,30 @@ class ChatCubit extends Cubit<ChatState> {
 
   Future<void> clearHistory() async {
     if (_currentUserId == null || _currentSessionId == null) return;
-    
-    emit(ChatLoading(
-      sessions: _currentSessions,
-      currentSessionId: _currentSessionId,
-      messages: _currentMessages,
-    ));
-    
-    final result = await clearChatHistoryUseCase(_currentUserId!, _currentSessionId!);
-    
-    result.fold(
-      (failure) => emit(ChatError(
-        message: failure.message,
+
+    emit(
+      ChatLoading(
         sessions: _currentSessions,
         currentSessionId: _currentSessionId,
         messages: _currentMessages,
-      )),
+        isTyping: false,
+      ),
+    );
+
+    final result = await clearChatHistoryUseCase(
+      _currentUserId!,
+      _currentSessionId!,
+    );
+
+    result.fold(
+      (failure) => emit(
+        ChatError(
+          message: failure.message,
+          sessions: _currentSessions,
+          currentSessionId: _currentSessionId,
+          messages: _currentMessages,
+        ),
+      ),
       (_) {
         // Stream Firestore sẽ update UI
       },
@@ -205,11 +246,13 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   void _emitLoaded() {
-    emit(ChatLoaded(
-      sessions: _currentSessions,
-      currentSessionId: _currentSessionId,
-      messages: _currentMessages,
-    ));
+    emit(
+      ChatLoaded(
+        sessions: _currentSessions,
+        currentSessionId: _currentSessionId,
+        messages: _currentMessages,
+      ),
+    );
   }
 
   @override
