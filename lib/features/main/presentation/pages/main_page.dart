@@ -16,12 +16,20 @@ import '../../../ai_chat/presentation/pages/chat_page.dart';
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
 
+  static MainPageState? of(BuildContext context) => context.findAncestorStateOfType<MainPageState>();
+
   @override
-  State<MainPage> createState() => _MainPageState();
+  State<MainPage> createState() => MainPageState();
 }
 
-class _MainPageState extends State<MainPage> {
+class MainPageState extends State<MainPage> {
   int _currentIndex = 0;
+
+  void changeTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
 
   // Danh sách các trang. Index 0 là HomePage hiện tại của bạn.
   @override

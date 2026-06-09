@@ -15,7 +15,7 @@ class NotificationsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         backgroundColor: kBgColor,
         appBar: AppBar(
@@ -29,8 +29,9 @@ class NotificationsPage extends StatelessWidget {
             indicatorColor: kCyan,
             dividerColor: Colors.transparent,
             tabs: [
-              Tab(text: 'Biến động số dư'),
+              Tab(text: 'Biến động'),
               Tab(text: 'Thông báo'),
+              Tab(text: 'Cảnh báo'),
             ],
           ),
         ),
@@ -38,6 +39,7 @@ class NotificationsPage extends StatelessWidget {
           children: [
             TransactionHistoryPage(userId: userId),
             _buildNotificationsTab(context),
+            _buildWarningsTab(context),
           ],
         ),
       ),
@@ -238,6 +240,111 @@ class NotificationsPage extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWarningsTab(BuildContext context) {
+    // Trả về dữ liệu mock giả lập cho Cảnh báo ngân sách
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        _buildWarningItem(
+          title: 'Cảnh báo ngân sách',
+          body:
+              'Bạn đã dùng 85% ngân sách tháng này. Hãy chú ý các khoản chi tiêu sắp tới để không vượt quá giới hạn.',
+          timestamp: DateTime.now(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWarningItem({
+    required String title,
+    required String body,
+    required DateTime timestamp,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: kThemeSurfaceSecondary,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.orange,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'CẢNH BÁO',
+                          style: TextStyle(
+                            color: Colors.orange,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        DateFormat('HH:mm - dd/MM/yyyy').format(timestamp),
+                        style: TextStyle(
+                          color: kTextSecondary.withValues(alpha: 0.7),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: kTextPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    body,
+                    style: TextStyle(
+                      color: kTextSecondary.withValues(alpha: 0.9),
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
