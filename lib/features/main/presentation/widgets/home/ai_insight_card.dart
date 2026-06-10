@@ -197,7 +197,7 @@ class AiInsightCard extends StatelessWidget {
                                     fontSize: 12,
                                     height: 1.5,
                                   ),
-                                  maxLines: 3,
+                                  maxLines: 7,
                                   overflow: TextOverflow.ellipsis,
                                 );
                               }

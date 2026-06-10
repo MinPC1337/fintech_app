@@ -108,6 +108,36 @@ class _ChatPageState extends State<ChatPage> {
     return 'Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.';
   }
 
+  Future<void> _showDeleteConfirmation(
+    BuildContext context, {
+    required String title,
+    required String content,
+    required VoidCallback onConfirm,
+  }) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: kThemeSurfaceSecondary,
+        title: Text(title, style: const TextStyle(color: kTextPrimary)),
+        content: Text(content, style: const TextStyle(color: kTextSecondary)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy', style: TextStyle(color: kTextSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Xóa', style: TextStyle(color: kRose, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      onConfirm();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider.value(
@@ -304,7 +334,12 @@ class _ChatPageState extends State<ChatPage> {
                 icon: const Icon(Icons.delete_sweep_outlined, color: kRose),
                 tooltip: 'Xóa lịch sử phiên này',
                 onPressed: () {
-                  _chatCubit.clearHistory();
+                  _showDeleteConfirmation(
+                    context,
+                    title: 'Xóa lịch sử trò chuyện',
+                    content: 'Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện của phiên này không?',
+                    onConfirm: () => _chatCubit.clearHistory(),
+                  );
                 },
               ),
               IconButton(
@@ -398,7 +433,14 @@ class _ChatPageState extends State<ChatPage> {
                             color: kTextSecondary,
                             size: 20,
                           ),
-                          onPressed: () => _chatCubit.deleteSession(session.id),
+                          onPressed: () {
+                            _showDeleteConfirmation(
+                              context,
+                              title: 'Xóa phiên chat',
+                              content: 'Bạn có chắc chắn muốn xóa vĩnh viễn phiên chat này không?',
+                              onConfirm: () => _chatCubit.deleteSession(session.id),
+                            );
+                          },
                         ),
                         onTap: () {
                           Navigator.pop(context);

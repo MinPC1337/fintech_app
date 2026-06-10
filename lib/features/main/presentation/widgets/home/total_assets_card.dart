@@ -60,15 +60,50 @@ class _TotalAssetsCardState extends State<TotalAssetsCard> {
               width: 16,
               height: 20,
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.black.withValues(alpha: 0.3), width: 0.5),
+                border: Border.all(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  width: 0.5,
+                ),
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
           ),
-          Positioned(top: 8, left: 0, right: 0, child: Container(height: 0.5, color: Colors.black.withValues(alpha: 0.3))),
-          Positioned(bottom: 8, left: 0, right: 0, child: Container(height: 0.5, color: Colors.black.withValues(alpha: 0.3))),
-          Positioned(top: 0, bottom: 0, left: 12, child: Container(width: 0.5, color: Colors.black.withValues(alpha: 0.3))),
-          Positioned(top: 0, bottom: 0, right: 12, child: Container(width: 0.5, color: Colors.black.withValues(alpha: 0.3))),
+          Positioned(
+            top: 8,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 0.5,
+              color: Colors.black.withValues(alpha: 0.3),
+            ),
+          ),
+          Positioned(
+            bottom: 8,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 0.5,
+              color: Colors.black.withValues(alpha: 0.3),
+            ),
+          ),
+          Positioned(
+            top: 0,
+            bottom: 0,
+            left: 12,
+            child: Container(
+              width: 0.5,
+              color: Colors.black.withValues(alpha: 0.3),
+            ),
+          ),
+          Positioned(
+            top: 0,
+            bottom: 0,
+            right: 12,
+            child: Container(
+              width: 0.5,
+              color: Colors.black.withValues(alpha: 0.3),
+            ),
+          ),
         ],
       ),
     );
@@ -87,7 +122,10 @@ class _TotalAssetsCardState extends State<TotalAssetsCard> {
             Color(0xFF11182B),
           ],
         ),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: kCyan.withValues(alpha: 0.1),
@@ -103,122 +141,109 @@ class _TotalAssetsCardState extends State<TotalAssetsCard> {
           String? primaryWalletId;
 
           if (walletSnapshot.hasData) {
-            walletSnapshot.data!.fold(
-              (failure) => null,
-              (wallet) {
-                currentBalance = wallet?.balance ?? 0.0;
-                primaryWalletId = wallet?.id;
-              },
-            );
+            walletSnapshot.data!.fold((failure) => null, (wallet) {
+              currentBalance = wallet?.balance ?? 0.0;
+              primaryWalletId = wallet?.id;
+            });
           }
 
           return StreamBuilder<List<dynamic>>(
             stream: getTransactionsStreamUseCase.call(widget.userId),
             builder: (context, txSnapshot) {
               final allTransactions = txSnapshot.data ?? [];
-              
+
               // Lọc các giao dịch liên quan đến ví chính
-              final relevantTx = allTransactions.where((tx) => 
-                tx.fromWalletId == primaryWalletId || tx.toWalletId == primaryWalletId
-              ).toList();
+              final relevantTx = allTransactions
+                  .where(
+                    (tx) =>
+                        tx.fromWalletId == primaryWalletId ||
+                        tx.toWalletId == primaryWalletId,
+                  )
+                  .toList();
 
               // Sắp xếp tăng dần theo thời gian (cũ -> mới)
               relevantTx.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
-              // Tính toán số dư quá khứ để vẽ biểu đồ và so sánh
+              // Tính toán số dư quá khứ để vẽ biểu đồ và so sánh (3 tháng gần nhất)
               final now = DateTime.now();
-              final thirtyDaysAgo = now.subtract(const Duration(days: 30));
-              
-              double balance30DaysAgo = currentBalance;
-              // Ngược về quá khứ: 
-              // Nếu là chi tiêu (fromWallet) -> quá khứ chưa chi -> cộng lại
-              // Nếu là thu nhập (toWallet) -> quá khứ chưa thu -> trừ đi
+              DateTime getPastMonth(int monthsAgo) {
+                int year = now.year;
+                int month = now.month - monthsAgo;
+                while (month <= 0) {
+                  year--;
+                  month += 12;
+                }
+                return DateTime(year, month, now.day);
+              }
+
+              final oneMonthAgo = getPastMonth(1);
+              final twoMonthsAgo = getPastMonth(2);
+              final threeMonthsAgo = getPastMonth(3);
+
+              double bal1 = currentBalance;
+              double bal2 = currentBalance;
+              double bal3 = currentBalance;
+
               for (var tx in relevantTx.reversed) {
-                if (tx.timestamp.isAfter(thirtyDaysAgo)) {
-                  if (tx.fromWalletId == primaryWalletId) {
-                    balance30DaysAgo += tx.amount; // Hoàn tác chi
-                  } else if (tx.toWalletId == primaryWalletId) {
-                    balance30DaysAgo -= tx.amount; // Hoàn tác thu
-                  }
+                double change = 0;
+                if (tx.fromWalletId == primaryWalletId) {
+                  change = tx.amount;
+                } else if (tx.toWalletId == primaryWalletId) {
+                  change = -tx.amount;
+                }
+
+                if (tx.timestamp.isAfter(oneMonthAgo)) {
+                  bal1 += change;
+                }
+                if (tx.timestamp.isAfter(twoMonthsAgo)) {
+                  bal2 += change;
+                }
+                if (tx.timestamp.isAfter(threeMonthsAgo)) {
+                  bal3 += change;
                 }
               }
 
-              // Tính tỷ lệ phần trăm thay đổi
-              double growth = currentBalance - balance30DaysAgo;
+              // Tính tỷ lệ phần trăm thay đổi so với 1 tháng trước
+              double growth = currentBalance - bal1;
               double percentChange = 0.0;
-              if (balance30DaysAgo > 0) {
-                percentChange = (growth / balance30DaysAgo) * 100;
+              if (bal1 > 0) {
+                percentChange = (growth / bal1) * 100;
               } else if (growth > 0) {
                 percentChange = 100.0;
               }
 
-              // Tạo dữ liệu cho biểu đồ 30 ngày (Lấy 15 điểm cho mượt)
-              List<FlSpot> spots = [];
-              double maxBalance = currentBalance;
-              double minBalance = currentBalance;
-              
-              if (relevantTx.isNotEmpty) {
-                for (int i = 0; i <= 30; i += 2) { // 15 points
-                  DateTime targetDate = thirtyDaysAgo.add(Duration(days: i));
-                  
-                  // Tính số dư tại targetDate
-                  // Bắt đầu từ balance30DaysAgo, duyệt từ cũ -> mới
-                  double balAtDate = balance30DaysAgo;
-                  for (var tx in relevantTx) {
-                    if (tx.timestamp.isAfter(thirtyDaysAgo) && 
-                        tx.timestamp.isBefore(targetDate)) {
-                      if (tx.toWalletId == primaryWalletId) {
-                        balAtDate += tx.amount;
-                      } else if (tx.fromWalletId == primaryWalletId) {
-                        balAtDate -= tx.amount;
-                      }
-                    }
-                  }
-                  
-                  if (balAtDate > maxBalance) maxBalance = balAtDate;
-                  if (balAtDate < minBalance) minBalance = balAtDate;
-                  
-                  spots.add(FlSpot((i / 2).toDouble(), balAtDate));
-                }
-              }
+              double maxBalance = [
+                bal3,
+                bal2,
+                bal1,
+                currentBalance,
+              ].reduce((a, b) => a > b ? a : b);
+              if (maxBalance <= 0) maxBalance = 1;
+              double chartMaxY = maxBalance * 1.3;
 
-              // Fallback nếu không có giao dịch
-              if (spots.isEmpty || spots.length < 2) {
-                spots = const [
-                  FlSpot(0, 0),
-                  FlSpot(1, 0),
-                  FlSpot(2, 0),
-                ];
-                maxBalance = 1;
-                minBalance = 0;
-              }
-
-              // Để biểu đồ không chạm sát đáy/đỉnh
-              double chartMaxY = maxBalance + (maxBalance - minBalance) * 0.2;
-              double chartMinY = minBalance - (maxBalance - minBalance) * 0.2;
-              if (chartMaxY == chartMinY) {
-                chartMaxY += 1000000;
-                chartMinY -= 1000000;
-              }
-              if (chartMinY < 0) chartMinY = 0;
+              List<FlSpot> spots = [
+                FlSpot(0, bal3),
+                FlSpot(1, bal2),
+                FlSpot(2, bal1),
+                FlSpot(3, currentBalance),
+              ];
 
               return Stack(
                 children: [
-                  // Background Chart
+                  // Biểu đồ so sánh
                   Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    height: 100, 
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(24),
-                        bottomRight: Radius.circular(24),
-                      ),
-                      child: _buildBackgroundChart(spots, chartMinY, chartMaxY),
-                    ),
+                    left: 24,
+                    right: 24,
+                    bottom: 20,
+                    height: 120,
+                    child: _buildFintechLineChart(spots, chartMaxY, [
+                      'Th${threeMonthsAgo.month}',
+                      'Th${twoMonthsAgo.month}',
+                      'Th${oneMonthAgo.month}',
+                      '${now.day}/${now.month}',
+                    ]),
                   ),
-                  
+
                   Padding(
                     padding: const EdgeInsets.all(24.0),
                     child: Column(
@@ -258,9 +283,9 @@ class _TotalAssetsCardState extends State<TotalAssetsCard> {
                             _buildCardChip(),
                           ],
                         ),
-                        
+
                         const SizedBox(height: 16),
-                        
+
                         // Số dư chính
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -270,9 +295,9 @@ class _TotalAssetsCardState extends State<TotalAssetsCard> {
                               _isBalanceHidden
                                   ? '******'
                                   : currencyFormatter
-                                      .format(currentBalance)
-                                      .replaceAll('đ', '')
-                                      .trim(),
+                                        .format(currentBalance)
+                                        .replaceAll('đ', '')
+                                        .trim(),
                               style: const TextStyle(
                                 fontSize: 36,
                                 fontWeight: FontWeight.bold,
@@ -291,15 +316,17 @@ class _TotalAssetsCardState extends State<TotalAssetsCard> {
                             ),
                           ],
                         ),
-                        
+
                         const SizedBox(height: 8),
-                        
+
                         // Biến động
                         Row(
                           children: [
                             Icon(
-                              percentChange >= 0 ? Icons.arrow_drop_up : Icons.arrow_drop_down, 
-                              color: percentChange >= 0 ? kEmerald : kRose, 
+                              percentChange >= 0
+                                  ? Icons.arrow_drop_up
+                                  : Icons.arrow_drop_down,
+                              color: percentChange >= 0 ? kEmerald : kRose,
                               size: 24,
                             ),
                             Text(
@@ -320,85 +347,116 @@ class _TotalAssetsCardState extends State<TotalAssetsCard> {
                             ),
                           ],
                         ),
-                        
+
                         // Khoảng trống để chứa biểu đồ
-                        const SizedBox(height: 60), 
-                      ],
-                    ),
-                  ),
-                  
-                  // Tooltip/Data point thật ở cuối biểu đồ
-                  Positioned(
-                    right: 40,
-                    bottom: 60,
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            children: [
-                              Text(
-                                _isBalanceHidden
-                                    ? '***'
-                                    : '${currencyFormatter.format(currentBalance).replaceAll('đ', '').trim()} đ',
-                                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                              ),
-                              Text(
-                                DateFormat('dd/MM').format(now),
-                                style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 9),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: const [
-                              BoxShadow(color: kCyan, blurRadius: 10, spreadRadius: 2),
-                            ],
-                            border: Border.all(color: kCyan, width: 2),
-                          ),
-                        ),
+                        const SizedBox(height: 140),
                       ],
                     ),
                   ),
                 ],
               );
-            }
+            },
           );
         },
       ),
     );
   }
 
-  Widget _buildBackgroundChart(List<FlSpot> spots, double minY, double maxY) {
+  Widget _buildFintechLineChart(
+    List<FlSpot> spots,
+    double maxY,
+    List<String> labels,
+  ) {
     return LineChart(
       LineChartData(
-        gridData: const FlGridData(show: false),
-        titlesData: const FlTitlesData(show: false),
+        minX: 0,
+        maxX: 3,
+        minY: 0,
+        maxY: maxY,
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: maxY / 4 > 0 ? maxY / 4 : 1,
+          getDrawingHorizontalLine: (value) {
+            return FlLine(
+              color: Colors.white.withValues(alpha: 0.05),
+              strokeWidth: 1,
+              dashArray: [4, 4],
+            );
+          },
+        ),
+        titlesData: FlTitlesData(
+          show: true,
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              interval: 1,
+              getTitlesWidget: (value, meta) {
+                int index = value.toInt();
+                if (index < 0 || index >= labels.length) {
+                  return const SizedBox.shrink();
+                }
+                final isCurrent = index == labels.length - 1;
+                return SideTitleWidget(
+                  key: ValueKey('line_label_$value'),
+                  axisSide: meta.axisSide,
+                  space: 12,
+                  child: Text(
+                    labels[index],
+                    style: TextStyle(
+                      color: isCurrent
+                          ? kCyan
+                          : Colors.white.withValues(alpha: 0.5),
+                      fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+                      fontSize: 12,
+                    ),
+                  ),
+                );
+              },
+              reservedSize: 30,
+            ),
+          ),
+          leftTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+        ),
         borderData: FlBorderData(show: false),
         lineBarsData: [
           LineChartBarData(
             spots: spots,
             isCurved: true,
-            color: const Color(0xFF4A65FF),
-            barWidth: 3,
+            curveSmoothness: 0.35,
+            gradient: const LinearGradient(
+              colors: [kCyan, kEmerald],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+            barWidth: 4,
             isStrokeCapRound: true,
-            dotData: const FlDotData(show: false),
+            dotData: FlDotData(
+              show: true,
+              getDotPainter: (spot, percent, barData, index) {
+                final isCurrent = index == 3;
+                return FlDotCirclePainter(
+                  radius: isCurrent ? 5 : 3,
+                  color: isCurrent ? Colors.white : kCyan,
+                  strokeWidth: isCurrent ? 3 : 2,
+                  strokeColor: isCurrent ? kEmerald : Colors.white,
+                );
+              },
+            ),
             belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(
                 colors: [
-                  const Color(0xFF4A65FF).withValues(alpha: 0.3),
-                  const Color(0xFF4A65FF).withValues(alpha: 0.0),
+                  kEmerald.withValues(alpha: 0.3),
+                  kCyan.withValues(alpha: 0.0),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -406,10 +464,27 @@ class _TotalAssetsCardState extends State<TotalAssetsCard> {
             ),
           ),
         ],
-        minX: spots.first.x,
-        maxX: spots.last.x,
-        minY: minY,
-        maxY: maxY,
+        lineTouchData: LineTouchData(
+          enabled: true,
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipColor: (touchedSpot) =>
+                const Color(0xFF1E284A).withValues(alpha: 0.9),
+            tooltipRoundedRadius: 8,
+            tooltipBorder: const BorderSide(color: kCyan, width: 1),
+            getTooltipItems: (touchedSpots) {
+              return touchedSpots.map((LineBarSpot touchedSpot) {
+                return LineTooltipItem(
+                  '${currencyFormatter.format(touchedSpot.y).replaceAll('đ', '').trim()} đ',
+                  const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                );
+              }).toList();
+            },
+          ),
+        ),
       ),
     );
   }
