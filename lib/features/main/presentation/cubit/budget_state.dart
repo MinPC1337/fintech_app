@@ -46,12 +46,14 @@ class BudgetLoaded extends BudgetState {
     required this.month,
     required this.items,
     required this.walletId,
+    required this.weeklySpendings,
     this.errorMessage,
   });
 
   final DateTime month;
   final List<BudgetLineItem> items;
   final String walletId;
+  final List<double> weeklySpendings; // 4 weeks
 
   /// Lỗi từ thao tác CRUD (không chặn toàn trang).
   final String? errorMessage;
@@ -63,5 +65,5 @@ class BudgetLoaded extends BudgetState {
       items.fold<double>(0, (s, i) => s + i.spentThisMonth);
 
   @override
-  List<Object?> get props => [month, items, walletId, errorMessage];
+  List<Object?> get props => [month, items, walletId, weeklySpendings, errorMessage];
 }

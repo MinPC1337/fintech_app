@@ -12,6 +12,12 @@ import '../../../auth/presentation/cubit/auth_state.dart';
 import '../../domain/entities/category_entity.dart';
 import '../cubit/budget_cubit.dart';
 import '../cubit/budget_state.dart';
+import '../widgets/budget/budget_header.dart';
+import '../widgets/budget/budget_summary_card.dart';
+import '../widgets/budget/budget_allocation_card.dart';
+import '../widgets/budget/budget_alerts_card.dart';
+import '../widgets/budget/weekly_spending_card.dart';
+import '../widgets/budget/budget_category_list.dart';
 import 'add_budget_page.dart';
 
 String _formatBudgetMoney(double value) {
@@ -176,6 +182,99 @@ class _BudgetScaffold extends StatelessWidget {
             ? (totalSpent / totalLimit).clamp(0, 1).toDouble()
             : 0.0;
 
+        final now = DateTime.now();
+        int remainingDays = 0;
+        if (loaded.month.year == now.year && loaded.month.month == now.month) {
+          final lastDay = DateTime(now.year, now.month + 1, 0).day;
+          remainingDays = lastDay - now.day;
+        } else if (loaded.month.isAfter(now)) {
+          remainingDays = DateTime(loaded.month.year, loaded.month.month + 1, 0).day;
+        }
+
+        final List<Color> palette = [
+          const Color(0xFFF59E0B),
+          kPurple,
+          kElectricBlue,
+          kEmerald,
+          kRose,
+          Colors.cyan,
+          Colors.pink,
+          Colors.teal,
+        ];
+
+        final allocationItems = <AllocationItem>[];
+        final alertItems = <AlertItem>[];
+        final categoryItems = <CategoryListItem>[];
+        
+        for (int i = 0; i < loaded.items.length; i++) {
+          final item = loaded.items[i];
+          final color = palette[i % palette.length];
+          final spent = item.spentThisMonth;
+          final limit = item.budgetLimit;
+          final r = limit > 0 ? spent / limit : 0.0;
+          final isOver = spent > limit;
+          final percentage = '${(r * 100).toInt()}%';
+
+          // Allocation
+          if (spent > 0) {
+            allocationItems.add(AllocationItem(
+              label: item.category.name,
+              value: spent,
+              color: color,
+            ));
+          }
+
+          // Alert (show top alerts)
+          String badgeText = 'Ổn định';
+          Color badgeColor = kElectricBlue;
+          if (isOver) {
+            badgeText = 'Vượt ngân sách';
+            badgeColor = kRose;
+          } else if (r >= 0.8) {
+            badgeText = 'Cảnh báo';
+            badgeColor = const Color(0xFFF59E0B);
+          } else if (r <= 0.5) {
+            badgeText = 'Tốt';
+            badgeColor = kEmerald;
+          }
+
+          if (isOver || r >= 0.8 || alertItems.length < 3) {
+            alertItems.add(AlertItem(
+              emoji: _budgetCategoryEmoji(item.category),
+              iconColor: color,
+              title: item.category.name,
+              subtitle: isOver 
+                  ? 'Đã vượt ${(r * 100 - 100).toInt()}% ngân sách' 
+                  : 'Còn ${_formatBudgetMoney(limit - spent)} đ (${(100 - r * 100).toInt()}%)',
+              badgeText: badgeText,
+              badgeColor: badgeColor,
+            ));
+          }
+
+          // Category List
+          categoryItems.add(CategoryListItem(
+            emoji: _budgetCategoryEmoji(item.category),
+            iconColor: color,
+            title: item.category.name,
+            spent: _formatBudgetMoney(spent),
+            limit: '${_formatBudgetMoney(limit)} đ',
+            percentage: percentage,
+            ratio: r.clamp(0.0, 1.0),
+            isOverBudget: isOver,
+            categoryId: item.category.id,
+          ));
+        }
+
+        // Convert allocation absolute values to percentages
+        final totalAllocation = allocationItems.fold<double>(0, (s, i) => s + i.value);
+        final finalAllocationItems = allocationItems.map((e) {
+          return AllocationItem(
+            label: e.label,
+            value: totalAllocation > 0 ? (e.value / totalAllocation * 100) : 0.0,
+            color: e.color,
+          );
+        }).toList();
+
         return Scaffold(
           backgroundColor: kBgColor,
           body: SafeArea(
@@ -185,112 +284,49 @@ class _BudgetScaffold extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _Header(
-                    title: 'NGÂN SÁCH',
-                    subtitle:
-                        'Theo dõi giới hạn và chi tiêu thực tế theo tháng',
-                    trailing: _MonthPickerChip(
-                      month: loaded.month,
-                      onPrev: () => context.read<BudgetCubit>().changeMonth(-1),
-                      onNext: () => context.read<BudgetCubit>().changeMonth(1),
-                    ),
+                  BudgetHeader(
+                    monthYearText: 'Tháng ${DateFormat('MM/yyyy').format(loaded.month)}',
+                    onPrevMonth: () =>
+                        context.read<BudgetCubit>().changeMonth(-1),
+                    onNextMonth: () =>
+                        context.read<BudgetCubit>().changeMonth(1),
                   ),
-                  const SizedBox(height: 20),
-                  _GlassCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            _Kpi(
-                              label: 'ĐÃ CHI',
-                              value: _formatBudgetMoney(totalSpent),
-                              color: kRose,
-                            ),
-                            _Kpi(
-                              label: 'CÒN LẠI',
-                              value: _formatBudgetMoney(remaining),
-                              color: kEmerald,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 18),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: SizedBox(
-                            height: 10,
-                            child: LinearProgressIndicator(
-                              value: ratio,
-                              backgroundColor: Colors.white.withValues(
-                                alpha: 0.06,
-                              ),
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                kCyan,
-                              ),
+                  const SizedBox(height: 24),
+                  BudgetSummaryCard(
+                    totalBudget: _formatBudgetMoney(totalLimit),
+                    spentAmount: _formatBudgetMoney(totalSpent),
+                    remainingAmount: _formatBudgetMoney(remaining),
+                    usagePercentage: ratio,
+                    remainingDays: remainingDays,
+                  ),
+                  const SizedBox(height: 24),
+                  BudgetAllocationCard(items: finalAllocationItems),
+                  const SizedBox(height: 24),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isWide = constraints.maxWidth > 600;
+                      final cardWidth = isWide ? (constraints.maxWidth - 24) / 2 : constraints.maxWidth;
+                      return Wrap(
+                        spacing: 24,
+                        runSpacing: 24,
+                        children: [
+                          SizedBox(
+                            width: cardWidth,
+                            child: BudgetAlertsCard(items: alertItems),
+                          ),
+                          SizedBox(
+                            width: cardWidth,
+                            child: WeeklySpendingCard(
+                              weeklySpendings: loaded.weeklySpendings,
+                              weeklyLimit: totalLimit / 4,
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Giới hạn: ${_formatBudgetMoney(totalLimit)}',
-                              style: TextStyle(
-                                color: kTextSecondary.withValues(alpha: 0.8),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              '${(ratio * 100).round()}%',
-                              style: const TextStyle(
-                                color: kCyan,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                        ],
+                      );
+                    },
                   ),
-                  const SizedBox(height: 26),
-                  const Text(
-                    'DANH MỤC',
-                    style: TextStyle(
-                      color: kTextPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  if (loaded.items.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      child: Text(
-                        'Chưa có danh mục chi. Nhấn "Thêm danh mục" để bắt đầu.',
-                        style: TextStyle(
-                          color: kTextSecondary.withValues(alpha: 0.85),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ...loaded.items.map(
-                    (item) => _CategoryCard(
-                      item: item,
-                      formatMoney: _formatBudgetMoney,
-                      onEdit: () => _navigateToBudgetForm(
-                        context,
-                        walletId: loaded.walletId,
-                        existing: item.category,
-                      ),
-                    ),
-                  ),
+                  const SizedBox(height: 24),
+                  BudgetCategoryList(items: categoryItems),
                   const SizedBox(height: 120),
                 ],
               ),
@@ -304,341 +340,6 @@ class _BudgetScaffold extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
-  const _Header({
-    required this.title,
-    required this.subtitle,
-    required this.trailing,
-  });
-
-  final String title;
-  final String subtitle;
-  final Widget trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: kTextPrimary,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.6,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  color: kTextSecondary.withValues(alpha: 0.8),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        trailing,
-      ],
-    );
-  }
-}
-
-class _MonthPickerChip extends StatelessWidget {
-  const _MonthPickerChip({
-    required this.month,
-    required this.onPrev,
-    required this.onNext,
-  });
-
-  final DateTime month;
-  final VoidCallback onPrev;
-  final VoidCallback onNext;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      decoration: BoxDecoration(
-        color: kCyan.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: kCyan.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            onPressed: onPrev,
-            visualDensity: VisualDensity.compact,
-            constraints: const BoxConstraints(),
-            icon: const Icon(Icons.chevron_left, color: kCyan, size: 18),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            DateFormat('MM/yyyy').format(month),
-            style: const TextStyle(
-              color: kCyan,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(width: 6),
-          IconButton(
-            onPressed: onNext,
-            visualDensity: VisualDensity.compact,
-            constraints: const BoxConstraints(),
-            icon: const Icon(Icons.chevron_right, color: kCyan, size: 18),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GlassCard extends StatelessWidget {
-  const _GlassCard({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: Container(
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
-              color: kThemeSurfacePrimary.withValues(alpha: 0.45),
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  kCyan.withValues(alpha: 0.10),
-                  kPurple.withValues(alpha: 0.06),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-            child: child,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Kpi extends StatelessWidget {
-  const _Kpi({required this.label, required this.value, required this.color});
-
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
-            fontSize: 10,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.4,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          '$value VND',
-          style: TextStyle(
-            color: color,
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.4,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _CategoryCard extends StatelessWidget {
-  const _CategoryCard({
-    required this.item,
-    required this.formatMoney,
-    required this.onEdit,
-  });
-
-  final BudgetLineItem item;
-  final String Function(double) formatMoney;
-  final VoidCallback onEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    final cat = item.category;
-    final limit = item.budgetLimit;
-    final spent = item.spentThisMonth;
-    final remaining = (limit - spent);
-    final ratio = limit > 0 ? (spent / limit).clamp(0, 1).toDouble() : 0.0;
-
-    final isOver = remaining < 0;
-    final baseAccent = isOver ? kRose : kCyan;
-    final emoji = _budgetCategoryEmoji(cat);
-
-    return GestureDetector(
-      onTap: onEdit,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 14),
-        decoration: BoxDecoration(
-          color: kThemeGlassBase,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: baseAccent.withValues(alpha: 0.18)),
-          boxShadow: [
-            BoxShadow(
-              color: baseAccent.withValues(alpha: 0.12),
-              blurRadius: 16,
-              offset: const Offset(-4, 0),
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.14),
-              blurRadius: 12,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: baseAccent.withValues(alpha: 0.12),
-                    ),
-                    child: Text(emoji, style: const TextStyle(fontSize: 20)),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          cat.name,
-                          style: const TextStyle(
-                            color: kTextPrimary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        if (cat.month != null && cat.year != null) ...[
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.event_note_rounded,
-                                color: baseAccent.withValues(alpha: 0.6),
-                                size: 11,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Tháng ${cat.month}/${cat.year}',
-                                style: TextStyle(
-                                  color: baseAccent.withValues(alpha: 0.7),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                        const SizedBox(height: 2),
-                        Text(
-                          'Giới hạn ${formatMoney(limit)} • Đã chi ${formatMoney(spent)}',
-                          style: TextStyle(
-                            color: kTextSecondary.withValues(alpha: 0.75),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: Colors.white.withValues(alpha: 0.35),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: SizedBox(
-                  height: 8,
-                  child: LinearProgressIndicator(
-                    value: ratio,
-                    backgroundColor: Colors.white.withValues(alpha: 0.06),
-                    valueColor: AlwaysStoppedAnimation<Color>(baseAccent),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    isOver
-                        ? 'Vượt ${formatMoney(-remaining)}'
-                        : 'Còn ${formatMoney(remaining)}',
-                    style: TextStyle(
-                      color: isOver ? kRose : kTextSecondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Text(
-                    '${(ratio * 100).round()}%',
-                    style: TextStyle(
-                      color: baseAccent,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

@@ -109,10 +109,23 @@ class BudgetCubit extends Cubit<BudgetState> {
     if (walletId == null) return;
 
     final spentByCategory = <String, double>{};
+    final weeklySpendings = [0.0, 0.0, 0.0, 0.0];
+
     for (final t in _transactions) {
       if (t.type == 'Expense') {
         spentByCategory[t.categoryId] =
             (spentByCategory[t.categoryId] ?? 0) + t.amount;
+
+        final day = t.timestamp.day;
+        if (day <= 7) {
+          weeklySpendings[0] += t.amount;
+        } else if (day <= 14) {
+          weeklySpendings[1] += t.amount;
+        } else if (day <= 21) {
+          weeklySpendings[2] += t.amount;
+        } else {
+          weeklySpendings[3] += t.amount;
+        }
       }
     }
 
@@ -137,6 +150,7 @@ class BudgetCubit extends Cubit<BudgetState> {
         month: _month,
         items: items,
         walletId: walletId,
+        weeklySpendings: weeklySpendings,
         errorMessage: err,
       ),
     );
@@ -201,6 +215,7 @@ class BudgetCubit extends Cubit<BudgetState> {
           month: s.month,
           items: s.items,
           walletId: s.walletId,
+          weeklySpendings: s.weeklySpendings,
           errorMessage: message,
         ),
       );
@@ -210,7 +225,14 @@ class BudgetCubit extends Cubit<BudgetState> {
   void _clearSheetError() {
     final s = state;
     if (s is BudgetLoaded && s.errorMessage != null) {
-      emit(BudgetLoaded(month: s.month, items: s.items, walletId: s.walletId));
+      emit(
+        BudgetLoaded(
+          month: s.month,
+          items: s.items,
+          walletId: s.walletId,
+          weeklySpendings: s.weeklySpendings,
+        ),
+      );
     }
   }
 
