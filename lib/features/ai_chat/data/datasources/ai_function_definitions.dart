@@ -64,10 +64,19 @@ class AiFunctionDefinitions {
 
   static final FunctionDeclaration _getBudgetStatus = FunctionDeclaration(
     'getBudgetStatus',
-    'Lấy trạng thái ngân sách tháng hiện tại — hạn mức và chi tiêu thực tế '
-        'theo từng danh mục. Dùng khi user hỏi về ngân sách, chi tiêu tháng này, '
+    'Lấy trạng thái ngân sách của một tháng cụ thể — hạn mức và chi tiêu thực tế '
+        'theo từng danh mục. Dùng khi user hỏi về ngân sách, chi tiêu, '
         'còn bao nhiêu trong danh mục nào, hoặc có vượt ngân sách không.',
-    Schema.object(properties: {}),
+    Schema.object(
+      properties: {
+        'month': Schema.integer(
+          description: 'Tháng cần lấy ngân sách (1-12). Mặc định là tháng hiện tại nếu không cung cấp.',
+        ),
+        'year': Schema.integer(
+          description: 'Năm cần lấy ngân sách (VD: 2024). Mặc định là năm hiện tại nếu không cung cấp.',
+        ),
+      },
+    ),
   );
 
   // ────────────────────────────────────────────────────

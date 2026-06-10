@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../../domain/entities/chat_message.dart';
 
-
 /// Quản lý in-memory cache các [ChatSession] của Gemini SDK.
 ///
 /// Hỗ trợ:
@@ -21,18 +20,18 @@ class GeminiSessionManager {
   final Map<String, ChatSession> _sessions = {};
 
   GeminiSessionManager({required List<GenerativeModel> models})
-      : assert(models.isNotEmpty, 'Phải có ít nhất 1 model'),
-        _models = models;
+    : assert(models.isNotEmpty, 'Phải có ít nhất 1 model'),
+      _models = models;
 
   GenerativeModel get _currentModel => _models[_currentModelIndex];
 
   String get currentModelName {
     // GenerativeModel không expose tên model, nên track thủ công qua index
     const names = [
-      'gemini-2.5-flash',
-      'gemini-2.0-flash',
       'gemini-1.5-flash',
-      'gemini-1.5-flash-8b',
+      'gemini-2.0-flash',
+      'gemini-2.5-flash',
+      'gemini-3.5-flash',
     ];
     if (_currentModelIndex < names.length) return names[_currentModelIndex];
     return 'gemini-model-${_currentModelIndex + 1}';
@@ -40,10 +39,7 @@ class GeminiSessionManager {
 
   /// Lấy [ChatSession] từ cache nếu đã có.
   /// Nếu chưa có, tạo mới và restore từ [history] (lấy từ Firestore).
-  ChatSession getOrRestoreSession(
-    String sessionId,
-    List<ChatMessage> history,
-  ) {
+  ChatSession getOrRestoreSession(String sessionId, List<ChatMessage> history) {
     if (_sessions.containsKey(sessionId)) {
       debugPrint(
         '[GeminiSessionManager] Reusing cached session: $sessionId '
@@ -66,10 +62,9 @@ class GeminiSessionManager {
         return Content.text(msg.content);
       } else {
         // Wrap lại dạng JSON để model nhất quán với system prompt
-        final jsonWrapped =
-            msg.content.startsWith('{')
-                ? msg.content
-                : '{"action": "none", "message": "${msg.content.replaceAll('"', '\\"')}"}';
+        final jsonWrapped = msg.content.startsWith('{')
+            ? msg.content
+            : '{"action": "none", "message": "${msg.content.replaceAll('"', '\\"')}"}';
         return Content.model([TextPart(jsonWrapped)]);
       }
     }).toList();

@@ -10,7 +10,6 @@ import '../widgets/home/home_header.dart';
 import '../widgets/home/total_assets_card.dart';
 import '../widgets/home/quick_actions_row.dart';
 import '../widgets/home/monthly_overview_section.dart';
-import '../widgets/home/ai_insight_card.dart';
 import '../widgets/home/group_wallets_card.dart';
 
 class HomePage extends StatefulWidget {
@@ -66,8 +65,6 @@ class _HomePageState extends State<HomePage> {
 
                   GroupWalletsCard(userId: currentUser.uid),
                   const SizedBox(height: 16),
-
-                  const AiInsightCard(),
 
                   // Bottom Spacing for bottom navigation bar
                   const SizedBox(height: 120),

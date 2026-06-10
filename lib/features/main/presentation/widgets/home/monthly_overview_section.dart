@@ -4,6 +4,7 @@ import '../../../../../core/theme/app_colors.dart';
 import 'expense_summary_card.dart';
 import 'expense_allocation_card.dart';
 import 'income_vs_expense_card.dart';
+import 'ai_insight_card.dart';
 
 class MonthlyOverviewSection extends StatefulWidget {
   final String userId;
@@ -74,7 +75,20 @@ class _MonthlyOverviewSectionState extends State<MonthlyOverviewSection> {
           ),
         ),
         const SizedBox(height: 16),
-        ExpenseSummaryCard(userId: widget.userId, month: _selectedMonth),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: ExpenseSummaryCard(userId: widget.userId, month: _selectedMonth),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: AiInsightCard(userId: widget.userId),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }

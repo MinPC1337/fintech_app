@@ -8,7 +8,6 @@ import 'gemini_session_manager.dart';
 import 'user_context_builder.dart';
 import 'ai_function_handler.dart';
 
-
 abstract class GeminiRemoteDataSource {
   /// Gửi [message] trong phiên [sessionId].
   /// [history] được dùng để restore session nếu chưa có trong cache.
@@ -179,7 +178,8 @@ QUY TẮC QUAN TRỌNG:
     } catch (e) {
       debugPrint('[Gemini] Exception (attempt ${attempt + 1}): $e');
 
-      if (_isQuotaOrRateLimitError(e.toString())) {
+      if (_isQuotaOrRateLimitError(e.toString()) ||
+          e.toString().contains('thought_signature')) {
         debugPrint('[Gemini] Quota/rate-limit error → thử model tiếp theo...');
         final hasFallback = sessionManager.switchToNextModel(sessionId);
         if (hasFallback) {
@@ -216,7 +216,9 @@ QUY TẮC QUAN TRỌNG:
   }) async {
     // Giới hạn vòng lặp function call tối đa 3 lần để tránh infinite loop
     if (functionCallDepth >= 3) {
-      debugPrint('[Gemini] Max function call depth reached, forcing text response');
+      debugPrint(
+        '[Gemini] Max function call depth reached, forcing text response',
+      );
       throw Exception('Quá nhiều function calls liên tiếp.');
     }
 
@@ -239,7 +241,6 @@ QUY TẮC QUAN TRỌNG:
       );
 
       final functionResponseParts = <FunctionResponse>[];
-
 
       for (final funcCall in functionCallParts) {
         debugPrint('[Gemini] Function call: ${funcCall.name}');

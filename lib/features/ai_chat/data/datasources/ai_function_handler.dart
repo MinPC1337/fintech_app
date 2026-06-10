@@ -36,7 +36,7 @@ class AiFunctionHandler {
           final type = args['type'] as String?;
           return await _getRecentTransactions(userId, limit: limit, type: type);
         case 'getBudgetStatus':
-          return await _getBudgetStatus(userId);
+          return await _getBudgetStatus(userId, args: args);
         case 'getGroupWallets':
           return await _getGroupWallets(userId);
         case 'getPendingDebts':
@@ -134,10 +134,10 @@ class AiFunctionHandler {
   // Function: getBudgetStatus
   // ────────────────────────────────────────────────────
 
-  Future<String> _getBudgetStatus(String userId) async {
+  Future<String> _getBudgetStatus(String userId, {Map<String, Object?>? args}) async {
     final now = DateTime.now();
-    final month = now.month;
-    final year = now.year;
+    final month = (args?['month'] as num?)?.toInt() ?? now.month;
+    final year = (args?['year'] as num?)?.toInt() ?? now.year;
 
     // Bước 1: Tìm ví cá nhân để lấy walletId
     final walletQuery = await firestore
@@ -153,7 +153,7 @@ class AiFunctionHandler {
 
     final walletId = walletQuery.docs.first.id;
 
-    // Bước 2: Lấy các danh mục ngân sách tháng này
+    // Bước 2: Lấy các danh mục ngân sách của tháng/năm đó
     final categoriesQuery = await firestore
         .collection('wallets')
         .doc(walletId)
@@ -166,6 +166,26 @@ class AiFunctionHandler {
       return 'Tháng $month/$year chưa có ngân sách nào được thiết lập.';
     }
 
+    // Bước 3: Lấy toàn bộ giao dịch của tháng đó để tính TỔNG CHI TIÊU động (vì currentSpent trong DB có thể không chuẩn)
+    final start = DateTime(year, month, 1);
+    final endExclusive = DateTime(year, month + 1, 1);
+    final txQuery = await firestore
+        .collection('transactions')
+        .where('userId', isEqualTo: userId)
+        .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+        .where('timestamp', isLessThan: Timestamp.fromDate(endExclusive))
+        .get();
+
+    final spentByCategory = <String, double>{};
+    for (final doc in txQuery.docs) {
+      final d = doc.data();
+      if (d['type'] == 'Expense') {
+        final catId = d['categoryId'] as String? ?? '';
+        final amount = (d['amount'] ?? 0).toDouble();
+        spentByCategory[catId] = (spentByCategory[catId] ?? 0) + amount;
+      }
+    }
+
     final buffer = StringBuffer(
       'Ngân sách tháng $month/$year:\n',
     );
@@ -175,9 +195,13 @@ class AiFunctionHandler {
 
     for (final doc in categoriesQuery.docs) {
       final d = doc.data();
+      final catId = doc.id;
       final name = d['name'] ?? 'Không tên';
-      final limit = (d['limit'] ?? 0).toDouble();
-      final spent = (d['currentSpent'] ?? 0).toDouble();
+      final limit = (d['limit'] ?? d['budgetLimit'] ?? 0).toDouble(); // Hỗ trợ cả limit và budgetLimit key
+      
+      // Sử dụng spent tính động từ giao dịch (chính xác nhất)
+      final spent = spentByCategory[catId] ?? 0.0;
+      
       final remaining = limit - spent;
       final isOver = spent > limit;
 

@@ -249,7 +249,7 @@ Future<void> init() async {
       tools: [appDataTool],
     ),
     GenerativeModel(
-      model: 'gemini-2.5-pro', // Ưu tiên 4: model nhỏ nhất, ít quota
+      model: 'gemini-2.5-flash', // Ưu tiên 4: model nhỏ nhất, ít quota
       apiKey: geminiApiKey,
       systemInstruction: systemInstruction,
       tools: [appDataTool],

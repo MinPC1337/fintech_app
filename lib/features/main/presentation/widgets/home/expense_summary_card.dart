@@ -92,7 +92,7 @@ class _ExpenseSummaryCardState extends State<ExpenseSummaryCard> {
           ),
           
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             child: StreamBuilder(
               stream: getPrimaryWalletStreamUseCase.call(widget.userId),
               builder: (context, walletSnap) {
@@ -173,17 +173,16 @@ class _ExpenseSummaryCardState extends State<ExpenseSummaryCard> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 12),
                             Text(
                               '${currencyFormatter.format(totalExpense).replaceAll('đ', '').trim()} đ',
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 28,
+                                fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                                letterSpacing: -0.5,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             Text(
                               totalBudgetLimit > 0 
                                   ? 'Ngân sách: ${currencyFormatter.format(totalBudgetLimit).replaceAll('đ', '').trim()} đ'
@@ -226,12 +225,12 @@ class _ExpenseSummaryCardState extends State<ExpenseSummaryCard> {
                               
                               // Success/Warning message box
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                                 decoration: BoxDecoration(
                                   color: isOverBudget 
                                       ? kRose.withValues(alpha: 0.15)
                                       : kEmerald.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: isOverBudget 
                                       ? kRose.withValues(alpha: 0.3)
@@ -241,7 +240,7 @@ class _ExpenseSummaryCardState extends State<ExpenseSummaryCard> {
                                 child: Row(
                                   children: [
                                     Container(
-                                      padding: const EdgeInsets.all(6),
+                                      padding: const EdgeInsets.all(4),
                                       decoration: BoxDecoration(
                                         color: isOverBudget ? kRose.withValues(alpha: 0.2) : kEmerald.withValues(alpha: 0.2),
                                         shape: BoxShape.circle,
@@ -249,18 +248,18 @@ class _ExpenseSummaryCardState extends State<ExpenseSummaryCard> {
                                       child: Icon(
                                         isOverBudget ? Icons.warning_amber_rounded : Icons.check_circle_outline,
                                         color: isOverBudget ? kRose : kEmerald,
-                                        size: 16,
+                                        size: 14,
                                       ),
                                     ),
-                                    const SizedBox(width: 12),
+                                    const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
                                         isOverBudget 
-                                            ? 'Bạn đã vượt ngân sách ${currencyFormatter.format(-remaining).replaceAll('đ', '').trim()} đ'
-                                            : 'Ngân sách còn ${currencyFormatter.format(remaining).replaceAll('đ', '').trim()} đ',
+                                            ? 'Vượt ${currencyFormatter.format(-remaining).replaceAll('đ', '').trim()} đ'
+                                            : 'Còn ${currencyFormatter.format(remaining).replaceAll('đ', '').trim()} đ',
                                         style: TextStyle(
                                           color: isOverBudget ? kRose : kEmerald,
-                                          fontSize: 12,
+                                          fontSize: 11,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
