@@ -41,20 +41,20 @@ class MainPageState extends State<MainPage> {
     }
   }
 
-  final List<Widget> _pages = [
-    const HomePage(),
-    const BudgetPage(),
-    const GroupWalletPage(),
-    const SettingsPage(),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final List<Widget> pages = [
+      HomePage(isActive: _currentIndex == 0),
+      const BudgetPage(),
+      const GroupWalletPage(),
+      const SettingsPage(),
+    ];
+
     return Scaffold(
       backgroundColor: kBgColor,
       // Cho phép nội dung tràn xuống dưới thanh điều hướng lơ lửng
       extendBody: true,
-      body: IndexedStack(index: _currentIndex, children: _pages),
+      body: IndexedStack(index: _currentIndex, children: pages),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 0), // Nâng lên khỏi bottom bar
         child: FloatingActionButton(

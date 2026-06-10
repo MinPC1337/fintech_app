@@ -13,7 +13,8 @@ import '../widgets/home/monthly_overview_section.dart';
 import '../widgets/home/group_wallets_card.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final bool isActive;
+  const HomePage({super.key, this.isActive = true});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -52,7 +53,7 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 24),
 
                   // 2. Total Assets Card
-                  TotalAssetsCard(userId: currentUser.uid),
+                  TotalAssetsCard(userId: currentUser.uid, isActive: widget.isActive),
                   const SizedBox(height: 24),
 
                   // 3. Quick Actions
@@ -60,7 +61,7 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 24),
 
                   // 4. Monthly Overview Section (Tổng quan & Picker)
-                  MonthlyOverviewSection(userId: currentUser.uid),
+                  MonthlyOverviewSection(userId: currentUser.uid, isActive: widget.isActive),
                   const SizedBox(height: 16),
 
                   GroupWalletsCard(userId: currentUser.uid),

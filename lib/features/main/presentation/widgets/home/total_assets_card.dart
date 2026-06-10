@@ -8,8 +8,9 @@ import '../../../domain/usecases/get_transactions_stream_usecase.dart';
 
 class TotalAssetsCard extends StatefulWidget {
   final String userId;
+  final bool isActive;
 
-  const TotalAssetsCard({super.key, required this.userId});
+  const TotalAssetsCard({super.key, required this.userId, this.isActive = true});
 
   @override
   State<TotalAssetsCard> createState() => _TotalAssetsCardState();
@@ -20,12 +21,38 @@ class _TotalAssetsCardState extends State<TotalAssetsCard> {
   late final GetPrimaryWalletStreamUseCase getPrimaryWalletStreamUseCase;
   late final GetTransactionsStreamUseCase getTransactionsStreamUseCase;
   bool _isBalanceHidden = false;
+  bool _showChartData = false;
 
   @override
   void initState() {
     super.initState();
     getPrimaryWalletStreamUseCase = sl<GetPrimaryWalletStreamUseCase>();
     getTransactionsStreamUseCase = sl<GetTransactionsStreamUseCase>();
+    if (widget.isActive) {
+      _triggerAnimation();
+    }
+  }
+
+  @override
+  void didUpdateWidget(TotalAssetsCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _triggerAnimation();
+    } else if (!widget.isActive && oldWidget.isActive) {
+      setState(() {
+        _showChartData = false;
+      });
+    }
+  }
+
+  void _triggerAnimation() {
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (mounted) {
+        setState(() {
+          _showChartData = true;
+        });
+      }
+    });
   }
 
   Widget _buildCardChip() {
@@ -221,7 +248,7 @@ class _TotalAssetsCardState extends State<TotalAssetsCard> {
               if (maxBalance <= 0) maxBalance = 1;
               double chartMaxY = maxBalance * 1.3;
 
-              List<FlSpot> spots = [
+              List<FlSpot> targetSpots = [
                 FlSpot(0, bal3),
                 FlSpot(1, bal2),
                 FlSpot(2, bal1),
@@ -232,20 +259,56 @@ class _TotalAssetsCardState extends State<TotalAssetsCard> {
                 children: [
                   // Biểu đồ so sánh
                   Positioned(
-                    left: 24,
-                    right: 24,
-                    bottom: 20,
-                    height: 120,
-                    child: _buildFintechLineChart(spots, chartMaxY, [
-                      'Th${threeMonthsAgo.month}',
-                      'Th${twoMonthsAgo.month}',
-                      'Th${oneMonthAgo.month}',
-                      '${now.day}/${now.month}',
-                    ]),
+                    left: 16,
+                    right: 16,
+                    bottom: 12,
+                    height: 90,
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween<double>(
+                        begin: 0,
+                        end: _showChartData ? 3.0 : 0.0,
+                      ),
+                      duration: const Duration(milliseconds: 1200),
+                      curve: Curves.easeInOut,
+                      builder: (context, animatedX, child) {
+                        List<FlSpot> currentSpots = [];
+                        if (animatedX == 0) {
+                          currentSpots = [targetSpots.first];
+                        } else {
+                          for (int i = 0; i < targetSpots.length - 1; i++) {
+                            FlSpot p1 = targetSpots[i];
+                            FlSpot p2 = targetSpots[i + 1];
+                            if (animatedX >= p2.x) {
+                              currentSpots.add(p1);
+                            } else if (animatedX >= p1.x && animatedX < p2.x) {
+                              currentSpots.add(p1);
+                              double t = (animatedX - p1.x) / (p2.x - p1.x);
+                              double interpolatedY = p1.y + (p2.y - p1.y) * t;
+                              currentSpots.add(FlSpot(animatedX, interpolatedY));
+                              break;
+                            }
+                          }
+                          if (animatedX >= targetSpots.last.x) {
+                            currentSpots.add(targetSpots.last);
+                          }
+                        }
+
+                        return _buildFintechLineChart(
+                          currentSpots,
+                          chartMaxY,
+                          [
+                            'Th${threeMonthsAgo.month}',
+                            'Th${twoMonthsAgo.month}',
+                            'Th${oneMonthAgo.month}',
+                            '${now.day}/${now.month}',
+                          ],
+                        );
+                      },
+                    ),
                   ),
 
                   Padding(
-                    padding: const EdgeInsets.all(24.0),
+                    padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -284,7 +347,7 @@ class _TotalAssetsCardState extends State<TotalAssetsCard> {
                           ],
                         ),
 
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 8),
 
                         // Số dư chính
                         Row(
@@ -299,25 +362,25 @@ class _TotalAssetsCardState extends State<TotalAssetsCard> {
                                         .replaceAll('đ', '')
                                         .trim(),
                               style: const TextStyle(
-                                fontSize: 36,
+                                fontSize: 32,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                                 letterSpacing: -0.5,
                               ),
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 4),
                             const Text(
                               'đ',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 24,
+                                fontSize: 20,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ],
                         ),
 
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 4),
 
                         // Biến động
                         Row(
@@ -349,7 +412,7 @@ class _TotalAssetsCardState extends State<TotalAssetsCard> {
                         ),
 
                         // Khoảng trống để chứa biểu đồ
-                        const SizedBox(height: 140),
+                        const SizedBox(height: 90),
                       ],
                     ),
                   ),
@@ -368,6 +431,7 @@ class _TotalAssetsCardState extends State<TotalAssetsCard> {
     List<String> labels,
   ) {
     return LineChart(
+      duration: Duration.zero,
       LineChartData(
         minX: 0,
         maxX: 3,
@@ -442,13 +506,17 @@ class _TotalAssetsCardState extends State<TotalAssetsCard> {
             dotData: FlDotData(
               show: true,
               getDotPainter: (spot, percent, barData, index) {
-                final isCurrent = index == 3;
+                final isLast = index == spots.length - 1 && spot.x == 3;
                 return FlDotCirclePainter(
-                  radius: isCurrent ? 5 : 3,
-                  color: isCurrent ? Colors.white : kCyan,
-                  strokeWidth: isCurrent ? 3 : 2,
-                  strokeColor: isCurrent ? kEmerald : Colors.white,
+                  radius: isLast ? 5 : 3,
+                  color: isLast ? Colors.white : kCyan,
+                  strokeWidth: isLast ? 3 : 2,
+                  strokeColor: isLast ? kEmerald : Colors.white,
                 );
+              },
+              checkToShowDot: (spot, barData) {
+                // Show dots only on integers
+                return spot.x == spot.x.roundToDouble();
               },
             ),
             belowBarData: BarAreaData(

@@ -8,8 +8,9 @@ import 'ai_insight_card.dart';
 
 class MonthlyOverviewSection extends StatefulWidget {
   final String userId;
+  final bool isActive;
 
-  const MonthlyOverviewSection({super.key, required this.userId});
+  const MonthlyOverviewSection({super.key, required this.userId, this.isActive = true});
 
   @override
   State<MonthlyOverviewSection> createState() => _MonthlyOverviewSectionState();
@@ -62,6 +63,7 @@ class _MonthlyOverviewSectionState extends State<MonthlyOverviewSection> {
                 child: ExpenseAllocationCard(
                   userId: widget.userId,
                   month: _selectedMonth,
+                  isActive: widget.isActive,
                 ),
               ),
               const SizedBox(width: 16),
@@ -69,6 +71,7 @@ class _MonthlyOverviewSectionState extends State<MonthlyOverviewSection> {
                 child: IncomeVsExpenseCard(
                   userId: widget.userId,
                   month: _selectedMonth,
+                  isActive: widget.isActive,
                 ),
               ),
             ],

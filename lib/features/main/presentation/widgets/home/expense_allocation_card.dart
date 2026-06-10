@@ -10,8 +10,14 @@ import '../../../domain/entities/category_entity.dart';
 class ExpenseAllocationCard extends StatefulWidget {
   final String userId;
   final DateTime month;
+  final bool isActive;
 
-  const ExpenseAllocationCard({super.key, required this.userId, required this.month});
+  const ExpenseAllocationCard({
+    super.key,
+    required this.userId,
+    required this.month,
+    this.isActive = true,
+  });
 
   @override
   State<ExpenseAllocationCard> createState() => _ExpenseAllocationCardState();
@@ -21,6 +27,7 @@ class _ExpenseAllocationCardState extends State<ExpenseAllocationCard> {
   late final GetPrimaryWalletStreamUseCase getPrimaryWalletStreamUseCase;
   late final GetTransactionsStreamUseCase getTransactionsStreamUseCase;
   late final WatchOutCategoriesUseCase watchOutCategoriesUseCase;
+  bool _showChartData = false;
 
   @override
   void initState() {
@@ -28,6 +35,31 @@ class _ExpenseAllocationCardState extends State<ExpenseAllocationCard> {
     getPrimaryWalletStreamUseCase = sl<GetPrimaryWalletStreamUseCase>();
     getTransactionsStreamUseCase = sl<GetTransactionsStreamUseCase>();
     watchOutCategoriesUseCase = sl<WatchOutCategoriesUseCase>();
+    if (widget.isActive) {
+      _triggerAnimation();
+    }
+  }
+
+  @override
+  void didUpdateWidget(ExpenseAllocationCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _triggerAnimation();
+    } else if (!widget.isActive && oldWidget.isActive) {
+      setState(() {
+        _showChartData = false;
+      });
+    }
+  }
+
+  void _triggerAnimation() {
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (mounted) {
+        setState(() {
+          _showChartData = true;
+        });
+      }
+    });
   }
 
   // Predefined colors for charts
@@ -60,7 +92,11 @@ class _ExpenseAllocationCardState extends State<ExpenseAllocationCard> {
           }
 
           return StreamBuilder<List<CategoryEntity>>(
-            stream: watchOutCategoriesUseCase.call(widget.userId, month: widget.month.month, year: widget.month.year),
+            stream: watchOutCategoriesUseCase.call(
+              widget.userId,
+              month: widget.month.month,
+              year: widget.month.year,
+            ),
             builder: (context, budgetSnap) {
               final categories = budgetSnap.data ?? [];
               final categoryMap = {for (var c in categories) c.id: c};
@@ -83,7 +119,8 @@ class _ExpenseAllocationCardState extends State<ExpenseAllocationCard> {
                     for (var tx in monthlyTxs) {
                       totalExpense += tx.amount;
                       final cid = tx.categoryId;
-                      categorySums[cid] = (categorySums[cid] ?? 0.0) + tx.amount;
+                      categorySums[cid] =
+                          (categorySums[cid] ?? 0.0) + tx.amount;
                     }
                   }
 
@@ -94,7 +131,7 @@ class _ExpenseAllocationCardState extends State<ExpenseAllocationCard> {
                   // Keep top 4, group rest into "other"
                   Map<String, double> finalSums = {};
                   double otherSum = 0.0;
-                  
+
                   for (int i = 0; i < sortedEntries.length; i++) {
                     if (i < 4) {
                       finalSums[sortedEntries[i].key] = sortedEntries[i].value;
@@ -102,23 +139,27 @@ class _ExpenseAllocationCardState extends State<ExpenseAllocationCard> {
                       otherSum += sortedEntries[i].value;
                     }
                   }
-                  
+
                   if (otherSum > 0) {
                     finalSums['other_grouped'] = otherSum;
                   }
 
-                  List<PieChartSectionData> sections = [];
+                  final List<MapEntry<String, double>> orderedSlices = finalSums.entries.toList();
                   List<Widget> legends = [];
                   int colorIndex = 0;
 
-                  finalSums.forEach((key, value) {
-                    if (value <= 0) return;
-                    
-                    final percent = totalExpense > 0 ? (value / totalExpense * 100) : 0;
-                    final color = key == 'other_grouped' 
+                  for (var entry in orderedSlices) {
+                    final key = entry.key;
+                    final value = entry.value;
+                    if (value <= 0) continue;
+
+                    final percent = totalExpense > 0
+                        ? (value / totalExpense * 100)
+                        : 0;
+                    final color = key == 'other_grouped'
                         ? const Color(0xFF6B7280) // Grey for other
                         : _chartColors[colorIndex % _chartColors.length];
-                    
+
                     if (key != 'other_grouped') colorIndex++;
 
                     String name = "Chưa rõ";
@@ -127,13 +168,6 @@ class _ExpenseAllocationCardState extends State<ExpenseAllocationCard> {
                     } else if (categoryMap.containsKey(key)) {
                       name = categoryMap[key]!.name;
                     }
-
-                    sections.add(PieChartSectionData(
-                      color: color,
-                      value: value,
-                      title: '',
-                      radius: 10,
-                    ));
 
                     legends.add(
                       Padding(
@@ -153,7 +187,9 @@ class _ExpenseAllocationCardState extends State<ExpenseAllocationCard> {
                                 ),
                                 const SizedBox(width: 6),
                                 ConstrainedBox(
-                                  constraints: const BoxConstraints(maxWidth: 80),
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 80,
+                                  ),
                                   child: Text(
                                     name,
                                     style: const TextStyle(
@@ -176,7 +212,7 @@ class _ExpenseAllocationCardState extends State<ExpenseAllocationCard> {
                         ),
                       ),
                     );
-                  });
+                  }
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,48 +230,113 @@ class _ExpenseAllocationCardState extends State<ExpenseAllocationCard> {
                         child: SizedBox(
                           width: 80,
                           height: 80,
-                          child: totalExpense == 0 
-                          ? const Center(child: Text("Không có giao dịch", style: TextStyle(color: Colors.white54, fontSize: 9), textAlign: TextAlign.center))
-                          : Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              PieChart(
-                                PieChartData(
-                                  sectionsSpace: 2,
-                                  centerSpaceRadius: 30,
-                                  sections: sections,
-                                ),
-                              ),
-                              Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    totalExpense > 1000000 
-                                        ? '${(totalExpense / 1000000).toStringAsFixed(1)}M'
-                                        : '${(totalExpense / 1000).toStringAsFixed(0)}K',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const Text(
-                                    'Tổng chi',
+                          child: totalExpense == 0
+                              ? const Center(
+                                  child: Text(
+                                    "Không có giao dịch",
                                     style: TextStyle(
                                       color: Colors.white54,
-                                      fontSize: 8,
+                                      fontSize: 9,
                                     ),
+                                    textAlign: TextAlign.center,
                                   ),
-                                ],
-                              ),
-                            ],
-                          ),
+                                )
+                              : Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    TweenAnimationBuilder<double>(
+                                      tween: Tween<double>(
+                                        begin: 0.0,
+                                        end: _showChartData ? 1.0 : 0.0,
+                                      ),
+                                      duration: const Duration(milliseconds: 1200),
+                                      curve: Curves.easeInOut,
+                                      builder: (context, animatedValue, child) {
+                                        List<PieChartSectionData> sections = [];
+                                        double currentDrawn = animatedValue * totalExpense;
+                                        double sumDrawn = 0;
+
+                                        int tempColorIndex = 0;
+                                        for (var entry in orderedSlices) {
+                                          final key = entry.key;
+                                          final val = entry.value;
+                                          if (val <= 0) continue;
+
+                                          final color = key == 'other_grouped'
+                                              ? const Color(0xFF6B7280)
+                                              : _chartColors[tempColorIndex % _chartColors.length];
+                                          if (key != 'other_grouped') tempColorIndex++;
+
+                                          if (currentDrawn >= val) {
+                                            sections.add(PieChartSectionData(
+                                              color: color,
+                                              value: val,
+                                              title: '',
+                                              radius: 10,
+                                            ));
+                                            currentDrawn -= val;
+                                            sumDrawn += val;
+                                          } else if (currentDrawn > 0) {
+                                            sections.add(PieChartSectionData(
+                                              color: color,
+                                              value: currentDrawn,
+                                              title: '',
+                                              radius: 10,
+                                            ));
+                                            sumDrawn += currentDrawn;
+                                            currentDrawn = 0;
+                                          }
+                                        }
+
+                                        final remaining = totalExpense - sumDrawn;
+                                        if (remaining > 0) {
+                                          sections.add(PieChartSectionData(
+                                            color: Colors.transparent,
+                                            value: remaining,
+                                            title: '',
+                                            radius: 10,
+                                          ));
+                                        }
+
+                                        return PieChart(
+                                          PieChartData(
+                                            startDegreeOffset: -90,
+                                            sectionsSpace: 2,
+                                            centerSpaceRadius: 30,
+                                            sections: sections,
+                                          ),
+                                          swapAnimationDuration: Duration.zero,
+                                        );
+                                      },
+                                    ),
+                                    Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          totalExpense > 1000000
+                                              ? '${(totalExpense / 1000000).toStringAsFixed(1)}M'
+                                              : '${(totalExpense / 1000).toStringAsFixed(0)}K',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const Text(
+                                          'Tổng chi',
+                                          style: TextStyle(
+                                            color: Colors.white54,
+                                            fontSize: 8,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Column(
-                        children: legends,
-                      ),
+                      Column(children: legends),
                     ],
                   );
                 },

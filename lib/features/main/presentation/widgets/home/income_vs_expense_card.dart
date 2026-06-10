@@ -9,8 +9,9 @@ import '../../../domain/usecases/get_transactions_stream_usecase.dart';
 class IncomeVsExpenseCard extends StatefulWidget {
   final String userId;
   final DateTime month;
+  final bool isActive;
 
-  const IncomeVsExpenseCard({super.key, required this.userId, required this.month});
+  const IncomeVsExpenseCard({super.key, required this.userId, required this.month, this.isActive = true});
 
   @override
   State<IncomeVsExpenseCard> createState() => _IncomeVsExpenseCardState();
@@ -20,12 +21,38 @@ class _IncomeVsExpenseCardState extends State<IncomeVsExpenseCard> {
   final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
   late final GetPrimaryWalletStreamUseCase getPrimaryWalletStreamUseCase;
   late final GetTransactionsStreamUseCase getTransactionsStreamUseCase;
+  bool _showChartData = false;
 
   @override
   void initState() {
     super.initState();
     getPrimaryWalletStreamUseCase = sl<GetPrimaryWalletStreamUseCase>();
     getTransactionsStreamUseCase = sl<GetTransactionsStreamUseCase>();
+    if (widget.isActive) {
+      _triggerAnimation();
+    }
+  }
+
+  @override
+  void didUpdateWidget(IncomeVsExpenseCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _triggerAnimation();
+    } else if (!widget.isActive && oldWidget.isActive) {
+      setState(() {
+        _showChartData = false;
+      });
+    }
+  }
+
+  void _triggerAnimation() {
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (mounted) {
+        setState(() {
+          _showChartData = true;
+        });
+      }
+    });
   }
 
   @override
@@ -181,10 +208,51 @@ class _IncomeVsExpenseCardState extends State<IncomeVsExpenseCard> {
                     height: 110,
                     child: incomeSpots.isEmpty 
                     ? const Center(child: Text("Chưa có dữ liệu", style: TextStyle(color: Colors.white54, fontSize: 11)))
-                    : LineChart(
-                      LineChartData(
-                        minX: 1,
-                        maxX: daysInMonth.toDouble(),
+                    : TweenAnimationBuilder<double>(
+                        tween: Tween<double>(
+                          begin: 1.0,
+                          end: _showChartData ? daysInMonth.toDouble() : 1.0,
+                        ),
+                        duration: const Duration(milliseconds: 1200),
+                        curve: Curves.easeInOut,
+                        builder: (context, animatedX, child) {
+                          List<FlSpot> currentIncomeSpots = [];
+                          List<FlSpot> currentExpenseSpots = [];
+
+                          if (animatedX == 1.0) {
+                            currentIncomeSpots = [incomeSpots.first];
+                            currentExpenseSpots = [expenseSpots.first];
+                          } else {
+                            for (int i = 0; i < incomeSpots.length - 1; i++) {
+                              FlSpot p1Inc = incomeSpots[i];
+                              FlSpot p2Inc = incomeSpots[i + 1];
+                              FlSpot p1Exp = expenseSpots[i];
+                              FlSpot p2Exp = expenseSpots[i + 1];
+
+                              if (animatedX >= p2Inc.x) {
+                                currentIncomeSpots.add(p1Inc);
+                                currentExpenseSpots.add(p1Exp);
+                              } else if (animatedX >= p1Inc.x && animatedX < p2Inc.x) {
+                                currentIncomeSpots.add(p1Inc);
+                                currentExpenseSpots.add(p1Exp);
+                                
+                                double t = (animatedX - p1Inc.x) / (p2Inc.x - p1Inc.x);
+                                currentIncomeSpots.add(FlSpot(animatedX, p1Inc.y + (p2Inc.y - p1Inc.y) * t));
+                                currentExpenseSpots.add(FlSpot(animatedX, p1Exp.y + (p2Exp.y - p1Exp.y) * t));
+                                break;
+                              }
+                            }
+                            if (animatedX >= incomeSpots.last.x) {
+                              currentIncomeSpots.add(incomeSpots.last);
+                              currentExpenseSpots.add(expenseSpots.last);
+                            }
+                          }
+
+                          return LineChart(
+                            duration: Duration.zero,
+                            LineChartData(
+                              minX: 1,
+                              maxX: daysInMonth.toDouble(),
                         minY: 0,
                         maxY: maxY,
                         lineTouchData: const LineTouchData(enabled: false),
@@ -232,7 +300,7 @@ class _IncomeVsExpenseCardState extends State<IncomeVsExpenseCard> {
                         borderData: FlBorderData(show: false),
                         lineBarsData: [
                           LineChartBarData(
-                            spots: incomeSpots,
+                            spots: currentIncomeSpots,
                             isCurved: true,
                             color: kEmerald,
                             barWidth: 2,
@@ -244,7 +312,7 @@ class _IncomeVsExpenseCardState extends State<IncomeVsExpenseCard> {
                             ),
                           ),
                           LineChartBarData(
-                            spots: expenseSpots,
+                            spots: currentExpenseSpots,
                             isCurved: true,
                             color: kRose,
                             barWidth: 2,
@@ -256,8 +324,10 @@ class _IncomeVsExpenseCardState extends State<IncomeVsExpenseCard> {
                             ),
                           ),
                         ],
+                            ),
+                          );
+                        },
                       ),
-                    ),
                   ),
                 ],
               );
