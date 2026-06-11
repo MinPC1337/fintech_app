@@ -231,25 +231,25 @@ Future<void> init() async {
 
   final geminiModels = [
     GenerativeModel(
-      model: 'gemini-3.5-flash', // Ưu tiên 1: model mới nhất
+      model: 'gemini-1.5-flash', // Ưu tiên 1
       apiKey: geminiApiKey,
       systemInstruction: systemInstruction,
       tools: [appDataTool],
     ),
     GenerativeModel(
-      model: 'gemini-2.5-flash', // Ưu tiên 2: stable fallback
+      model: 'gemini-2.0-flash', // Ưu tiên 2
       apiKey: geminiApiKey,
       systemInstruction: systemInstruction,
       tools: [appDataTool],
     ),
     GenerativeModel(
-      model: 'gemini-2.0-flash', // Ưu tiên 3: ổn định, free 1500 req/ngày
+      model: 'gemini-2.5-flash', // Ưu tiên 3
       apiKey: geminiApiKey,
       systemInstruction: systemInstruction,
       tools: [appDataTool],
     ),
     GenerativeModel(
-      model: 'gemini-2.5-flash', // Ưu tiên 4: model nhỏ nhất, ít quota
+      model: 'gemini-3.5-flash', // Ưu tiên 4
       apiKey: geminiApiKey,
       systemInstruction: systemInstruction,
       tools: [appDataTool],

@@ -142,6 +142,10 @@ QUY TẮC QUAN TRỌNG:
       }
     }
 
+    // Khởi tạo lại model ưu tiên nhất (index 0) cho mỗi tin nhắn mới để luôn ưu tiên model 1.5
+    // Nếu nó bị lỗi quota, hàm _sendWithFallback sẽ tự động nhảy lên model tiếp theo.
+    sessionManager.resetToPrimaryModel(sessionId);
+
     return await _sendWithFallback(
       message: message,
       sessionId: sessionId,
@@ -164,7 +168,7 @@ QUY TẮC QUAN TRỌNG:
     final chatSession = sessionManager.getOrRestoreSession(sessionId, history);
     debugPrint(
       '[Gemini] Gửi (attempt ${attempt + 1}, '
-      'model: ${sessionManager.currentModelName}): "$message"',
+      'model: ${sessionManager.currentModelName(sessionId)}): "$message"',
     );
 
     try {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../core/theme/app_colors.dart';
+import 'budget_glass_card.dart';
 
 class CategoryListItem {
   final String? emoji;
@@ -69,15 +70,18 @@ class BudgetCategoryList extends StatelessWidget {
           )
         else
           ...items.map((item) {
-            return _buildCategoryItem(
-              emoji: item.emoji,
-              iconColor: item.iconColor,
-              title: item.title,
-              spent: item.spent,
-              limit: item.limit,
-              percentage: item.percentage,
-              ratio: item.ratio,
-              isOverBudget: item.isOverBudget,
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildCategoryItem(
+                emoji: item.emoji,
+                iconColor: item.iconColor,
+                title: item.title,
+                spent: item.spent,
+                limit: item.limit,
+                percentage: item.percentage,
+                ratio: item.ratio,
+                isOverBudget: item.isOverBudget,
+              ),
             );
           }),
       ],
@@ -96,14 +100,8 @@ class BudgetCategoryList extends StatelessWidget {
   }) {
     final barColor = isOverBudget ? kRose : iconColor;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+    return BudgetGlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF131B2A),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
       child: Row(
         children: [
           Container(

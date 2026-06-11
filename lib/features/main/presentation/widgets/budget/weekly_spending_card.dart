@@ -2,9 +2,14 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../../core/theme/app_colors.dart';
+import 'budget_glass_card.dart';
 
 class WeeklySpendingCard extends StatelessWidget {
-  const WeeklySpendingCard({super.key, required this.weeklySpendings, required this.weeklyLimit});
+  const WeeklySpendingCard({
+    super.key,
+    required this.weeklySpendings,
+    required this.weeklyLimit,
+  });
 
   final List<double> weeklySpendings;
   final double weeklyLimit;
@@ -12,18 +17,15 @@ class WeeklySpendingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Determine max Y for the chart (add 20% padding above highest value)
-    final maxSpending = weeklySpendings.isEmpty ? 0.0 : weeklySpendings.reduce((a, b) => a > b ? a : b);
+    final maxSpending = weeklySpendings.isEmpty
+        ? 0.0
+        : weeklySpendings.reduce((a, b) => a > b ? a : b);
     final maxY = (maxSpending > weeklyLimit ? maxSpending : weeklyLimit) * 1.2;
     // ensure maxY > 0 to avoid Division by Zero
     final safeMaxY = maxY > 0 ? maxY : 5.0;
 
-    return Container(
+    return BudgetGlassCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF131B2A),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -50,12 +52,6 @@ class WeeklySpendingCard extends StatelessWidget {
                       'Tháng này',
                       style: TextStyle(color: kTextSecondary, fontSize: 11),
                     ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.keyboard_arrow_down,
-                      color: kTextSecondary.withValues(alpha: 0.8),
-                      size: 14,
-                    ),
                   ],
                 ),
               ),
@@ -64,10 +60,7 @@ class WeeklySpendingCard extends StatelessWidget {
           const SizedBox(height: 4),
           const Text(
             'Đơn vị: đồng',
-            style: TextStyle(
-              color: kTextSecondary,
-              fontSize: 11,
-            ),
+            style: TextStyle(color: kTextSecondary, fontSize: 11),
           ),
           const SizedBox(height: 32),
           SizedBox(
@@ -180,14 +173,21 @@ class WeeklySpendingCard extends StatelessWidget {
                             show: true,
                             alignment: Alignment.topRight,
                             padding: const EdgeInsets.only(bottom: 4),
-                            style: const TextStyle(color: kTextSecondary, fontSize: 9),
+                            style: const TextStyle(
+                              color: kTextSecondary,
+                              fontSize: 9,
+                            ),
                             labelResolver: (line) => line.y.toStringAsFixed(0),
                           ),
                         ),
                       ],
                     ),
                     barGroups: weeklySpendings.asMap().entries.map((entry) {
-                      return _buildBarGroup(entry.key, entry.value, entry.value > weeklyLimit);
+                      return _buildBarGroup(
+                        entry.key,
+                        entry.value,
+                        entry.value > weeklyLimit,
+                      );
                     }).toList(),
                   ),
                 ),
@@ -216,15 +216,12 @@ class WeeklySpendingCard extends StatelessWidget {
           toY: y,
           width: 24,
           gradient: LinearGradient(
-            colors: isOver 
-              ? [
-                  kRose.withValues(alpha: 0.8),
-                  kRose.withValues(alpha: 0.5),
-                ]
-              : [
-                  kPurple.withValues(alpha: 0.8),
-                  kElectricBlue.withValues(alpha: 0.8),
-                ],
+            colors: isOver
+                ? [kRose.withValues(alpha: 0.8), kRose.withValues(alpha: 0.5)]
+                : [
+                    kPurple.withValues(alpha: 0.8),
+                    kElectricBlue.withValues(alpha: 0.8),
+                  ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),

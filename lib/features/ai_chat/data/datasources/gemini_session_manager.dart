@@ -13,19 +13,21 @@ class GeminiSessionManager {
   /// Danh sách model theo thứ tự ưu tiên (index 0 = ưu tiên nhất).
   final List<GenerativeModel> _models;
 
-  /// Index model đang được sử dụng.
-  int _currentModelIndex = 0;
-
   /// Cache sessions theo sessionId.
   final Map<String, ChatSession> _sessions = {};
+
+  /// Lưu index model đang dùng cho mỗi session.
+  final Map<String, int> _sessionModelIndices = {};
 
   GeminiSessionManager({required List<GenerativeModel> models})
     : assert(models.isNotEmpty, 'Phải có ít nhất 1 model'),
       _models = models;
 
-  GenerativeModel get _currentModel => _models[_currentModelIndex];
+  int _getModelIndex(String sessionId) => _sessionModelIndices[sessionId] ?? 0;
 
-  String get currentModelName {
+  GenerativeModel _getModel(String sessionId) => _models[_getModelIndex(sessionId)];
+
+  String currentModelName(String sessionId) {
     // GenerativeModel không expose tên model, nên track thủ công qua index
     const names = [
       'gemini-1.5-flash',
@@ -33,8 +35,9 @@ class GeminiSessionManager {
       'gemini-2.5-flash',
       'gemini-3.5-flash',
     ];
-    if (_currentModelIndex < names.length) return names[_currentModelIndex];
-    return 'gemini-model-${_currentModelIndex + 1}';
+    final idx = _getModelIndex(sessionId);
+    if (idx < names.length) return names[idx];
+    return 'gemini-model-${idx + 1}';
   }
 
   /// Lấy [ChatSession] từ cache nếu đã có.
@@ -43,7 +46,7 @@ class GeminiSessionManager {
     if (_sessions.containsKey(sessionId)) {
       debugPrint(
         '[GeminiSessionManager] Reusing cached session: $sessionId '
-        '(model: $currentModelName)',
+        '(model: ${currentModelName(sessionId)})',
       );
       return _sessions[sessionId]!;
     }
@@ -54,7 +57,7 @@ class GeminiSessionManager {
   ChatSession _createSession(String sessionId, List<ChatMessage> history) {
     debugPrint(
       '[GeminiSessionManager] Creating session: $sessionId '
-      'with ${history.length} messages (model: $currentModelName)',
+      'with ${history.length} messages (model: ${currentModelName(sessionId)})',
     );
 
     final chatHistory = history.map((msg) {
@@ -69,7 +72,7 @@ class GeminiSessionManager {
       }
     }).toList();
 
-    final session = _currentModel.startChat(history: chatHistory);
+    final session = _getModel(sessionId).startChat(history: chatHistory);
     _sessions[sessionId] = session;
     return session;
   }
@@ -78,7 +81,8 @@ class GeminiSessionManager {
   /// Xóa session hiện tại để tạo lại với model mới.
   /// Trả về `true` nếu còn model để fallback, `false` nếu đã hết.
   bool switchToNextModel(String sessionId) {
-    if (_currentModelIndex >= _models.length - 1) {
+    final currentIdx = _getModelIndex(sessionId);
+    if (currentIdx >= _models.length - 1) {
       debugPrint(
         '[GeminiSessionManager] Không còn model fallback nào! '
         'Đã thử hết ${_models.length} model.',
@@ -86,14 +90,23 @@ class GeminiSessionManager {
       return false;
     }
 
-    _currentModelIndex++;
+    _sessionModelIndices[sessionId] = currentIdx + 1;
     // Xóa session cũ để tạo lại với model mới
     _sessions.remove(sessionId);
     debugPrint(
-      '[GeminiSessionManager] Chuyển sang model fallback: $currentModelName '
-      '(index: $_currentModelIndex)',
+      '[GeminiSessionManager] Chuyển sang model fallback: ${currentModelName(sessionId)} '
+      '(index: ${currentIdx + 1})',
     );
     return true;
+  }
+
+  /// Reset model ưu tiên nhất cho session (thường dùng trước khi bắt đầu tin nhắn mới).
+  void resetToPrimaryModel(String sessionId) {
+    if (_sessionModelIndices[sessionId] != 0) {
+      _sessionModelIndices[sessionId] = 0;
+      _sessions.remove(sessionId);
+      debugPrint('[GeminiSessionManager] Reset session $sessionId về model ưu tiên nhất (index: 0)');
+    }
   }
 
   /// Lấy session mới với model tiếp theo (sau khi switchToNextModel).
@@ -107,19 +120,21 @@ class GeminiSessionManager {
   /// Xóa session khỏi cache (dùng khi user xóa session).
   void removeSession(String sessionId) {
     _sessions.remove(sessionId);
+    _sessionModelIndices.remove(sessionId);
     debugPrint('[GeminiSessionManager] Removed session: $sessionId');
   }
 
   /// Reset session (dùng khi user clear history) — tạo lại session rỗng.
   void clearSession(String sessionId) {
     _sessions.remove(sessionId);
+    _sessionModelIndices.remove(sessionId);
     debugPrint('[GeminiSessionManager] Cleared session: $sessionId');
   }
 
   /// Xóa toàn bộ cache (dùng khi logout).
   void clearAll() {
     _sessions.clear();
-    _currentModelIndex = 0; // reset về model mặc định
+    _sessionModelIndices.clear();
     debugPrint(
       '[GeminiSessionManager] Cleared all sessions, reset to primary model',
     );

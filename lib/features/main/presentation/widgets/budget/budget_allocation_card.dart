@@ -2,13 +2,18 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../../core/theme/app_colors.dart';
+import 'budget_glass_card.dart';
 
 class AllocationItem {
   final String label;
   final double value; // e.g. 27 for 27%
   final Color color;
 
-  AllocationItem({required this.label, required this.value, required this.color});
+  AllocationItem({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 }
 
 class BudgetAllocationCard extends StatelessWidget {
@@ -20,14 +25,9 @@ class BudgetAllocationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // If no items or total value is 0, we can show an empty state.
     final total = items.fold<double>(0, (s, i) => s + i.value);
-    
-    return Container(
+
+    return BudgetGlassCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF162033),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -42,27 +42,6 @@ class BudgetAllocationCard extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    const Text(
-                      '% ngân sách',
-                      style: TextStyle(color: kTextSecondary, fontSize: 11),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.keyboard_arrow_down,
-                      color: kTextSecondary.withValues(alpha: 0.8),
-                      size: 14,
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -70,7 +49,10 @@ class BudgetAllocationCard extends StatelessWidget {
             const Center(
               child: Padding(
                 padding: EdgeInsets.all(16.0),
-                child: Text('Chưa có dữ liệu phân bổ', style: TextStyle(color: kTextSecondary)),
+                child: Text(
+                  'Chưa có dữ liệu phân bổ',
+                  style: TextStyle(color: kTextSecondary),
+                ),
               ),
             )
           else
@@ -101,11 +83,15 @@ class BudgetAllocationCard extends StatelessWidget {
                 Expanded(
                   flex: 5,
                   child: Column(
-                    children: items.map((e) => _buildLegendItem(
-                      e.color, 
-                      e.label, 
-                      '${e.value.toStringAsFixed(1).replaceAll('.0', '')}%'
-                    )).toList(),
+                    children: items
+                        .map(
+                          (e) => _buildLegendItem(
+                            e.color,
+                            e.label,
+                            '${e.value.toStringAsFixed(1).replaceAll('.0', '')}%',
+                          ),
+                        )
+                        .toList(),
                   ),
                 ),
               ],

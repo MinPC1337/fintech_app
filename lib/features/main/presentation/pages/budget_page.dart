@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -188,7 +186,11 @@ class _BudgetScaffold extends StatelessWidget {
           final lastDay = DateTime(now.year, now.month + 1, 0).day;
           remainingDays = lastDay - now.day;
         } else if (loaded.month.isAfter(now)) {
-          remainingDays = DateTime(loaded.month.year, loaded.month.month + 1, 0).day;
+          remainingDays = DateTime(
+            loaded.month.year,
+            loaded.month.month + 1,
+            0,
+          ).day;
         }
 
         final List<Color> palette = [
@@ -205,7 +207,7 @@ class _BudgetScaffold extends StatelessWidget {
         final allocationItems = <AllocationItem>[];
         final alertItems = <AlertItem>[];
         final categoryItems = <CategoryListItem>[];
-        
+
         for (int i = 0; i < loaded.items.length; i++) {
           final item = loaded.items[i];
           final color = palette[i % palette.length];
@@ -217,11 +219,13 @@ class _BudgetScaffold extends StatelessWidget {
 
           // Allocation
           if (spent > 0) {
-            allocationItems.add(AllocationItem(
-              label: item.category.name,
-              value: spent,
-              color: color,
-            ));
+            allocationItems.add(
+              AllocationItem(
+                label: item.category.name,
+                value: spent,
+                color: color,
+              ),
+            );
           }
 
           // Alert (show top alerts)
@@ -239,38 +243,47 @@ class _BudgetScaffold extends StatelessWidget {
           }
 
           if (isOver || r >= 0.8 || alertItems.length < 3) {
-            alertItems.add(AlertItem(
-              emoji: _budgetCategoryEmoji(item.category),
-              iconColor: color,
-              title: item.category.name,
-              subtitle: isOver 
-                  ? 'Đã vượt ${(r * 100 - 100).toInt()}% ngân sách' 
-                  : 'Còn ${_formatBudgetMoney(limit - spent)} đ (${(100 - r * 100).toInt()}%)',
-              badgeText: badgeText,
-              badgeColor: badgeColor,
-            ));
+            alertItems.add(
+              AlertItem(
+                emoji: _budgetCategoryEmoji(item.category),
+                iconColor: color,
+                title: item.category.name,
+                subtitle: isOver
+                    ? 'Đã vượt ${(r * 100 - 100).toInt()}% ngân sách'
+                    : 'Còn ${_formatBudgetMoney(limit - spent)} đ (${(100 - r * 100).toInt()}%)',
+                badgeText: badgeText,
+                badgeColor: badgeColor,
+              ),
+            );
           }
 
           // Category List
-          categoryItems.add(CategoryListItem(
-            emoji: _budgetCategoryEmoji(item.category),
-            iconColor: color,
-            title: item.category.name,
-            spent: _formatBudgetMoney(spent),
-            limit: '${_formatBudgetMoney(limit)} đ',
-            percentage: percentage,
-            ratio: r.clamp(0.0, 1.0),
-            isOverBudget: isOver,
-            categoryId: item.category.id,
-          ));
+          categoryItems.add(
+            CategoryListItem(
+              emoji: _budgetCategoryEmoji(item.category),
+              iconColor: color,
+              title: item.category.name,
+              spent: _formatBudgetMoney(spent),
+              limit: '${_formatBudgetMoney(limit)} đ',
+              percentage: percentage,
+              ratio: r.clamp(0.0, 1.0),
+              isOverBudget: isOver,
+              categoryId: item.category.id,
+            ),
+          );
         }
 
         // Convert allocation absolute values to percentages
-        final totalAllocation = allocationItems.fold<double>(0, (s, i) => s + i.value);
+        final totalAllocation = allocationItems.fold<double>(
+          0,
+          (s, i) => s + i.value,
+        );
         final finalAllocationItems = allocationItems.map((e) {
           return AllocationItem(
             label: e.label,
-            value: totalAllocation > 0 ? (e.value / totalAllocation * 100) : 0.0,
+            value: totalAllocation > 0
+                ? (e.value / totalAllocation * 100)
+                : 0.0,
             color: e.color,
           );
         }).toList();
@@ -285,11 +298,16 @@ class _BudgetScaffold extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   BudgetHeader(
-                    monthYearText: 'Tháng ${DateFormat('MM/yyyy').format(loaded.month)}',
+                    monthYearText:
+                        'Tháng ${DateFormat('MM/yyyy').format(loaded.month)}',
                     onPrevMonth: () =>
                         context.read<BudgetCubit>().changeMonth(-1),
                     onNextMonth: () =>
                         context.read<BudgetCubit>().changeMonth(1),
+                    onAddBudget: () => _navigateToBudgetForm(
+                      context,
+                      walletId: loaded.walletId,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   BudgetSummaryCard(
@@ -305,7 +323,9 @@ class _BudgetScaffold extends StatelessWidget {
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final isWide = constraints.maxWidth > 600;
-                      final cardWidth = isWide ? (constraints.maxWidth - 24) / 2 : constraints.maxWidth;
+                      final cardWidth = isWide
+                          ? (constraints.maxWidth - 24) / 2
+                          : constraints.maxWidth;
                       return Wrap(
                         spacing: 24,
                         runSpacing: 24,
@@ -332,72 +352,8 @@ class _BudgetScaffold extends StatelessWidget {
               ),
             ),
           ),
-          floatingActionButton: _NeoFab(
-            label: 'Thêm danh mục',
-            icon: Icons.add_rounded,
-            onTap: () =>
-                _navigateToBudgetForm(context, walletId: loaded.walletId),
-          ),
         );
       },
-    );
-  }
-}
-
-class _NeoFab extends StatelessWidget {
-  const _NeoFab({required this.label, required this.icon, required this.onTap});
-
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 92),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onTap,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: kCyan.withValues(alpha: 0.22)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: kCyan.withValues(alpha: 0.22),
-                      blurRadius: 20,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(icon, color: kCyan),
-                    const SizedBox(width: 10),
-                    Text(
-                      label,
-                      style: const TextStyle(
-                        color: kTextPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
