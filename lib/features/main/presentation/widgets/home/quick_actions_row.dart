@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../pages/send_to_user_page.dart';
 import '../../pages/receive_money_page.dart';
 import '../../pages/momo_deposit_page.dart';
+import '../../pages/transfer_page.dart';
 import '../../pages/main_page.dart';
 
 class QuickActionsRow extends StatelessWidget {
@@ -22,12 +23,14 @@ class QuickActionsRow extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: _buildActionItem(
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          clipBehavior: Clip.none, // Để bóng/viền không bị cắt
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildActionItem(
                 context: context,
                 icon: Icons.send_rounded,
                 color: const Color(0xFF7C3AED), // Tím
@@ -37,9 +40,8 @@ class QuickActionsRow extends StatelessWidget {
                   MaterialPageRoute(builder: (_) => const SendToUserPage()),
                 )),
               ),
-            ),
-            Expanded(
-              child: _buildActionItem(
+              const SizedBox(width: 16),
+              _buildActionItem(
                 context: context,
                 icon: Icons.qr_code_scanner_rounded,
                 color: const Color(0xFF0EA5E9), // Xanh dương
@@ -49,9 +51,8 @@ class QuickActionsRow extends StatelessWidget {
                   MaterialPageRoute(builder: (_) => const ReceiveMoneyPage()),
                 )),
               ),
-            ),
-            Expanded(
-              child: _buildActionItem(
+              const SizedBox(width: 16),
+              _buildActionItem(
                 context: context,
                 icon: Icons.account_balance_wallet_rounded,
                 color: const Color(0xFFD946EF), // Hồng MoMo
@@ -61,9 +62,19 @@ class QuickActionsRow extends StatelessWidget {
                   MaterialPageRoute(builder: (_) => const MomoDepositPage()),
                 )),
               ),
-            ),
-            Expanded(
-              child: _buildActionItem(
+              const SizedBox(width: 16),
+              _buildActionItem(
+                context: context,
+                icon: Icons.send_to_mobile_rounded,
+                color: const Color(0xFFF43F5E), // Đỏ / Hồng đậm
+                label: 'Rút MoMo',
+                onTap: () => Future.microtask(() => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TransferPage()),
+                )),
+              ),
+              const SizedBox(width: 16),
+              _buildActionItem(
                 context: context,
                 icon: Icons.pie_chart_rounded,
                 color: const Color(0xFFF59E0B), // Cam
@@ -72,9 +83,8 @@ class QuickActionsRow extends StatelessWidget {
                   Future.microtask(() => MainPage.of(context)?.changeTab(1));
                 },
               ),
-            ),
-            Expanded(
-              child: _buildActionItem(
+              const SizedBox(width: 16),
+              _buildActionItem(
                 context: context,
                 icon: Icons.group_rounded,
                 color: const Color(0xFF10B981), // Xanh lá
@@ -83,8 +93,8 @@ class QuickActionsRow extends StatelessWidget {
                   Future.microtask(() => MainPage.of(context)?.changeTab(2));
                 },
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -100,37 +110,43 @@ class QuickActionsRow extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 52, // Nhỏ hơn một chút để chứa được 5 items
-            height: 52,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(16), // Squircle
-              border: Border.all(
-                color: color.withValues(alpha: 0.3),
-                width: 1,
+      child: SizedBox(
+        width: 72, // Đủ rộng để chữ hiển thị tốt
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64, // To ra
+              height: 64,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20), // Bo tròn mềm mại hơn
+                border: Border.all(
+                  color: color.withValues(alpha: 0.3),
+                  width: 1.5,
+                ),
+              ),
+              child: Icon(
+                icon,
+                color: color,
+                size: 30, // Icon to ra
               ),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 24,
+            const SizedBox(height: 10),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                height: 1.2,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

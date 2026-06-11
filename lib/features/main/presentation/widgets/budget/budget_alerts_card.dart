@@ -21,23 +21,33 @@ class AlertItem {
   });
 }
 
-class BudgetAlertsCard extends StatelessWidget {
+class BudgetAlertsCard extends StatefulWidget {
   const BudgetAlertsCard({super.key, required this.items});
 
   final List<AlertItem> items;
 
   @override
+  State<BudgetAlertsCard> createState() => _BudgetAlertsCardState();
+}
+
+class _BudgetAlertsCardState extends State<BudgetAlertsCard> {
+  bool _isExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final displayItems = _isExpanded
+        ? widget.items
+        : widget.items.take(4).toList();
+
     return BudgetGlassCard(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             spacing: 8,
-            runSpacing: 8,
             children: [
               const Text(
                 'Cảnh báo ngân sách',
@@ -47,17 +57,29 @@ class BudgetAlertsCard extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              Text(
-                'Xem tất cả',
-                style: TextStyle(
-                  color: kElectricBlue.withValues(alpha: 0.9),
-                  fontSize: 12,
+              if (widget.items.length > 4)
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isExpanded = !_isExpanded;
+                    });
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Text(
+                      _isExpanded ? 'Thu gọn' : 'Xem tất cả',
+                      style: TextStyle(
+                        color: kElectricBlue.withValues(alpha: 0.9),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 16),
-          if (items.isEmpty)
+          if (widget.items.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
               child: Text(
@@ -66,19 +88,26 @@ class BudgetAlertsCard extends StatelessWidget {
               ),
             )
           else
-            ...items.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              return _buildAlertItem(
-                emoji: item.emoji,
-                iconColor: item.iconColor,
-                title: item.title,
-                subtitle: item.subtitle,
-                badgeText: item.badgeText,
-                badgeColor: item.badgeColor,
-                isLast: index == items.length - 1,
-              );
-            }),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOutCubic,
+              alignment: Alignment.topCenter,
+              child: Column(
+                children: displayItems.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final item = entry.value;
+                  return _buildAlertItem(
+                    emoji: item.emoji,
+                    iconColor: item.iconColor,
+                    title: item.title,
+                    subtitle: item.subtitle,
+                    badgeText: item.badgeText,
+                    badgeColor: item.badgeColor,
+                    isLast: index == displayItems.length - 1,
+                  );
+                }).toList(),
+              ),
+            ),
         ],
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../domain/entities/category_entity.dart';
+import '../../domain/entities/transaction_entity.dart';
 
 class BudgetLineItem extends Equatable {
   const BudgetLineItem({
@@ -47,6 +48,7 @@ class BudgetLoaded extends BudgetState {
     required this.items,
     required this.walletId,
     required this.weeklySpendings,
+    required this.transactions,
     this.errorMessage,
   });
 
@@ -54,6 +56,7 @@ class BudgetLoaded extends BudgetState {
   final List<BudgetLineItem> items;
   final String walletId;
   final List<double> weeklySpendings; // 4 weeks
+  final List<TransactionEntity> transactions;
 
   /// Lỗi từ thao tác CRUD (không chặn toàn trang).
   final String? errorMessage;
@@ -65,5 +68,5 @@ class BudgetLoaded extends BudgetState {
       items.fold<double>(0, (s, i) => s + i.spentThisMonth);
 
   @override
-  List<Object?> get props => [month, items, walletId, weeklySpendings, errorMessage];
+  List<Object?> get props => [month, items, walletId, weeklySpendings, transactions, errorMessage];
 }

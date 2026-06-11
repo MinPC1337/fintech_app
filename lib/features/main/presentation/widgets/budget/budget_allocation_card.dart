@@ -16,15 +16,62 @@ class AllocationItem {
   });
 }
 
-class BudgetAllocationCard extends StatelessWidget {
-  const BudgetAllocationCard({super.key, required this.items});
+class BudgetAllocationCard extends StatefulWidget {
+  const BudgetAllocationCard({
+    super.key,
+    required this.items,
+    this.isActive = true,
+  });
 
   final List<AllocationItem> items;
+  final bool isActive;
+
+  @override
+  State<BudgetAllocationCard> createState() => _BudgetAllocationCardState();
+}
+
+class _BudgetAllocationCardState extends State<BudgetAllocationCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _animation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+    );
+
+    if (widget.isActive) {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant BudgetAllocationCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _controller.forward(from: 0.0);
+    } else if (!widget.isActive && oldWidget.isActive) {
+      _controller.value = 0.0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     // If no items or total value is 0, we can show an empty state.
-    final total = items.fold<double>(0, (s, i) => s + i.value);
+    final total = widget.items.fold<double>(0, (s, i) => s + i.value);
 
     return BudgetGlassCard(
       padding: const EdgeInsets.all(16),
@@ -56,45 +103,64 @@ class BudgetAllocationCard extends StatelessWidget {
               ),
             )
           else
-            Row(
-              children: [
-                Expanded(
-                  flex: 5,
-                  child: SizedBox(
-                    height: 120,
-                    child: PieChart(
-                      PieChartData(
-                        sectionsSpace: 0,
-                        centerSpaceRadius: 25,
-                        startDegreeOffset: 180,
-                        sections: items.map((e) {
-                          return PieChartSectionData(
-                            value: e.value,
-                            color: e.color,
-                            radius: 25,
-                            showTitle: false,
-                          );
-                        }).toList(),
+            AnimatedBuilder(
+              animation: _animation,
+              builder: (context, child) {
+                final animValue = _animation.value;
+                return Row(
+                  children: [
+                    Expanded(
+                      flex: 5,
+                      child: SizedBox(
+                        height: 120,
+                        // ScaleX: -1 lật ngược biểu đồ để tạo hiệu ứng vẽ ngược chiều kim đồng hồ (từ phải qua trái)
+                        child: Transform.scale(
+                          scaleX: -1,
+                          child: PieChart(
+                            PieChartData(
+                              sectionsSpace: 0,
+                              centerSpaceRadius: 25,
+                              startDegreeOffset: 270,
+                              sections: [
+                                ...widget.items.map((e) {
+                                  return PieChartSectionData(
+                                    value: e.value * animValue,
+                                    color: e.color,
+                                    radius: 25,
+                                    showTitle: false,
+                                  );
+                                }),
+                                if (animValue < 1.0)
+                                  PieChartSectionData(
+                                    value: 100 * (1 - animValue),
+                                    color: Colors.transparent,
+                                    radius: 25,
+                                    showTitle: false,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  flex: 5,
-                  child: Column(
-                    children: items
-                        .map(
-                          (e) => _buildLegendItem(
-                            e.color,
-                            e.label,
-                            '${e.value.toStringAsFixed(1).replaceAll('.0', '')}%',
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ),
-              ],
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 5,
+                      child: Column(
+                        children: widget.items
+                            .map(
+                              (e) => _buildLegendItem(
+                                e.color,
+                                e.label,
+                                '${(e.value * animValue).toStringAsFixed(1).replaceAll('.0', '')}%',
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
         ],
       ),

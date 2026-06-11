@@ -45,7 +45,7 @@ class MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       HomePage(isActive: _currentIndex == 0),
-      const BudgetPage(),
+      BudgetPage(isActive: _currentIndex == 1),
       const GroupWalletPage(),
       const SettingsPage(),
     ];

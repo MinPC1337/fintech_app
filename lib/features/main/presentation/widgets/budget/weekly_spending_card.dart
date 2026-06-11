@@ -4,23 +4,67 @@ import 'package:flutter/material.dart';
 import '../../../../../core/theme/app_colors.dart';
 import 'budget_glass_card.dart';
 
-class WeeklySpendingCard extends StatelessWidget {
+class WeeklySpendingCard extends StatefulWidget {
   const WeeklySpendingCard({
     super.key,
     required this.weeklySpendings,
     required this.weeklyLimit,
+    this.isActive = true,
   });
 
   final List<double> weeklySpendings;
   final double weeklyLimit;
+  final bool isActive;
+
+  @override
+  State<WeeklySpendingCard> createState() => _WeeklySpendingCardState();
+}
+
+class _WeeklySpendingCardState extends State<WeeklySpendingCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _animation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+    );
+
+    if (widget.isActive) {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant WeeklySpendingCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _controller.forward(from: 0.0);
+    } else if (!widget.isActive && oldWidget.isActive) {
+      _controller.value = 0.0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     // Determine max Y for the chart (add 20% padding above highest value)
-    final maxSpending = weeklySpendings.isEmpty
+    final maxSpending = widget.weeklySpendings.isEmpty
         ? 0.0
-        : weeklySpendings.reduce((a, b) => a > b ? a : b);
-    final maxY = (maxSpending > weeklyLimit ? maxSpending : weeklyLimit) * 1.2;
+        : widget.weeklySpendings.reduce((a, b) => a > b ? a : b);
+    final maxY = (maxSpending > widget.weeklyLimit ? maxSpending : widget.weeklyLimit) * 1.2;
     // ensure maxY > 0 to avoid Division by Zero
     final safeMaxY = maxY > 0 ? maxY : 5.0;
 
@@ -65,142 +109,148 @@ class WeeklySpendingCard extends StatelessWidget {
           const SizedBox(height: 32),
           SizedBox(
             height: 160,
-            child: Stack(
-              children: [
-                BarChart(
-                  BarChartData(
-                    alignment: BarChartAlignment.spaceAround,
-                    maxY: safeMaxY,
-                    minY: 0,
-                    gridData: FlGridData(show: false),
-                    borderData: FlBorderData(show: false),
-                    barTouchData: BarTouchData(
-                      enabled: false,
-                      touchTooltipData: BarTouchTooltipData(
-                        getTooltipColor: (group) => Colors.transparent,
-                        tooltipPadding: EdgeInsets.zero,
-                        tooltipMargin: 4,
-                        getTooltipItem:
-                            (
-                              BarChartGroupData group,
-                              int groupIndex,
-                              BarChartRodData rod,
-                              int rodIndex,
-                            ) {
-                              return BarTooltipItem(
-                                rod.toY.toStringAsFixed(1),
-                                TextStyle(
-                                  color: rod.toY > 3.8 ? kRose : kTextPrimary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 10,
-                                ),
-                              );
-                            },
-                      ),
-                    ),
-                    titlesData: FlTitlesData(
-                      show: true,
-                      leftTitles: AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      rightTitles: AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      topTitles: AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          getTitlesWidget: (value, meta) {
-                            String week = '';
-                            String dates = '';
-                            switch (value.toInt()) {
-                              case 0:
-                                week = 'Tuần 1';
-                                dates = '(01-07)';
-                                break;
-                              case 1:
-                                week = 'Tuần 2';
-                                dates = '(08-14)';
-                                break;
-                              case 2:
-                                week = 'Tuần 3';
-                                dates = '(15-21)';
-                                break;
-                              case 3:
-                                week = 'Tuần 4';
-                                dates = '(22-30)';
-                                break;
-                              default:
-                                return const SizedBox.shrink();
-                            }
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    week,
-                                    style: const TextStyle(
-                                      color: kTextSecondary,
+            child: AnimatedBuilder(
+              animation: _animation,
+              builder: (context, child) {
+                final animValue = _animation.value;
+                return Stack(
+                  children: [
+                    BarChart(
+                      BarChartData(
+                        alignment: BarChartAlignment.spaceAround,
+                        maxY: safeMaxY,
+                        minY: 0,
+                        gridData: FlGridData(show: false),
+                        borderData: FlBorderData(show: false),
+                        barTouchData: BarTouchData(
+                          enabled: false,
+                          touchTooltipData: BarTouchTooltipData(
+                            getTooltipColor: (group) => Colors.transparent,
+                            tooltipPadding: EdgeInsets.zero,
+                            tooltipMargin: 4,
+                            getTooltipItem:
+                                (
+                                  BarChartGroupData group,
+                                  int groupIndex,
+                                  BarChartRodData rod,
+                                  int rodIndex,
+                                ) {
+                                  return BarTooltipItem(
+                                    rod.toY.toStringAsFixed(1),
+                                    TextStyle(
+                                      color: (rod.toY > 3.8 ? kRose : kTextPrimary).withValues(alpha: animValue),
+                                      fontWeight: FontWeight.bold,
                                       fontSize: 10,
                                     ),
-                                  ),
-                                  Text(
-                                    dates,
-                                    style: const TextStyle(
-                                      color: kTextSecondary,
-                                      fontSize: 9,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                          reservedSize: 36,
-                        ),
-                      ),
-                    ),
-                    extraLinesData: ExtraLinesData(
-                      horizontalLines: [
-                        HorizontalLine(
-                          y: weeklyLimit,
-                          color: Colors.white.withValues(alpha: 0.2),
-                          strokeWidth: 1,
-                          dashArray: [3, 3],
-                          label: HorizontalLineLabel(
-                            show: true,
-                            alignment: Alignment.topRight,
-                            padding: const EdgeInsets.only(bottom: 4),
-                            style: const TextStyle(
-                              color: kTextSecondary,
-                              fontSize: 9,
-                            ),
-                            labelResolver: (line) => line.y.toStringAsFixed(0),
+                                  );
+                                },
                           ),
                         ),
-                      ],
+                        titlesData: FlTitlesData(
+                          show: true,
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          rightTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          topTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget: (value, meta) {
+                                String week = '';
+                                String dates = '';
+                                switch (value.toInt()) {
+                                  case 0:
+                                    week = 'Tuần 1';
+                                    dates = '(01-07)';
+                                    break;
+                                  case 1:
+                                    week = 'Tuần 2';
+                                    dates = '(08-14)';
+                                    break;
+                                  case 2:
+                                    week = 'Tuần 3';
+                                    dates = '(15-21)';
+                                    break;
+                                  case 3:
+                                    week = 'Tuần 4';
+                                    dates = '(22-30)';
+                                    break;
+                                  default:
+                                    return const SizedBox.shrink();
+                                }
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        week,
+                                        style: const TextStyle(
+                                          color: kTextSecondary,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                      Text(
+                                        dates,
+                                        style: const TextStyle(
+                                          color: kTextSecondary,
+                                          fontSize: 9,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                              reservedSize: 36,
+                            ),
+                          ),
+                        ),
+                        extraLinesData: ExtraLinesData(
+                          horizontalLines: [
+                            HorizontalLine(
+                              y: widget.weeklyLimit,
+                              color: Colors.white.withValues(alpha: 0.2),
+                              strokeWidth: 1,
+                              dashArray: [3, 3],
+                              label: HorizontalLineLabel(
+                                show: true,
+                                alignment: Alignment.topRight,
+                                padding: const EdgeInsets.only(bottom: 4),
+                                style: const TextStyle(
+                                  color: kTextSecondary,
+                                  fontSize: 9,
+                                ),
+                                labelResolver: (line) => line.y.toStringAsFixed(0),
+                              ),
+                            ),
+                          ],
+                        ),
+                        barGroups: widget.weeklySpendings.asMap().entries.map((entry) {
+                          return _buildBarGroup(
+                            entry.key,
+                            entry.value * animValue,
+                            entry.value > widget.weeklyLimit,
+                          );
+                        }).toList(),
+                      ),
                     ),
-                    barGroups: weeklySpendings.asMap().entries.map((entry) {
-                      return _buildBarGroup(
-                        entry.key,
-                        entry.value,
-                        entry.value > weeklyLimit,
-                      );
-                    }).toList(),
-                  ),
-                ),
-                // Custom label for the dotted line on the left
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  child: Text(
-                    'Ngân sách/tuần: ${weeklyLimit.toStringAsFixed(0)}',
-                    style: const TextStyle(color: kTextSecondary, fontSize: 9),
-                  ),
-                ),
-              ],
+                    // Custom label for the dotted line on the left
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      child: Text(
+                        'Ngân sách/tuần: ${widget.weeklyLimit.toStringAsFixed(0)}',
+                        style: const TextStyle(color: kTextSecondary, fontSize: 9),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ],

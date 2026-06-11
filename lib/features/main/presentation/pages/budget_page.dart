@@ -44,7 +44,9 @@ void _navigateToBudgetForm(
 }
 
 class BudgetPage extends StatelessWidget {
-  const BudgetPage({super.key});
+  const BudgetPage({super.key, this.isActive = true});
+
+  final bool isActive;
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +71,7 @@ class BudgetPage extends StatelessWidget {
         return BlocProvider(
           key: ValueKey(authState.user.uid),
           create: (_) => di.sl<BudgetCubit>()..start(authState.user.uid),
-          child: const _BudgetScaffold(),
+          child: _BudgetScaffold(isActive: isActive),
         );
       },
     );
@@ -77,7 +79,9 @@ class BudgetPage extends StatelessWidget {
 }
 
 class _BudgetScaffold extends StatelessWidget {
-  const _BudgetScaffold();
+  const _BudgetScaffold({this.isActive = true});
+
+  final bool isActive;
 
   @override
   Widget build(BuildContext context) {
@@ -269,6 +273,11 @@ class _BudgetScaffold extends StatelessWidget {
               ratio: r.clamp(0.0, 1.0),
               isOverBudget: isOver,
               categoryId: item.category.id,
+              category: item.category,
+              walletId: loaded.walletId,
+              transactions: loaded.transactions
+                  .where((t) => t.categoryId == item.category.id)
+                  .toList(),
             ),
           );
         }
@@ -316,9 +325,15 @@ class _BudgetScaffold extends StatelessWidget {
                     remainingAmount: _formatBudgetMoney(remaining),
                     usagePercentage: ratio,
                     remainingDays: remainingDays,
+                    isActive: isActive,
                   ),
                   const SizedBox(height: 24),
-                  BudgetAllocationCard(items: finalAllocationItems),
+                  BudgetCategoryList(items: categoryItems),
+                  const SizedBox(height: 24),
+                  BudgetAllocationCard(
+                    items: finalAllocationItems,
+                    isActive: isActive,
+                  ),
                   const SizedBox(height: 24),
                   LayoutBuilder(
                     builder: (context, constraints) {
@@ -332,21 +347,20 @@ class _BudgetScaffold extends StatelessWidget {
                         children: [
                           SizedBox(
                             width: cardWidth,
-                            child: BudgetAlertsCard(items: alertItems),
-                          ),
-                          SizedBox(
-                            width: cardWidth,
                             child: WeeklySpendingCard(
                               weeklySpendings: loaded.weeklySpendings,
                               weeklyLimit: totalLimit / 4,
+                              isActive: isActive,
                             ),
+                          ),
+                          SizedBox(
+                            width: cardWidth,
+                            child: BudgetAlertsCard(items: alertItems),
                           ),
                         ],
                       );
                     },
                   ),
-                  const SizedBox(height: 24),
-                  BudgetCategoryList(items: categoryItems),
                   const SizedBox(height: 120),
                 ],
               ),

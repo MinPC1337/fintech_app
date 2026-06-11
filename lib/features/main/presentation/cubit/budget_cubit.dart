@@ -151,6 +151,7 @@ class BudgetCubit extends Cubit<BudgetState> {
         items: items,
         walletId: walletId,
         weeklySpendings: weeklySpendings,
+        transactions: List.unmodifiable(_transactions),
         errorMessage: err,
       ),
     );
@@ -216,6 +217,7 @@ class BudgetCubit extends Cubit<BudgetState> {
           items: s.items,
           walletId: s.walletId,
           weeklySpendings: s.weeklySpendings,
+          transactions: s.transactions,
           errorMessage: message,
         ),
       );
@@ -231,6 +233,7 @@ class BudgetCubit extends Cubit<BudgetState> {
           items: s.items,
           walletId: s.walletId,
           weeklySpendings: s.weeklySpendings,
+          transactions: s.transactions,
         ),
       );
     }

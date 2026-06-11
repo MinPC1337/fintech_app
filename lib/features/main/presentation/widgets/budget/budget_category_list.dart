@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../core/theme/app_colors.dart';
-import 'budget_glass_card.dart';
+import '../../../domain/entities/category_entity.dart';
+import '../../../domain/entities/transaction_entity.dart';
+import '../../pages/budget_category_details_page.dart';
 
 class CategoryListItem {
   final String? emoji;
@@ -13,6 +15,9 @@ class CategoryListItem {
   final double ratio;
   final bool isOverBudget;
   final String categoryId;
+  final CategoryEntity category;
+  final String walletId;
+  final List<TransactionEntity> transactions;
 
   CategoryListItem({
     this.emoji,
@@ -24,6 +29,9 @@ class CategoryListItem {
     required this.ratio,
     required this.isOverBudget,
     required this.categoryId,
+    required this.category,
+    required this.walletId,
+    required this.transactions,
   });
 }
 
@@ -48,13 +56,25 @@ class BudgetCategoryList extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            Text(
-              'Xem tất cả',
-              style: TextStyle(
-                color: kElectricBlue.withValues(alpha: 0.9),
-                fontSize: 13,
+            if (items.isNotEmpty)
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => BudgetCategoryDetailsPage(items: items),
+                    ),
+                  );
+                },
+                child: Text(
+                  'Xem tất cả',
+                  style: TextStyle(
+                    color: kElectricBlue.withValues(alpha: 0.9),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
-            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -69,132 +89,56 @@ class BudgetCategoryList extends StatelessWidget {
             ),
           )
         else
-          ...items.map((item) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _buildCategoryItem(
-                emoji: item.emoji,
-                iconColor: item.iconColor,
-                title: item.title,
-                spent: item.spent,
-                limit: item.limit,
-                percentage: item.percentage,
-                ratio: item.ratio,
-                isOverBudget: item.isOverBudget,
-              ),
-            );
-          }),
-      ],
-    );
-  }
-
-  Widget _buildCategoryItem({
-    String? emoji,
-    required Color iconColor,
-    required String title,
-    required String spent,
-    required String limit,
-    required String percentage,
-    required double ratio,
-    bool isOverBudget = false,
-  }) {
-    final barColor = isOverBudget ? kRose : iconColor;
-
-    return BudgetGlassCard(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-            ),
-            child: emoji != null && emoji.isNotEmpty
-                ? Text(emoji, style: const TextStyle(fontSize: 24))
-                : Icon(Icons.category, color: iconColor, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: kTextPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    RichText(
-                      text: TextSpan(
-                        text: '$spent / ',
-                        style: const TextStyle(
-                          color: kTextPrimary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+              children: items.map((item) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: item.iconColor.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
                         ),
-                        children: [
-                          TextSpan(
-                            text: limit,
-                            style: const TextStyle(
-                              color: kTextSecondary,
-                              fontWeight: FontWeight.normal,
-                            ),
-                          ),
-                        ],
+                        child: item.emoji != null && item.emoji!.isNotEmpty
+                            ? Text(
+                                item.emoji!,
+                                style: const TextStyle(fontSize: 24),
+                              )
+                            : Icon(
+                                Icons.category,
+                                color: item.iconColor,
+                                size: 24,
+                              ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: SizedBox(
-                          height: 6,
-                          child: LinearProgressIndicator(
-                            value: ratio,
-                            backgroundColor: Colors.white.withValues(
-                              alpha: 0.1,
-                            ),
-                            valueColor: AlwaysStoppedAnimation<Color>(barColor),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: 70,
+                        child: Text(
+                          item.title,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: kTextPrimary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    SizedBox(
-                      width: 40,
-                      child: Text(
-                        percentage,
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          color: barColor,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                );
+              }).toList(),
             ),
           ),
-          const SizedBox(width: 12),
-          Icon(
-            Icons.chevron_right,
-            color: kTextSecondary.withValues(alpha: 0.5),
-            size: 20,
-          ),
-        ],
-      ),
+      ],
     );
   }
 }
