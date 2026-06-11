@@ -37,9 +37,10 @@ class _BudgetSummaryCardState extends State<BudgetSummaryCard>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
-    _animation = Tween<double>(begin: 0, end: widget.usagePercentage).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-    );
+    _animation = Tween<double>(
+      begin: 0,
+      end: widget.usagePercentage,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
     Future.delayed(const Duration(milliseconds: 150), () {
       if (mounted) {
@@ -51,13 +52,13 @@ class _BudgetSummaryCardState extends State<BudgetSummaryCard>
   @override
   void didUpdateWidget(BudgetSummaryCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     bool shouldAnimate = false;
-    
+
     // Animate when page becomes active
     if (widget.isActive && !oldWidget.isActive) {
       shouldAnimate = true;
-    } 
+    }
     // Animate when data changes
     else if (oldWidget.usagePercentage != widget.usagePercentage ||
         oldWidget.totalBudget != widget.totalBudget) {
@@ -90,7 +91,6 @@ class _BudgetSummaryCardState extends State<BudgetSummaryCard>
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: const LinearGradient(
@@ -99,17 +99,16 @@ class _BudgetSummaryCardState extends State<BudgetSummaryCard>
           colors: [
             Color(0xFF1E3A8A), // Deep vibrant blue
             Color(0xFF0F172A), // Dark slate
+            Color(0xFF020617), // Very dark slate
           ],
+          stops: [0.0, 0.6, 1.0],
         ),
-        border: Border.all(
-          color: kCyan.withValues(alpha: 0.15),
-          width: 1.5,
-        ),
+        border: Border.all(color: kCyan.withValues(alpha: 0.15), width: 1.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.4),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
           BoxShadow(
             color: kCyan.withValues(alpha: 0.05),
@@ -118,204 +117,272 @@ class _BudgetSummaryCardState extends State<BudgetSummaryCard>
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Ngân sách tháng',
-                          style: TextStyle(
-                            color: kTextSecondary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          widget.totalBudget,
-                          style: const TextStyle(
-                            color: kTextPrimary,
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.only(bottom: 4, left: 4),
-                          child: Text(
-                            'đ',
-                            style: TextStyle(
-                              color: kTextPrimary,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      'Tổng ngân sách',
-                      style: TextStyle(color: kTextSecondary, fontSize: 13),
-                    ),
-                  ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          children: [
+            // Background Elements (Holographic / Glassmorphism)
+            Positioned(
+              right: -60,
+              top: -60,
+              child: Container(
+                width: 200,
+                height: 200,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [kCyan.withValues(alpha: 0.15), Colors.transparent],
+                  ),
                 ),
               ),
-              Expanded(
-                flex: 4,
-                child: SizedBox(
-                  height: 100,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      AnimatedBuilder(
-                        animation: _animation,
-                        builder: (context, child) {
-                          final value = _animation.value;
-                          final safeValue = value.clamp(0.0, 1.0);
-                          return PieChart(
-                            PieChartData(
-                              sectionsSpace: 0,
-                              centerSpaceRadius: 35,
-                              startDegreeOffset: 270,
-                              sections: [
-                                PieChartSectionData(
-                                  value: safeValue,
-                                  color: _progressColor,
-                                  radius: 12,
-                                  showTitle: false,
-                                ),
-                                PieChartSectionData(
-                                  value: (1 - safeValue),
-                                  color: Colors.white.withValues(alpha: 0.05),
-                                  radius: 12,
-                                  showTitle: false,
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AnimatedBuilder(
-                            animation: _animation,
-                            builder: (context, child) {
-                              final value = _animation.value;
-                              return Text(
-                                '${(value * 100).toInt()}%',
-                                style: const TextStyle(
-                                  color: kTextPrimary,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              );
-                            },
-                          ),
-                          const Text(
-                            'Đã sử dụng',
-                            style: TextStyle(
-                              color: kTextSecondary,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
-                      ),
+            ),
+            Positioned(
+              left: -40,
+              bottom: -40,
+              child: Container(
+                width: 150,
+                height: 150,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      kEmerald.withValues(alpha: 0.1),
+                      Colors.transparent,
                     ],
                   ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 32),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: SizedBox(
-              height: 28,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return AnimatedBuilder(
-                    animation: _animation,
-                    builder: (context, child) {
-                      final value = _animation.value;
-                      final safeValue = value.clamp(0.0, 1.0);
-                      final spentWidth = constraints.maxWidth * safeValue;
-                      final remainingWidth = constraints.maxWidth - spentWidth;
-                      
-                      return Row(
-                        children: [
-                          // Spent part (Red)
-                          Container(
-                            width: spentWidth,
-                            color: kRose,
-                            alignment: Alignment.center,
-                            child: safeValue > 0.15
-                                ? Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: Text(
-                                        '${widget.spentAmount} đ',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                : const SizedBox(),
-                          ),
-                          // Remaining part (Green)
-                          Container(
-                            width: remainingWidth,
-                            color: kEmerald,
-                            alignment: Alignment.center,
-                            child: (1 - safeValue) > 0.15
-                                ? Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: Text(
-                                        '${widget.remainingAmount} đ',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                : const SizedBox(),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
+            ),
+            // Pattern watermark
+            Positioned(
+              right: 20,
+              bottom: 20,
+              child: Icon(
+                Icons.pie_chart_rounded,
+                size: 150,
+                color: Colors.white.withValues(alpha: 0.03),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Còn ${widget.remainingDays} ngày trong tháng',
-            style: const TextStyle(color: kTextSecondary, fontSize: 13),
-          ),
-        ],
+
+            // Nội dung chính
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Ngân sách tháng',
+                                  style: TextStyle(
+                                    color: kTextSecondary,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  widget.totalBudget,
+                                  style: const TextStyle(
+                                    color: kTextPrimary,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const Padding(
+                                  padding: EdgeInsets.only(bottom: 4, left: 4),
+                                  child: Text(
+                                    'đ',
+                                    style: TextStyle(
+                                      color: kTextPrimary,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            const Text(
+                              'Tổng ngân sách',
+                              style: TextStyle(
+                                color: kTextSecondary,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        flex: 4,
+                        child: SizedBox(
+                          height: 100,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              AnimatedBuilder(
+                                animation: _animation,
+                                builder: (context, child) {
+                                  final value = _animation.value;
+                                  final safeValue = value.clamp(0.0, 1.0);
+                                  return PieChart(
+                                    PieChartData(
+                                      sectionsSpace: 0,
+                                      centerSpaceRadius: 35,
+                                      startDegreeOffset: 270,
+                                      sections: [
+                                        PieChartSectionData(
+                                          value: safeValue,
+                                          color: _progressColor,
+                                          radius: 12,
+                                          showTitle: false,
+                                        ),
+                                        PieChartSectionData(
+                                          value: (1 - safeValue),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.05,
+                                          ),
+                                          radius: 12,
+                                          showTitle: false,
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  AnimatedBuilder(
+                                    animation: _animation,
+                                    builder: (context, child) {
+                                      final value = _animation.value;
+                                      return Text(
+                                        '${(value * 100).toInt()}%',
+                                        style: const TextStyle(
+                                          color: kTextPrimary,
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  const Text(
+                                    'Đã sử dụng',
+                                    style: TextStyle(
+                                      color: kTextSecondary,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: SizedBox(
+                      height: 28,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return AnimatedBuilder(
+                            animation: _animation,
+                            builder: (context, child) {
+                              final value = _animation.value;
+                              final safeValue = value.clamp(0.0, 1.0);
+                              final spentWidth =
+                                  constraints.maxWidth * safeValue;
+                              final remainingWidth =
+                                  constraints.maxWidth - spentWidth;
+
+                              return Row(
+                                children: [
+                                  // Spent part (Red)
+                                  Container(
+                                    width: spentWidth,
+                                    color: kRose,
+                                    alignment: Alignment.center,
+                                    child: safeValue > 0.15
+                                        ? Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 4,
+                                            ),
+                                            child: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              child: Text(
+                                                '${widget.spentAmount} đ',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                        : const SizedBox(),
+                                  ),
+                                  // Remaining part (Green)
+                                  Container(
+                                    width: remainingWidth,
+                                    color: kEmerald,
+                                    alignment: Alignment.center,
+                                    child: (1 - safeValue) > 0.15
+                                        ? Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 4,
+                                            ),
+                                            child: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              child: Text(
+                                                '${widget.remainingAmount} đ',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                        : const SizedBox(),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Còn ${widget.remainingDays} ngày trong tháng',
+                    style: const TextStyle(color: kTextSecondary, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
