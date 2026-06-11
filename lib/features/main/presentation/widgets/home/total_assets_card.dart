@@ -347,7 +347,23 @@ class _TotalAssetsCardState extends State<TotalAssetsCard> {
                           ],
                         ),
 
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 12),
+
+                        // Số tài khoản
+                        Text(
+                          widget.userId.hashCode
+                              .abs()
+                              .toString()
+                              .padLeft(10, '0')
+                              .substring(0, 10),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 2.0,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
 
                         // Số dư chính
                         Row(
