@@ -8,6 +8,7 @@ import '../../domain/entities/transaction_entity.dart';
 import '../../domain/entities/wallet_entity.dart';
 import '../../domain/repositories/budget_repository.dart';
 import '../../domain/usecases/get_primary_wallet_stream_usecase.dart';
+import '../../domain/services/budget_alert_service.dart';
 import '../../../../core/errors/failures.dart';
 import 'budget_state.dart';
 
@@ -15,12 +16,15 @@ class BudgetCubit extends Cubit<BudgetState> {
   BudgetCubit({
     required GetPrimaryWalletStreamUseCase getPrimaryWalletStreamUseCase,
     required BudgetRepository budgetRepository,
+    required BudgetAlertService budgetAlertService,
   }) : _getPrimaryWalletStreamUseCase = getPrimaryWalletStreamUseCase,
        _budgetRepository = budgetRepository,
+       _budgetAlertService = budgetAlertService,
        super(BudgetInitial());
 
   final GetPrimaryWalletStreamUseCase _getPrimaryWalletStreamUseCase;
   final BudgetRepository _budgetRepository;
+  final BudgetAlertService _budgetAlertService;
 
   StreamSubscription<Either<dynamic, WalletEntity?>>? _walletSub;
   StreamSubscription<List<CategoryEntity>>? _categoriesSub;
@@ -133,12 +137,27 @@ class BudgetCubit extends Cubit<BudgetState> {
         .where((c) => c.type == CategoryType.outType)
         .toList();
 
+    final now = DateTime.now();
+    final isCurrentMonth = _month.year == now.year && _month.month == now.month;
+
     final items = outCategories
         .map(
-          (c) => BudgetLineItem(
-            category: c,
-            spentThisMonth: spentByCategory[c.id] ?? 0,
-          ),
+          (c) {
+            final spent = spentByCategory[c.id] ?? 0;
+            
+            if (isCurrentMonth && _userId != null) {
+              _budgetAlertService.checkAndAlert(
+                userId: _userId!,
+                category: c,
+                newTotalSpent: spent,
+              );
+            }
+
+            return BudgetLineItem(
+              category: c,
+              spentThisMonth: spent,
+            );
+          }
         )
         .toList();
 

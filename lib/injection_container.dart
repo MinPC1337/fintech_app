@@ -31,6 +31,7 @@ import 'features/main/domain/usecases/get_transactions_stream_usecase.dart';
 import 'features/main/domain/usecases/transfer_to_user_usecase.dart';
 import 'features/main/domain/usecases/watch_out_categories_usecase.dart';
 import 'features/main/presentation/cubit/budget_cubit.dart';
+import 'features/main/domain/services/budget_alert_service.dart';
 import 'features/group_wallet/data/datasources/group_wallet_remote_data_source.dart';
 import 'features/group_wallet/data/repositories/group_wallet_repository_impl.dart';
 import 'features/group_wallet/domain/repositories/group_wallet_repository.dart';
@@ -179,16 +180,24 @@ Future<void> init() async {
     () => GroupWalletRemoteDataSourceImpl(firestore: sl()),
   );
 
-  sl.registerLazySingleton<BudgetRemoteDataSource>(
-    () => BudgetRemoteDataSourceImpl(firestore: sl()),
-  );
   sl.registerLazySingleton<BudgetRepository>(
     () => BudgetRepositoryImpl(remoteDataSource: sl()),
   );
+  sl.registerLazySingleton<BudgetRemoteDataSource>(
+    () => BudgetRemoteDataSourceImpl(firestore: sl()),
+  );
+  sl.registerLazySingleton<BudgetAlertService>(
+    () => BudgetAlertService(
+      firestore: sl(),
+      localNotificationService: sl(),
+    ),
+  );
+  
   sl.registerFactory(
     () => BudgetCubit(
       getPrimaryWalletStreamUseCase: sl(),
       budgetRepository: sl(),
+      budgetAlertService: sl(),
     ),
   );
 

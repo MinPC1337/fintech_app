@@ -13,7 +13,6 @@ import '../cubit/budget_state.dart';
 import '../widgets/budget/budget_header.dart';
 import '../widgets/budget/budget_summary_card.dart';
 import '../widgets/budget/budget_allocation_card.dart';
-import '../widgets/budget/budget_alerts_card.dart';
 import '../widgets/budget/weekly_spending_card.dart';
 import '../widgets/budget/budget_category_list.dart';
 import 'add_budget_page.dart';
@@ -209,7 +208,6 @@ class _BudgetScaffold extends StatelessWidget {
         ];
 
         final allocationItems = <AllocationItem>[];
-        final alertItems = <AlertItem>[];
         final categoryItems = <CategoryListItem>[];
 
         for (int i = 0; i < loaded.items.length; i++) {
@@ -232,34 +230,7 @@ class _BudgetScaffold extends StatelessWidget {
             );
           }
 
-          // Alert (show top alerts)
-          String badgeText = 'Ổn định';
-          Color badgeColor = kElectricBlue;
-          if (isOver) {
-            badgeText = 'Vượt ngân sách';
-            badgeColor = kRose;
-          } else if (r >= 0.8) {
-            badgeText = 'Cảnh báo';
-            badgeColor = const Color(0xFFF59E0B);
-          } else if (r <= 0.5) {
-            badgeText = 'Tốt';
-            badgeColor = kEmerald;
-          }
 
-          if (isOver || r >= 0.8 || alertItems.length < 3) {
-            alertItems.add(
-              AlertItem(
-                emoji: _budgetCategoryEmoji(item.category),
-                iconColor: color,
-                title: item.category.name,
-                subtitle: isOver
-                    ? 'Đã vượt ${(r * 100 - 100).toInt()}% ngân sách'
-                    : 'Còn ${_formatBudgetMoney(limit - spent)} đ (${(100 - r * 100).toInt()}%)',
-                badgeText: badgeText,
-                badgeColor: badgeColor,
-              ),
-            );
-          }
 
           // Category List
           categoryItems.add(
@@ -337,27 +308,13 @@ class _BudgetScaffold extends StatelessWidget {
                   const SizedBox(height: 24),
                   LayoutBuilder(
                     builder: (context, constraints) {
-                      final isWide = constraints.maxWidth > 600;
-                      final cardWidth = isWide
-                          ? (constraints.maxWidth - 24) / 2
-                          : constraints.maxWidth;
-                      return Wrap(
-                        spacing: 24,
-                        runSpacing: 24,
-                        children: [
-                          SizedBox(
-                            width: cardWidth,
-                            child: WeeklySpendingCard(
-                              weeklySpendings: loaded.weeklySpendings,
-                              weeklyLimit: totalLimit / 4,
-                              isActive: isActive,
-                            ),
-                          ),
-                          SizedBox(
-                            width: cardWidth,
-                            child: BudgetAlertsCard(items: alertItems),
-                          ),
-                        ],
+                      return SizedBox(
+                        width: double.infinity,
+                        child: WeeklySpendingCard(
+                          weeklySpendings: loaded.weeklySpendings,
+                          weeklyLimit: totalLimit / 4,
+                          isActive: isActive,
+                        ),
                       );
                     },
                   ),

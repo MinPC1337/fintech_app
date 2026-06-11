@@ -56,7 +56,7 @@ class NotificationsPage extends StatelessWidget {
 
         final allNotifications = snapshot.data ?? [];
         final notifications = allNotifications
-            .where((n) => n.type != 'transaction')
+            .where((n) => n.type != 'transaction' && n.type != 'budget_alert')
             .toList();
 
         if (notifications.isEmpty) {
@@ -246,31 +246,77 @@ class NotificationsPage extends StatelessWidget {
   }
 
   Widget _buildWarningsTab(BuildContext context) {
-    // Trả về dữ liệu mock giả lập cho Cảnh báo ngân sách
-    return ListView(
-      padding: const EdgeInsets.all(24),
-      children: [
-        _buildWarningItem(
-          title: 'Cảnh báo ngân sách',
-          body:
-              'Bạn đã dùng 85% ngân sách tháng này. Hãy chú ý các khoản chi tiêu sắp tới để không vượt quá giới hạn.',
-          timestamp: DateTime.now(),
-        ),
-      ],
+    return StreamBuilder<List<NotificationModel>>(
+      stream: sl<NotificationRemoteDataSource>().getNotificationsStream(userId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: Colors.orange));
+        }
+
+        final allNotifications = snapshot.data ?? [];
+        final warnings = allNotifications
+            .where((n) => n.type == 'budget_alert')
+            .toList();
+
+        if (warnings.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  size: 64,
+                  color: kTextSecondary.withValues(alpha: 0.3),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Bạn chưa có cảnh báo nào',
+                  style: TextStyle(color: kTextSecondary),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(24),
+          itemCount: warnings.length,
+          itemBuilder: (context, index) {
+            final item = warnings[index];
+            return _buildWarningItem(
+              item: item,
+              title: item.title,
+              body: item.body,
+              timestamp: item.timestamp,
+            );
+          },
+        );
+      },
     );
   }
 
   Widget _buildWarningItem({
+    required NotificationModel item,
     required String title,
     required String body,
     required DateTime timestamp,
   }) {
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        if (!item.isRead) {
+          sl<NotificationRemoteDataSource>().markAsRead(item.id);
+        }
+      },
+      child: Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: kThemeSurfaceSecondary,
+        color: item.isRead ? kThemeSurfaceSecondary : Colors.orange.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: item.isRead 
+              ? kThemeBorderDefault.withValues(alpha: 0.1) 
+              : Colors.orange.withValues(alpha: 0.3),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -346,6 +392,7 @@ class NotificationsPage extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }
