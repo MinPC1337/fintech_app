@@ -33,6 +33,12 @@ class GroupWalletLoaded extends GroupWalletState {
   final bool isActionInProgress;
   final String? message;
 
+  // Aggregated overview data
+  final List<TransactionEntity> allRecentTransactions;
+  final List<DebtEntity> myUnsettledDebts;
+  final Map<String, String> memberNames;
+  final Map<String, String> memberAvatars;
+
   const GroupWalletLoaded({
     required this.wallets,
     this.selectedWallet,
@@ -41,6 +47,10 @@ class GroupWalletLoaded extends GroupWalletState {
     required this.pendingInvitations,
     this.isActionInProgress = false,
     this.message,
+    this.allRecentTransactions = const [],
+    this.myUnsettledDebts = const [],
+    this.memberNames = const {},
+    this.memberAvatars = const {},
   });
 
   @override
@@ -52,6 +62,10 @@ class GroupWalletLoaded extends GroupWalletState {
     pendingInvitations,
     isActionInProgress,
     message,
+    allRecentTransactions,
+    myUnsettledDebts,
+    memberNames,
+    memberAvatars,
   ];
 
   GroupWalletLoaded copyWith({
@@ -62,6 +76,10 @@ class GroupWalletLoaded extends GroupWalletState {
     List<InvitationEntity>? pendingInvitations,
     bool? isActionInProgress,
     String? message,
+    List<TransactionEntity>? allRecentTransactions,
+    List<DebtEntity>? myUnsettledDebts,
+    Map<String, String>? memberNames,
+    Map<String, String>? memberAvatars,
   }) {
     return GroupWalletLoaded(
       wallets: wallets ?? this.wallets,
@@ -71,6 +89,11 @@ class GroupWalletLoaded extends GroupWalletState {
       pendingInvitations: pendingInvitations ?? this.pendingInvitations,
       isActionInProgress: isActionInProgress ?? this.isActionInProgress,
       message: message,
+      allRecentTransactions:
+          allRecentTransactions ?? this.allRecentTransactions,
+      myUnsettledDebts: myUnsettledDebts ?? this.myUnsettledDebts,
+      memberNames: memberNames ?? this.memberNames,
+      memberAvatars: memberAvatars ?? this.memberAvatars,
     );
   }
 }

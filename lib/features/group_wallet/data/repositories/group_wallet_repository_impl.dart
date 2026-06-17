@@ -18,11 +18,8 @@ class GroupWalletRepositoryImpl implements GroupWalletRepository {
 
   @override
   Future<WalletEntity> createGroupWallet(
-    String name,
-    String ownerId,
-    int? accentArgb,
-  ) async {
-    return await remoteDataSource.createGroupWallet(name, ownerId, accentArgb);
+      String name, String ownerId, int? accentArgb, String? imageUrl, String? emoji) async {
+    return await remoteDataSource.createGroupWallet(name, ownerId, accentArgb, imageUrl, emoji);
   }
 
   @override
@@ -127,5 +124,27 @@ class GroupWalletRepositoryImpl implements GroupWalletRepository {
       note,
       participantIds,
     );
+  }
+
+  @override
+  Stream<List<TransactionEntity>> watchAllGroupTransactions(
+    List<String> walletIds,
+  ) {
+    return remoteDataSource.watchAllGroupTransactions(walletIds);
+  }
+
+  @override
+  Stream<List<DebtEntity>> watchMyUnsettledDebts(String userId) {
+    return remoteDataSource.watchMyUnsettledDebts(userId);
+  }
+
+  @override
+  Future<Map<String, String>> getUserNames(List<String> userIds) {
+    return remoteDataSource.getUserNames(userIds);
+  }
+
+  @override
+  Future<Map<String, Map<String, String>>> getUserProfiles(List<String> userIds) {
+    return remoteDataSource.getUserProfiles(userIds);
   }
 }

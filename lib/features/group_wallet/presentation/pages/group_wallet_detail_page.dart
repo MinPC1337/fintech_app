@@ -256,15 +256,40 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                                     ],
                                   ),
                                 ),
-                                Icon(
-                                  wallet.status == 'active'
-                                      ? Icons.group_rounded
-                                      : Icons.lock_rounded,
-                                  color: wallet.status == 'active'
-                                      ? kCyan
-                                      : kTextSecondary,
-                                  size: 34,
-                                ),
+                                wallet.status == 'closed'
+                                    ? const Icon(
+                                        Icons.lock_rounded,
+                                        color: kTextSecondary,
+                                        size: 34,
+                                      )
+                                    : wallet.imageUrl != null &&
+                                            wallet.imageUrl!.isNotEmpty
+                                        ? Container(
+                                            width: 36,
+                                            height: 36,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              border: Border.all(color: kCyan.withValues(alpha: 0.5), width: 1),
+                                            ),
+                                            child: ClipOval(
+                                              child: Image.network(
+                                                wallet.imageUrl!,
+                                                fit: BoxFit.cover,
+                                              ),
+                                            ),
+                                          )
+                                        : wallet.emoji != null &&
+                                                wallet.emoji!.isNotEmpty
+                                            ? Text(
+                                                wallet.emoji!,
+                                                style: const TextStyle(
+                                                    fontSize: 32),
+                                              )
+                                            : const Icon(
+                                                Icons.group_rounded,
+                                                color: kCyan,
+                                                size: 34,
+                                              ),
                               ],
                             ),
                             const SizedBox(height: 18),

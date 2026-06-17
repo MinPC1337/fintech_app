@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/imgbb_client.dart';
 import '../cubit/auth_cubit.dart';
@@ -25,8 +26,8 @@ class _ProfilePageState extends State<ProfilePage> {
   String? _avatarUrl;
   bool _isUploading = false;
 
-  // IMPORTANT: replace with your own Imgbb API key or inject securely.
-  static const _imgbbKey = '52dd149a8c2c1242940bd1e77b66cb15';
+  // Use Imgbb API key from .env file
+  static final _imgbbKey = dotenv.env['IMGBB_KEY'] ?? '';
 
   @override
   void initState() {

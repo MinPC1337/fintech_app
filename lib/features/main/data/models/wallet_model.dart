@@ -11,6 +11,8 @@ class WalletModel extends WalletEntity {
     super.accentArgb,
     super.createdAt,
     super.status,
+    super.imageUrl,
+    super.emoji,
   });
 
   factory WalletModel.fromJson(Map<String, dynamic> json) {
@@ -28,6 +30,8 @@ class WalletModel extends WalletEntity {
               : DateTime.tryParse(json['createdAt'].toString()))
           : null,
       status: json['status'] ?? 'active',
+      imageUrl: json['imageUrl'] as String?,
+      emoji: json['emoji'] as String?,
     );
   }
 
@@ -42,6 +46,8 @@ class WalletModel extends WalletEntity {
       if (accentArgb != null) 'accentArgb': accentArgb,
       if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
       'status': status,
+      if (imageUrl != null) 'imageUrl': imageUrl,
+      if (emoji != null) 'emoji': emoji,
     };
   }
 }

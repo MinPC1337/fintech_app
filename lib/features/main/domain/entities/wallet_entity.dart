@@ -10,6 +10,8 @@ class WalletEntity extends Equatable {
   final int? accentArgb;
   final DateTime? createdAt;
   final String status; // "active" | "closed"
+  final String? imageUrl;
+  final String? emoji;
 
   const WalletEntity({
     required this.id,
@@ -21,6 +23,8 @@ class WalletEntity extends Equatable {
     this.accentArgb,
     this.createdAt,
     this.status = 'active',
+    this.imageUrl,
+    this.emoji,
   });
 
   @override
@@ -34,5 +38,7 @@ class WalletEntity extends Equatable {
         accentArgb,
         createdAt,
         status,
+        imageUrl,
+        emoji,
       ];
 }

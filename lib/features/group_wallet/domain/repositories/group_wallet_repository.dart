@@ -6,7 +6,13 @@ import 'package:fintech_app/features/main/domain/entities/debt_entity.dart';
 
 abstract class GroupWalletRepository {
   // CRUD ví nhóm
-  Future<WalletEntity> createGroupWallet(String name, String ownerId, int? accentArgb);
+  Future<WalletEntity> createGroupWallet(
+    String name,
+    String ownerId,
+    int? accentArgb,
+    String? imageUrl,
+    String? emoji,
+  );
   Stream<List<WalletEntity>> watchGroupWallets(String userId);
   Stream<WalletEntity?> watchGroupWalletById(String walletId);
   Future<void> closeGroupWallet(String walletId, String requesterId);
@@ -28,4 +34,10 @@ abstract class GroupWalletRepository {
   Stream<List<DebtEntity>> watchDebts(String walletId);
   Future<void> settleDebt(String debtId, String borrowerId);
   Future<RemindDebtResult> remindDebt(String debtId, String lenderId);
+
+  // Aggregated overview
+  Stream<List<TransactionEntity>> watchAllGroupTransactions(List<String> walletIds);
+  Stream<List<DebtEntity>> watchMyUnsettledDebts(String userId);
+  Future<Map<String, String>> getUserNames(List<String> userIds);
+  Future<Map<String, Map<String, String>>> getUserProfiles(List<String> userIds);
 }

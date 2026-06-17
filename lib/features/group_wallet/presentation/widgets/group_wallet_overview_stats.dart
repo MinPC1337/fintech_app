@@ -3,12 +3,23 @@ import '../../../../core/theme/app_colors.dart';
 
 /// Section "Tổng quan tất cả ví nhóm"
 class GroupWalletOverviewStats extends StatelessWidget {
-  const GroupWalletOverviewStats({super.key});
+  const GroupWalletOverviewStats({
+    super.key,
+    required this.totalBalance,
+    required this.totalContributed,
+    required this.totalSpent,
+    required this.walletCount,
+    required this.totalMembers,
+  });
+
+  final double totalBalance;
+  final double totalContributed;
+  final double totalSpent;
+  final int walletCount;
+  final int totalMembers;
 
   @override
   Widget build(BuildContext context) {
-    // Kích thước màn hình để responsive
-
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
@@ -105,13 +116,13 @@ class GroupWalletOverviewStats extends StatelessWidget {
                         children: [
                           _buildInfoTag(
                             Icons.folder_shared_rounded,
-                            '3 Ví',
+                            '$walletCount Ví',
                             kCyan,
                           ),
                           const SizedBox(width: 8),
                           _buildInfoTag(
                             Icons.group_rounded,
-                            '12 Thành viên',
+                            '$totalMembers Thành viên',
                             kEmerald,
                           ),
                         ],
@@ -134,9 +145,9 @@ class GroupWalletOverviewStats extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text(
-                        '22.090.000',
-                        style: TextStyle(
+                      Text(
+                        _formatCurrencyNumber(totalBalance),
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 32,
                           fontWeight: FontWeight.w900,
@@ -164,35 +175,6 @@ class GroupWalletOverviewStats extends StatelessWidget {
                   Container(
                     height: 1,
                     color: Colors.white.withValues(alpha: 0.1),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Hàng 3: Tổng đóng góp & Đã chi
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildBottomStatItem(
-                          icon: Icons.download_rounded,
-                          iconColor: kEmerald,
-                          label: 'Đã đóng góp',
-                          value: '37.000.000 đ',
-                        ),
-                      ),
-                      Container(
-                        width: 1,
-                        height: 40,
-                        color: Colors.white.withValues(alpha: 0.1),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildBottomStatItem(
-                          icon: Icons.upload_rounded,
-                          iconColor: kRose,
-                          label: 'Đã chi tiêu',
-                          value: '14.910.000 đ',
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),
@@ -229,50 +211,16 @@ class GroupWalletOverviewStats extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomStatItem({
-    required IconData icon,
-    required Color iconColor,
-    required String label,
-    required String value,
-  }) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: iconColor.withValues(alpha: 0.15),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: iconColor, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+  String _formatCurrencyNumber(double amount) {
+    final intAmount = amount.toInt();
+    final str = intAmount.toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < str.length; i++) {
+      if (i > 0 && (str.length - i) % 3 == 0) {
+        buffer.write('.');
+      }
+      buffer.write(str[i]);
+    }
+    return buffer.toString();
   }
 }

@@ -51,6 +51,8 @@ import 'features/group_wallet/domain/usecases/watch_group_wallet_detail_usecase.
 import 'features/group_wallet/domain/usecases/watch_group_wallets_usecase.dart';
 import 'features/group_wallet/domain/usecases/watch_pending_invitations_usecase.dart';
 import 'features/group_wallet/domain/usecases/withdraw_from_group_usecase.dart';
+import 'features/group_wallet/domain/usecases/watch_all_group_transactions_usecase.dart';
+import 'features/group_wallet/domain/usecases/watch_my_unsettled_debts_usecase.dart';
 import 'features/group_wallet/presentation/cubit/group_wallet_cubit.dart';
 
 import 'package:google_generative_ai/google_generative_ai.dart';
@@ -171,6 +173,12 @@ Future<void> init() async {
   sl.registerLazySingleton<WatchPendingInvitationsUseCase>(
     () => WatchPendingInvitationsUseCase(sl()),
   );
+  sl.registerLazySingleton<WatchAllGroupTransactionsUseCase>(
+    () => WatchAllGroupTransactionsUseCase(sl()),
+  );
+  sl.registerLazySingleton<WatchMyUnsettledDebtsUseCase>(
+    () => WatchMyUnsettledDebtsUseCase(sl()),
+  );
 
   sl.registerLazySingleton<GroupWalletRepository>(
     () => GroupWalletRepositoryImpl(remoteDataSource: sl()),
@@ -219,6 +227,9 @@ Future<void> init() async {
       watchGroupTransactionsUseCase: sl(),
       watchDebtsUseCase: sl(),
       watchPendingInvitationsUseCase: sl(),
+      watchAllGroupTransactionsUseCase: sl(),
+      watchMyUnsettledDebtsUseCase: sl(),
+      groupWalletRepository: sl(),
     ),
   );
 

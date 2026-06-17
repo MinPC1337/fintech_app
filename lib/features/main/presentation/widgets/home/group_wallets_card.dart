@@ -129,7 +129,22 @@ class _GroupWalletsCardState extends State<GroupWalletsCard> {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: color.withValues(alpha: 0.3)),
             ),
-            child: Icon(Icons.group_rounded, color: color, size: 20),
+            child: wallet.imageUrl != null && wallet.imageUrl!.isNotEmpty
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(9),
+                    child: Image.network(
+                      wallet.imageUrl!,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                : wallet.emoji != null && wallet.emoji!.isNotEmpty
+                    ? Center(
+                        child: Text(
+                          wallet.emoji!,
+                          style: const TextStyle(fontSize: 20),
+                        ),
+                      )
+                    : Icon(Icons.group_rounded, color: color, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(

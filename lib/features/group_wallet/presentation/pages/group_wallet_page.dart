@@ -16,7 +16,6 @@ import 'package:fintech_app/core/utils/dialog_utils.dart';
 import '../widgets/group_wallet_header.dart';
 import '../widgets/group_wallet_card_carousel.dart';
 import '../widgets/group_wallet_overview_stats.dart';
-import '../widgets/group_wallet_recent_transactions.dart';
 import '../widgets/group_wallet_debts_card.dart';
 
 class GroupWalletPage extends StatelessWidget {
@@ -115,8 +114,8 @@ class _GroupWalletView extends StatelessWidget {
                           final auth = context.read<AuthCubit>().state;
                           if (auth is AuthSuccess) {
                             context.read<GroupWalletCubit>().start(
-                                  auth.user.uid,
-                                );
+                              auth.user.uid,
+                            );
                           }
                         },
                         child: const Text('Thử lại'),
@@ -130,6 +129,34 @@ class _GroupWalletView extends StatelessWidget {
         }
 
         final loaded = state as GroupWalletLoaded;
+        final currentUserId = context.read<AuthCubit>().state is AuthSuccess
+            ? (context.read<AuthCubit>().state as AuthSuccess).user.uid
+            : '';
+
+        // Tích luỹ aggregates
+        double totalBalance = 0;
+        final uniqueMembers = <String>{};
+        final walletNames = <String, String>{};
+
+        for (final w in loaded.wallets) {
+          totalBalance += w.balance;
+          uniqueMembers.addAll(w.members);
+          walletNames[w.id] = w.name;
+        }
+
+        // Tạm tính chi/góp từ giao dịch gần đây (hoặc 0 nếu chưa fetch hết)
+        // Lưu ý: nếu cần tổng chính xác, phải lưu totalSpent ở model ví
+        double totalContributed = 0;
+        double totalSpent = 0;
+        for (final tx in loaded.allRecentTransactions) {
+          if (tx.senderId == currentUserId) {
+            if (tx.type == 'expense' || tx.categoryId == 'group_withdraw') {
+              totalSpent += tx.amount.abs();
+            } else if (tx.categoryId == 'group_contribute') {
+              totalContributed += tx.amount.abs();
+            }
+          }
+        }
 
         return Scaffold(
           backgroundColor: kBgColor,
@@ -156,19 +183,31 @@ class _GroupWalletView extends StatelessWidget {
                   ],
 
                   // ── Overview stats ──────────────────────
-                  const GroupWalletOverviewStats(),
+                  GroupWalletOverviewStats(
+                    totalBalance: totalBalance,
+                    totalContributed: totalContributed,
+                    totalSpent: totalSpent,
+                    walletCount: loaded.wallets.length,
+                    totalMembers: uniqueMembers.length,
+                  ),
                   const SizedBox(height: 26),
 
                   // ── Wallet cards carousel ──────────────────────
-                  const GroupWalletCardCarousel(),
-                  const SizedBox(height: 26),
-
-                  // ── Recent transactions ──────────────────────
-                  const GroupWalletRecentTransactions(),
+                  GroupWalletCardCarousel(
+                    wallets: loaded.wallets,
+                    memberNames: loaded.memberNames,
+                    memberAvatars: loaded.memberAvatars,
+                    onTapWallet: (wallet) => _openWalletDetail(context, wallet),
+                  ),
                   const SizedBox(height: 26),
 
                   // ── Debts ──────────────────────
-                  const GroupWalletDebtsCard(),
+                  GroupWalletDebtsCard(
+                    debts: loaded.myUnsettledDebts,
+                    walletNames: walletNames,
+                    onSettleDebt: (debt) =>
+                        context.read<GroupWalletCubit>().settleDebt(debt.id),
+                  ),
                   const SizedBox(height: 120),
                 ],
               ),
@@ -180,9 +219,15 @@ class _GroupWalletView extends StatelessWidget {
   }
 
   void _openCreatePage(BuildContext context) {
+    final groupCubit = context.read<GroupWalletCubit>();
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const CreateGroupWalletPage()),
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: groupCubit,
+          child: const CreateGroupWalletPage(),
+        ),
+      ),
     );
   }
 
@@ -215,10 +260,7 @@ class _GroupWalletView extends StatelessWidget {
 
 /// Invitation banner — inline notification about pending invitations.
 class _InvitationBanner extends StatelessWidget {
-  const _InvitationBanner({
-    required this.count,
-    required this.onTap,
-  });
+  const _InvitationBanner({required this.count, required this.onTap});
 
   final int count;
   final VoidCallback onTap;
@@ -237,10 +279,7 @@ class _InvitationBanner extends StatelessWidget {
               kCyan.withValues(alpha: 0.08),
             ],
           ),
-          border: Border.all(
-            color: kPurple.withValues(alpha: 0.2),
-            width: 1,
-          ),
+          border: Border.all(color: kPurple.withValues(alpha: 0.2), width: 1),
         ),
         child: Row(
           children: [
@@ -250,11 +289,7 @@ class _InvitationBanner extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: kPurple.withValues(alpha: 0.15),
               ),
-              child: Icon(
-                Icons.mail_rounded,
-                color: kPurple,
-                size: 18,
-              ),
+              child: Icon(Icons.mail_rounded, color: kPurple, size: 18),
             ),
             const SizedBox(width: 12),
             Expanded(

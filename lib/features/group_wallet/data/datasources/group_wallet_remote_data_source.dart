@@ -13,6 +13,8 @@ abstract class GroupWalletRemoteDataSource {
     String name,
     String ownerId,
     int? accentArgb,
+    String? imageUrl,
+    String? emoji,
   );
   Stream<List<WalletModel>> watchGroupWallets(String userId);
   Stream<WalletModel?> watchGroupWalletById(String walletId);
@@ -55,6 +57,20 @@ abstract class GroupWalletRemoteDataSource {
   Stream<List<DebtModel>> watchDebts(String walletId);
   Future<void> settleDebt(String debtId, String borrowerId);
   Future<RemindDebtResult> remindDebt(String debtId, String lenderId);
+
+  /// Watch recent transactions across multiple group wallets.
+  Stream<List<TransactionModel>> watchAllGroupTransactions(
+    List<String> walletIds,
+  );
+
+  /// Watch unsettled debts where user is the borrower.
+  Stream<List<DebtModel>> watchMyUnsettledDebts(String userId);
+
+  /// Batch-resolve user UIDs to display names.
+  Future<Map<String, String>> getUserNames(List<String> userIds);
+  Future<Map<String, Map<String, String>>> getUserProfiles(
+    List<String> userIds,
+  );
 }
 
 class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
@@ -98,6 +114,8 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
     String name,
     String ownerId,
     int? accentArgb,
+    String? imageUrl,
+    String? emoji,
   ) async {
     final ref = firestore.collection('wallets').doc();
     final data = {
@@ -110,6 +128,8 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
       'status': 'active',
       'createdAt': FieldValue.serverTimestamp(),
       'accentArgb': accentArgb,
+      'imageUrl': ?imageUrl,
+      'emoji': ?emoji,
     };
     await ref.set(data);
     debugPrint('[GROUP_WALLET] Created group wallet: ${ref.id}');
@@ -831,5 +851,90 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
       debtId: debtId,
       walletId: walletId,
     );
+  }
+
+  // ─────────────────────────────────────────────
+  // Aggregated overview queries
+  // ─────────────────────────────────────────────
+
+  @override
+  Stream<List<TransactionModel>> watchAllGroupTransactions(
+    List<String> walletIds,
+  ) {
+    if (walletIds.isEmpty) return Stream.value([]);
+
+    // Firestore whereIn supports max 30 values
+    final chunk = walletIds.length > 30 ? walletIds.sublist(0, 30) : walletIds;
+
+    return firestore
+        .collection('transactions')
+        .where('walletId', whereIn: chunk)
+        .orderBy('timestamp', descending: true)
+        .limit(10)
+        .snapshots()
+        .map((snapshot) => _mapTransactionsFromSnapshot(snapshot));
+  }
+
+  @override
+  Stream<List<DebtModel>> watchMyUnsettledDebts(String userId) {
+    return firestore
+        .collection('debts')
+        .where('borrowerId', isEqualTo: userId)
+        .where('isSettled', isEqualTo: false)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs.map((doc) {
+            final data = Map<String, dynamic>.from(doc.data());
+            if (data['createdAt'] is Timestamp) {
+              data['createdAt'] = (data['createdAt'] as Timestamp)
+                  .toDate()
+                  .toIso8601String();
+            } else if (data['createdAt'] == null) {
+              data['createdAt'] = DateTime.now().toIso8601String();
+            }
+            return DebtModel.fromJson({...data, 'id': doc.id});
+          }).toList();
+        });
+  }
+
+  @override
+  Future<Map<String, String>> getUserNames(List<String> userIds) async {
+    if (userIds.isEmpty) return {};
+    final result = <String, String>{};
+    // Firestore getAll batch
+    for (final uid in userIds) {
+      result[uid] = await _getUserFullName(uid);
+    }
+    return result;
+  }
+
+  @override
+  Future<Map<String, Map<String, String>>> getUserProfiles(
+    List<String> userIds,
+  ) async {
+    if (userIds.isEmpty) return {};
+    final result = <String, Map<String, String>>{};
+    for (final uid in userIds) {
+      try {
+        final doc = await firestore.collection('users').doc(uid).get();
+        if (doc.exists) {
+          final data = doc.data();
+          final name = data?['fullName'];
+          final avatar = data?['avatarUrl'];
+          result[uid] = {
+            'name': (name is String && name.trim().isNotEmpty)
+                ? name.trim()
+                : 'Người dùng',
+            'avatarUrl': (avatar is String) ? avatar : '',
+          };
+        } else {
+          result[uid] = {'name': 'Người dùng', 'avatarUrl': ''};
+        }
+      } catch (_) {
+        result[uid] = {'name': 'Người dùng', 'avatarUrl': ''};
+      }
+    }
+    return result;
   }
 }

@@ -17,6 +17,9 @@ import 'package:fintech_app/features/group_wallet/domain/usecases/watch_group_wa
 import 'package:fintech_app/features/group_wallet/domain/usecases/watch_group_wallets_usecase.dart';
 import 'package:fintech_app/features/group_wallet/domain/usecases/watch_pending_invitations_usecase.dart';
 import 'package:fintech_app/features/group_wallet/domain/usecases/withdraw_from_group_usecase.dart';
+import 'package:fintech_app/features/group_wallet/domain/usecases/watch_all_group_transactions_usecase.dart';
+import 'package:fintech_app/features/group_wallet/domain/usecases/watch_my_unsettled_debts_usecase.dart';
+import 'package:fintech_app/features/group_wallet/domain/repositories/group_wallet_repository.dart';
 import 'package:fintech_app/features/main/domain/entities/debt_entity.dart';
 import 'package:fintech_app/features/main/domain/entities/invitation_entity.dart';
 import 'package:fintech_app/features/main/domain/entities/transaction_entity.dart';
@@ -42,6 +45,9 @@ class GroupWalletCubit extends Cubit<GroupWalletState> {
     required this.watchGroupTransactionsUseCase,
     required this.watchDebtsUseCase,
     required this.watchPendingInvitationsUseCase,
+    required this.watchAllGroupTransactionsUseCase,
+    required this.watchMyUnsettledDebtsUseCase,
+    required this.groupWalletRepository,
   }) : super(GroupWalletInitial());
 
   final CreateGroupWalletUseCase createGroupWalletUseCase;
@@ -60,12 +66,17 @@ class GroupWalletCubit extends Cubit<GroupWalletState> {
   final WatchGroupTransactionsUseCase watchGroupTransactionsUseCase;
   final WatchDebtsUseCase watchDebtsUseCase;
   final WatchPendingInvitationsUseCase watchPendingInvitationsUseCase;
+  final WatchAllGroupTransactionsUseCase watchAllGroupTransactionsUseCase;
+  final WatchMyUnsettledDebtsUseCase watchMyUnsettledDebtsUseCase;
+  final GroupWalletRepository groupWalletRepository;
 
   StreamSubscription<List<WalletEntity>>? _walletsSubscription;
   StreamSubscription<WalletEntity?>? _walletDetailSubscription;
   StreamSubscription<List<TransactionEntity>>? _transactionsSubscription;
   StreamSubscription<List<DebtEntity>>? _debtsSubscription;
   StreamSubscription<List<InvitationEntity>>? _pendingInvitationsSubscription;
+  StreamSubscription<List<TransactionEntity>>? _allTransactionsSubscription;
+  StreamSubscription<List<DebtEntity>>? _myDebtsSubscription;
 
   String? _userId;
   String? _selectedWalletId;
@@ -77,13 +88,22 @@ class GroupWalletCubit extends Cubit<GroupWalletState> {
   final List<InvitationEntity> _pendingInvitations = [];
   bool _isActionInProgress = false;
 
+  // Aggregated overview data
+  List<TransactionEntity> _allRecentTransactions = [];
+  List<DebtEntity> _myUnsettledDebts = [];
+  final Map<String, String> _memberNames = {};
+  final Map<String, String> _memberAvatars = {};
+
   void start(String userId) {
     _userId = userId;
     emit(GroupWalletLoading());
     _walletsSubscription?.cancel();
     _pendingInvitationsSubscription?.cancel();
+    _myDebtsSubscription?.cancel();
+
     _walletsSubscription = watchGroupWalletsUseCase(userId).listen(
       (wallets) {
+        final oldWalletIds = _wallets.map((w) => w.id).toSet();
         _wallets
           ..clear()
           ..addAll(wallets);
@@ -93,6 +113,16 @@ class GroupWalletCubit extends Cubit<GroupWalletState> {
           _selectedWallet = null;
           _cancelDetailsSubscriptions();
         }
+
+        // Refresh aggregate subscriptions when wallet list changes
+        final newWalletIds = wallets.map((w) => w.id).toSet();
+        if (!_setEquals(oldWalletIds, newWalletIds)) {
+          _refreshAllTransactionsSubscription(newWalletIds.toList());
+        }
+
+        // Resolve member names
+        _resolveMemberNames(wallets);
+
         _emitLoaded();
       },
       onError: (Object error, StackTrace stackTrace) {
@@ -112,6 +142,66 @@ class GroupWalletCubit extends Cubit<GroupWalletState> {
             emit(GroupWalletFailure(error.toString()));
           },
         );
+
+    // Watch my unsettled debts across all wallets
+    _myDebtsSubscription = watchMyUnsettledDebtsUseCase(userId).listen(
+      (debts) {
+        _myUnsettledDebts = debts;
+        _emitLoaded();
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        // Non-critical: log but don't fail
+      },
+    );
+  }
+
+  bool _setEquals(Set<String> a, Set<String> b) {
+    if (a.length != b.length) return false;
+    return a.containsAll(b);
+  }
+
+  void _refreshAllTransactionsSubscription(List<String> walletIds) {
+    _allTransactionsSubscription?.cancel();
+    if (walletIds.isEmpty) {
+      _allRecentTransactions = [];
+      return;
+    }
+    _allTransactionsSubscription = watchAllGroupTransactionsUseCase(walletIds)
+        .listen(
+          (txns) {
+            _allRecentTransactions = txns;
+            _emitLoaded();
+          },
+          onError: (Object error, StackTrace stackTrace) {
+            // Non-critical
+          },
+        );
+  }
+
+  Future<void> _resolveMemberNames(List<WalletEntity> wallets) async {
+    final allMemberIds = <String>{};
+    for (final w in wallets) {
+      allMemberIds.addAll(w.members);
+    }
+
+    // Only resolve names we don't have yet
+    final unknownIds = allMemberIds
+        .where((id) => !_memberNames.containsKey(id))
+        .toList();
+    if (unknownIds.isEmpty) return;
+
+    try {
+      final newProfiles = await groupWalletRepository.getUserProfiles(
+        unknownIds,
+      );
+      for (final entry in newProfiles.entries) {
+        _memberNames[entry.key] = entry.value['name']!;
+        _memberAvatars[entry.key] = entry.value['avatarUrl'] ?? '';
+      }
+      _emitLoaded();
+    } catch (_) {
+      // Non-critical
+    }
   }
 
   void selectWallet(String walletId) {
@@ -125,10 +215,10 @@ class GroupWalletCubit extends Cubit<GroupWalletState> {
     _emitLoaded();
   }
 
-  Future<bool> createGroupWallet(String name, int accentArgb) async {
+  Future<bool> createGroupWallet(String name, int accentArgb, {String? imageUrl, String? emoji}) async {
     if (_userId == null) return false;
     _setActionInProgress(true);
-    final result = await createGroupWalletUseCase(name, _userId!, accentArgb);
+    final result = await createGroupWalletUseCase(name, _userId!, accentArgb, imageUrl, emoji);
     _setActionInProgress(false);
     return result.fold(
       (failure) {
@@ -395,6 +485,10 @@ class GroupWalletCubit extends Cubit<GroupWalletState> {
         pendingInvitations: List.unmodifiable(_pendingInvitations),
         isActionInProgress: _isActionInProgress,
         message: message,
+        allRecentTransactions: List.unmodifiable(_allRecentTransactions),
+        myUnsettledDebts: List.unmodifiable(_myUnsettledDebts),
+        memberNames: Map.unmodifiable(_memberNames),
+        memberAvatars: Map.unmodifiable(_memberAvatars),
       ),
     );
   }
@@ -427,6 +521,8 @@ class GroupWalletCubit extends Cubit<GroupWalletState> {
     _transactionsSubscription?.cancel();
     _debtsSubscription?.cancel();
     _pendingInvitationsSubscription?.cancel();
+    _allTransactionsSubscription?.cancel();
+    _myDebtsSubscription?.cancel();
     return super.close();
   }
 }
