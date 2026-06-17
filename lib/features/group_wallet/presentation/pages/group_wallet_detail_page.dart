@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,11 +8,12 @@ import 'package:fintech_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:fintech_app/features/auth/presentation/cubit/auth_state.dart';
 import 'package:fintech_app/features/group_wallet/presentation/cubit/group_wallet_cubit.dart';
 import 'package:fintech_app/features/group_wallet/presentation/cubit/group_wallet_state.dart';
-import 'package:fintech_app/features/main/domain/entities/debt_entity.dart';
 import 'package:fintech_app/features/main/domain/entities/invitation_entity.dart';
-import 'package:fintech_app/features/main/domain/entities/transaction_entity.dart';
 import 'package:fintech_app/features/main/domain/entities/wallet_entity.dart';
 import 'package:fintech_app/core/utils/dialog_utils.dart';
+import 'group_wallet_transactions_page.dart';
+import 'group_wallet_debts_page.dart';
+import '../widgets/group_wallet_bar_chart.dart';
 
 class GroupWalletDetailPage extends StatefulWidget {
   const GroupWalletDetailPage({super.key, required this.walletId});
@@ -26,12 +25,7 @@ class GroupWalletDetailPage extends StatefulWidget {
 }
 
 class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
-  final _currency = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
   bool _hasInitialized = false;
-
-  String _formatMoney(double value) {
-    return _currency.format(value).replaceAll('đ', '').trim();
-  }
 
   @override
   void didChangeDependencies() {
@@ -181,9 +175,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
               }
               return false;
             }).toList();
-            final walletDebts = loaded.debts
-                .where((debt) => debt.walletId == wallet!.id)
-                .toList();
+
             final walletInvitations = loaded.pendingInvitations
                 .where((invite) => invite.walletId == wallet!.id)
                 .toList();
@@ -194,9 +186,9 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 iconTheme: const IconThemeData(color: Colors.white),
-                title: Text(
-                  wallet.name,
-                  style: const TextStyle(color: kTextPrimary),
+                title: const Text(
+                  'Chi tiết ví nhóm',
+                  style: TextStyle(color: kTextPrimary),
                 ),
               ),
               body: SafeArea(
@@ -209,155 +201,69 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _GlassHero(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        wallet.status == 'active'
-                                            ? 'Đang hoạt động'
-                                            : 'Đã đóng',
-                                        style: TextStyle(
-                                          color: kTextSecondary.withValues(
-                                            alpha: 0.8,
-                                          ),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        _formatMoney(wallet.balance),
-                                        style: const TextStyle(
-                                          color: kTextPrimary,
-                                          fontSize: 34,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        'Số dư ví nhóm',
-                                        style: TextStyle(
-                                          color: kTextSecondary.withValues(
-                                            alpha: 0.85,
-                                          ),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                wallet.status == 'closed'
-                                    ? const Icon(
-                                        Icons.lock_rounded,
-                                        color: kTextSecondary,
-                                        size: 34,
-                                      )
-                                    : wallet.imageUrl != null &&
-                                            wallet.imageUrl!.isNotEmpty
-                                        ? Container(
-                                            width: 36,
-                                            height: 36,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              border: Border.all(color: kCyan.withValues(alpha: 0.5), width: 1),
-                                            ),
-                                            child: ClipOval(
-                                              child: Image.network(
-                                                wallet.imageUrl!,
-                                                fit: BoxFit.cover,
-                                              ),
-                                            ),
-                                          )
-                                        : wallet.emoji != null &&
-                                                wallet.emoji!.isNotEmpty
-                                            ? Text(
-                                                wallet.emoji!,
-                                                style: const TextStyle(
-                                                    fontSize: 32),
-                                              )
-                                            : const Icon(
-                                                Icons.group_rounded,
-                                                color: kCyan,
-                                                size: 34,
-                                              ),
-                              ],
-                            ),
-                            const SizedBox(height: 18),
-                            Row(
-                              children: [
-                                _Pill(
-                                  icon: Icons.person_outline,
-                                  text: '${members.length} thành viên',
-                                  color: kCyan,
-                                ),
-                                const SizedBox(width: 10),
-                                _Pill(
-                                  icon: Icons.account_balance_wallet_outlined,
-                                  text: isOwner
-                                      ? 'Bạn là chủ nhóm'
-                                      : 'Thành viên',
-                                  color: kPurple,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                      _WalletCard(
+                        wallet: wallet,
+                        isOwner: isOwner,
+                        balance: wallet.balance,
                       ),
-                      const SizedBox(height: 20),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          _ActionChip(
-                            label: 'Mời thành viên',
-                            icon: Icons.person_add_rounded,
-                            color: kCyan,
-                            onTap: () =>
-                                _showInviteMemberSheet(context, wallet!.id),
-                          ),
-                          _ActionChip(
-                            label: 'Nạp quỹ',
+                          _QuickActionIcon(
                             icon: Icons.arrow_downward_rounded,
+                            label: 'Nạp quỹ',
                             color: kEmerald,
-                            onTap: () =>
-                                _showContributeSheet(context, wallet!.id),
-                          ),
-                          _ActionChip(
-                            label: 'Chia tiền',
-                            icon: Icons.account_balance_outlined,
-                            color: kPurple,
-                            onTap: () =>
-                                _showSplitExpenseSheet(context, wallet!),
+                            onTap: () => _showContributeSheet(context, wallet!.id),
                           ),
                           if (isOwner)
-                            _ActionChip(
-                              label: 'Rút tiền',
+                            _QuickActionIcon(
                               icon: Icons.arrow_upward_rounded,
+                              label: 'Rút tiền',
                               color: kRose,
-                              onTap: () =>
-                                  _showWithdrawSheet(context, wallet!.id),
+                              onTap: () => _showWithdrawSheet(context, wallet!.id),
                             ),
-                          if (isOwner && wallet.status != 'closed')
-                            _ActionChip(
-                              label: 'Đóng nhóm',
-                              icon: Icons.lock_open_rounded,
-                              color: kTextSecondary,
-                              onTap: () =>
-                                  _confirmCloseGroup(context, wallet!.id),
-                            ),
+                          _QuickActionIcon(
+                            icon: Icons.account_balance_outlined,
+                            label: 'Chia tiền',
+                            color: kPurple,
+                            onTap: () => _showSplitExpenseSheet(context, wallet!),
+                          ),
+                          _QuickActionIcon(
+                            icon: Icons.history_rounded,
+                            label: 'Lịch sử',
+                            color: kCyan,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => BlocProvider.value(
+                                    value: context.read<GroupWalletCubit>(),
+                                    child: GroupWalletTransactionsPage(walletId: wallet!.id),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          _QuickActionIcon(
+                            icon: Icons.receipt_long_rounded,
+                            label: 'Nợ',
+                            color: const Color(0xFFF59E0B),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => BlocProvider.value(
+                                    value: context.read<GroupWalletCubit>(),
+                                    child: GroupWalletDebtsPage(walletId: wallet!.id),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 22),
+                      const SizedBox(height: 32),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -366,7 +272,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                             style: TextStyle(
                               color: kTextPrimary,
                               fontWeight: FontWeight.bold,
-                              fontSize: 15,
+                              fontSize: 16,
                             ),
                           ),
                           TextButton(
@@ -395,17 +301,56 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                         height: 110,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
-                          itemCount: members.length,
+                          itemCount: members.length + 1, // +1 for the invite button
                           separatorBuilder: (_, _) => const SizedBox(width: 10),
                           itemBuilder: (context, index) {
+                            if (index == 0) {
+                              return GestureDetector(
+                                onTap: () => _showInviteMemberSheet(context, wallet!.id),
+                                child: SizedBox(
+                                  width: 72,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 58,
+                                        height: 58,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: kCyan.withValues(alpha: 0.5),
+                                            width: 1,
+                                          ),
+                                          color: kCyan.withValues(alpha: 0.1),
+                                        ),
+                                        child: const Icon(Icons.person_add_rounded, color: kCyan, size: 24),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      const Text(
+                                        'Mời',
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: kCyan,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
+                            final memberIndex = index - 1;
                             return _MemberAvatarTile(
-                              memberId: members[index],
-                              isOwner: members[index] == wallet!.ownerId,
+                              memberId: members[memberIndex],
+                              isOwner: members[memberIndex] == wallet!.ownerId,
                               onTap: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => _GroupWalletMemberDetailPage(
-                                    memberId: members[index],
+                                    memberId: members[memberIndex],
                                     ownerId: wallet!.ownerId,
                                   ),
                                 ),
@@ -416,65 +361,16 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                       ),
                       const SizedBox(height: 22),
                       if (walletTransactions.isNotEmpty) ...[
-                        const Text(
-                          'Giao dịch gần đây',
-                          style: TextStyle(
-                            color: kTextPrimary,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        ...walletTransactions
-                            .take(4)
-                            .map(
-                              (tx) => _TransactionTile(
-                                transaction: tx,
-                                walletId: wallet!.id,
-                                formatMoney: _formatMoney,
-                              ),
-                            ),
+                        GroupWalletBarChart(transactions: walletTransactions),
                         const SizedBox(height: 20),
                       ],
-                      if (walletDebts.isNotEmpty) ...[
-                        const Text(
-                          'Công nợ',
-                          style: TextStyle(
-                            color: kTextPrimary,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        ...walletDebts.map(
-                          (debt) => _DebtTile(
-                            debt: debt,
-                            currentUserId: authState.user.uid,
-                            formatMoney: _formatMoney,
-                            onSettle:
-                                debt.borrowerId == authState.user.uid &&
-                                    !debt.isSettled
-                                ? () => context
-                                      .read<GroupWalletCubit>()
-                                      .settleDebt(debt.id)
-                                : null,
-                            onRemind:
-                                debt.lenderId == authState.user.uid &&
-                                    !debt.isSettled
-                                ? () => context
-                                      .read<GroupWalletCubit>()
-                                      .remindDebt(debt.id)
-                                : null,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
+
                       if (walletInvitations.isNotEmpty) ...[
                         const Text(
                           'Lời mời',
                           style: TextStyle(
                             color: kTextPrimary,
-                            fontSize: 15,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -494,13 +390,12 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                         const SizedBox(height: 20),
                       ],
                       if (walletTransactions.isEmpty &&
-                          walletDebts.isEmpty &&
                           walletInvitations.isEmpty)
                         Center(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 40),
                             child: Text(
-                              'Ví nhóm chưa có giao dịch, công nợ hoặc lời mời nào.',
+                              'Ví nhóm chưa có giao dịch hoặc lời mời nào.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: kTextSecondary.withValues(alpha: 0.85),
@@ -509,6 +404,27 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                             ),
                           ),
                         ),
+
+                      const SizedBox(height: 40),
+                      if (isOwner && wallet.status != 'closed')
+                        Center(
+                          child: TextButton.icon(
+                            onPressed: () => _confirmCloseGroup(context, wallet!.id),
+                            icon: const Icon(Icons.lock_outline_rounded, color: kRose, size: 18),
+                            label: const Text(
+                              'Đóng nhóm',
+                              style: TextStyle(color: kRose, fontWeight: FontWeight.w700),
+                            ),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              backgroundColor: kRose.withValues(alpha: 0.1),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                          ),
+                        ),
+
                       const SizedBox(height: 80),
                     ],
                   ),
@@ -952,16 +868,16 @@ class _SplitExpenseSheetState extends State<_SplitExpenseSheet> {
   }
 }
 
-class _ActionChip extends StatelessWidget {
-  const _ActionChip({
-    required this.label,
+class _QuickActionIcon extends StatelessWidget {
+  const _QuickActionIcon({
     required this.icon,
+    required this.label,
     required this.color,
     required this.onTap,
   });
 
-  final String label;
   final IconData icon;
+  final String label;
   final Color color;
   final VoidCallback onTap;
 
@@ -969,320 +885,27 @@ class _ActionChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: color.withValues(alpha: 0.22)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 18),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: kTextPrimary,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TransactionTile extends StatelessWidget {
-  const _TransactionTile({
-    required this.transaction,
-    required this.walletId,
-    required this.formatMoney,
-  });
-
-  final TransactionEntity transaction;
-  final String walletId;
-  final String Function(double) formatMoney;
-
-  @override
-  Widget build(BuildContext context) {
-    final isIncrease = transaction.toWalletId == walletId;
-    final icon = isIncrease
-        ? Icons.arrow_downward_rounded
-        : Icons.arrow_upward_rounded;
-    final accent = isIncrease ? kEmerald : kRose;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: kThemeSurfaceSecondary,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: kThemeBorderDefault),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: accent.withValues(alpha: 0.12),
-            child: Icon(icon, color: accent, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  transaction.note.isNotEmpty
-                      ? transaction.note
-                      : (isIncrease
-                            ? 'Giao dịch tăng ví nhóm'
-                            : 'Giao dịch giảm ví nhóm'),
-                  style: const TextStyle(
-                    color: kTextPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  DateFormat('dd/MM/yyyy HH:mm').format(transaction.timestamp),
-                  style: TextStyle(
-                    color: kTextSecondary.withValues(alpha: 0.75),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '${formatMoney(transaction.amount)} đ',
-            style: TextStyle(color: accent, fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DebtTile extends StatelessWidget {
-  const _DebtTile({
-    required this.debt,
-    required this.currentUserId,
-    required this.formatMoney,
-    this.onSettle,
-    this.onRemind,
-  });
-
-  final DebtEntity debt;
-  final String currentUserId;
-  final String Function(double) formatMoney;
-  final VoidCallback? onSettle;
-  final VoidCallback? onRemind;
-
-  Future<String> _fetchDisplayName(String uid) async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .get();
-      if (!doc.exists || doc.data() == null) return uid;
-      final data = doc.data()!;
-      final name = (data['fullName'] ?? data['displayName'] ?? data['name']);
-      if (name is String && name.isNotEmpty) return name;
-    } catch (_) {}
-    return uid;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isBorrower = debt.borrowerId == currentUserId;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: kThemeSurfaceSecondary,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: kThemeBorderDefault),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
               shape: BoxShape.circle,
-              color: kRose.withValues(alpha: 0.12),
+              border: Border.all(color: color.withValues(alpha: 0.3)),
             ),
-            child: const Icon(
-              Icons.currency_exchange_rounded,
-              color: kRose,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                FutureBuilder<String>(
-                  future: _fetchDisplayName(
-                    isBorrower ? debt.lenderId : debt.borrowerId,
-                  ),
-                  builder: (context, snapshot) {
-                    final other =
-                        snapshot.data ??
-                        (isBorrower ? debt.lenderId : debt.borrowerId);
-                    return Text(
-                      isBorrower ? 'Bạn nợ $other' : 'Được $other nợ',
-                      style: const TextStyle(
-                        color: kTextPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Số tiền: ${formatMoney(debt.amount)} đ',
-                  style: TextStyle(
-                    color: kTextSecondary.withValues(alpha: 0.8),
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  debt.isSettled ? 'Đã thanh toán' : 'Chưa thanh toán',
-                  style: TextStyle(
-                    color: debt.isSettled ? kEmerald : kRose,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (onRemind != null) ...[
-            GestureDetector(
-              onTap: onRemind,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: kCyan.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Text(
-                  'Nhắc nợ',
-                  style: TextStyle(
-                    color: kCyan,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
-          if (onSettle != null)
-            GestureDetector(
-              onTap: onSettle,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: kEmerald.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Text(
-                  'Thanh toán',
-                  style: TextStyle(
-                    color: kEmerald,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InvitationTile extends StatelessWidget {
-  const _InvitationTile({
-    required this.invitation,
-    required this.walletName,
-    required this.onAccept,
-    required this.onReject,
-  });
-
-  final InvitationEntity invitation;
-  final String walletName;
-  final VoidCallback onAccept;
-  final VoidCallback onReject;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: kThemeSurfaceSecondary,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: kThemeBorderDefault),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Lời mời tham gia nhóm "$walletName"',
-            style: const TextStyle(
-              color: kTextPrimary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Từ: ${invitation.senderEmail}',
-            style: TextStyle(
-              color: kTextSecondary.withValues(alpha: 0.85),
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Email nhận: ${invitation.receiverEmail}',
-            style: TextStyle(
-              color: kTextSecondary.withValues(alpha: 0.85),
-              fontSize: 12,
-            ),
+            child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _SheetButton(
-                  label: 'Chấp nhận',
-                  color: kEmerald,
-                  onTap: onAccept,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _SheetButton(
-                  label: 'Từ chối',
-                  color: kRose,
-                  onTap: onReject,
-                ),
-              ),
-            ],
+          Text(
+            label,
+            style: const TextStyle(
+              color: kTextPrimary,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
@@ -1290,87 +913,377 @@ class _InvitationTile extends StatelessWidget {
   }
 }
 
-class _GlassHero extends StatelessWidget {
-  const _GlassHero({required this.child});
+class _WalletCard extends StatefulWidget {
+  final WalletEntity wallet;
+  final bool isOwner;
+  final double balance;
 
-  final Widget child;
+  const _WalletCard({
+    required this.wallet,
+    required this.isOwner,
+    required this.balance,
+  });
+
+  @override
+  State<_WalletCard> createState() => _WalletCardState();
+}
+
+class _WalletCardState extends State<_WalletCard> {
+  bool _isBalanceHidden = false;
+  final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
+
+  Widget _buildCardChip() {
+    return Container(
+      width: 42,
+      height: 32,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(6),
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFFE5C07B),
+            Color(0xFFF3E5AB),
+            Color(0xFFD4AF37),
+            Color(0xFFB8860B),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 3,
+            offset: const Offset(1, 1),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Center(
+            child: Container(
+              width: 18,
+              height: 22,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  width: 0.5,
+                ),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 10,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 0.5,
+              color: Colors.black.withValues(alpha: 0.2),
+            ),
+          ),
+          Positioned(
+            bottom: 10,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 0.5,
+              color: Colors.black.withValues(alpha: 0.2),
+            ),
+          ),
+          Positioned(
+            top: 0,
+            bottom: 0,
+            left: 14,
+            child: Container(
+              width: 0.5,
+              color: Colors.black.withValues(alpha: 0.2),
+            ),
+          ),
+          Positioned(
+            top: 0,
+            bottom: 0,
+            right: 14,
+            child: Container(
+              width: 0.5,
+              color: Colors.black.withValues(alpha: 0.2),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatAccountNumber(String acc) {
+    if (acc.length == 10) {
+      return '${acc.substring(0, 4)}${acc.substring(4, 7)}${acc.substring(7)}';
+    }
+    return acc;
+  }
 
   @override
   Widget build(BuildContext context) {
+    String rawAcc = widget.wallet.id.hashCode
+        .abs()
+        .toString()
+        .padLeft(10, '0')
+        .substring(0, 10);
+    String formattedAcc = _formatAccountNumber(rawAcc);
+
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF1E3A8A), // Deep vibrant blue
+            Color(0xFF0F172A), // Dark slate
+            Color(0xFF020617), // Very dark slate
+          ],
+          stops: [0.0, 0.6, 1.0],
+        ),
+        border: Border.all(color: kCyan.withValues(alpha: 0.15), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: kCyan.withValues(alpha: 0.12),
-            blurRadius: 36,
-            spreadRadius: -12,
+            color: Colors.black.withValues(alpha: 0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
+            color: kCyan.withValues(alpha: 0.05),
             blurRadius: 24,
-            offset: const Offset(0, 14),
+            spreadRadius: 2,
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: Container(
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
-              color: kThemeSurfacePrimary.withValues(alpha: 0.45),
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  kCyan.withValues(alpha: 0.10),
-                  kPurple.withValues(alpha: 0.08),
-                  Colors.transparent,
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          children: [
+            // Background Elements (Holographic / Glassmorphism)
+            Positioned(
+              right: -60,
+              top: -60,
+              child: Container(
+                width: 200,
+                height: 200,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [kCyan.withValues(alpha: 0.15), Colors.transparent],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              left: -40,
+              bottom: -40,
+              child: Container(
+                width: 150,
+                height: 150,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      kEmerald.withValues(alpha: 0.1),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              right: 20,
+              bottom: 20,
+              child: Icon(
+                Icons.language_rounded,
+                size: 150,
+                color: Colors.white.withValues(alpha: 0.03),
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header (Logo + Contactless)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(
+                                alpha: 0.1,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.group_rounded,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            widget.wallet.name.toUpperCase(),
+                            style: TextStyle(
+                              color: Colors.white.withValues(
+                                alpha: 0.9,
+                              ),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Icon(
+                        Icons.contactless_rounded,
+                        color: Colors.white.withValues(alpha: 0.7),
+                        size: 24,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Chip
+                  _buildCardChip(),
+
+                  const SizedBox(height: 20),
+
+                  // Số tài khoản
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        formattedAcc,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 22,
+                          fontFamily: 'monospace',
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 3.0,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.5),
+                              offset: const Offset(0, 2),
+                              blurRadius: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (widget.wallet.status == 'closed')
+                         Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: kRose.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: kRose.withValues(alpha: 0.5)),
+                          ),
+                          child: const Text('ĐÃ ĐÓNG', style: TextStyle(color: kRose, fontSize: 10, fontWeight: FontWeight.bold)),
+                         )
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Footer: Tên + Balance
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'SỐ DƯ VÍ NHÓM',
+                            style: TextStyle(
+                              color: Colors.white.withValues(
+                                alpha: 0.5,
+                              ),
+                              fontSize: 10,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                _isBalanceHidden
+                                    ? '******'
+                                    : currencyFormatter
+                                          .format(widget.balance)
+                                          .replaceAll('đ', '')
+                                          .trim(),
+                                style: const TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Text(
+                                'đ',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      // Nút ẩn hiện + Logo
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _isBalanceHidden = !_isBalanceHidden;
+                              });
+                            },
+                            child: Icon(
+                              _isBalanceHidden
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              color: Colors.white.withValues(
+                                alpha: 0.5,
+                              ),
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          // Premium Logo
+                          Text(
+                            widget.isOwner ? 'CHỦ NHÓM' : 'THÀNH VIÊN',
+                            style: TextStyle(
+                              color: Colors.white.withValues(
+                                alpha: 0.8,
+                              ),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
-            child: child,
-          ),
+          ],
         ),
-      ),
-    );
-  }
-}
-
-class _Pill extends StatelessWidget {
-  const _Pill({required this.icon, required this.text, required this.color});
-
-  final IconData icon;
-  final String text;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.18)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 8),
-          Text(
-            text,
-            style: TextStyle(
-              color: kTextPrimary.withValues(alpha: 0.9),
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1979,6 +1892,81 @@ class _SheetButton extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _InvitationTile extends StatelessWidget {
+  const _InvitationTile({
+    required this.invitation,
+    required this.walletName,
+    required this.onAccept,
+    required this.onReject,
+  });
+
+  final InvitationEntity invitation;
+  final String walletName;
+  final VoidCallback onAccept;
+  final VoidCallback onReject;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: kThemeSurfaceSecondary,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: kThemeBorderDefault),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Lời mời tham gia nhóm "$walletName"',
+            style: const TextStyle(
+              color: kTextPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Từ: ${invitation.senderEmail}',
+            style: TextStyle(
+              color: kTextSecondary.withValues(alpha: 0.85),
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Email nhận: ${invitation.receiverEmail}',
+            style: TextStyle(
+              color: kTextSecondary.withValues(alpha: 0.85),
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _SheetButton(
+                  label: 'Chấp nhận',
+                  color: kEmerald,
+                  onTap: onAccept,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _SheetButton(
+                  label: 'Từ chối',
+                  color: kRose,
+                  onTap: onReject,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

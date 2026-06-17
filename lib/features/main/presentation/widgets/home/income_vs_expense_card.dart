@@ -273,7 +273,7 @@ class _IncomeVsExpenseCardState extends State<IncomeVsExpenseCard> {
                                 int day = value.toInt();
                                 if (day == 1 || day == 10 || day == 20 || day == daysInMonth) {
                                   return SideTitleWidget(
-                                    axisSide: meta.axisSide,
+                                    meta: meta,
                                     child: Text(day.toString(), style: style),
                                   );
                                 }

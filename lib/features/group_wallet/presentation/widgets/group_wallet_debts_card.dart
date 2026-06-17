@@ -11,12 +11,12 @@ class GroupWalletDebtsCard extends StatelessWidget {
     super.key,
     required this.debts,
     required this.walletNames,
-    required this.onSettleDebt,
+    required this.onNavigateToDebts,
   });
 
   final List<DebtEntity> debts;
   final Map<String, String> walletNames;
-  final void Function(DebtEntity) onSettleDebt;
+  final void Function(String) onNavigateToDebts;
 
   @override
   Widget build(BuildContext context) {
@@ -38,8 +38,10 @@ class GroupWalletDebtsCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: kEmerald.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
@@ -58,10 +60,7 @@ class GroupWalletDebtsCard extends StatelessWidget {
             const SizedBox(height: 16),
             const Text(
               'Bạn không có khoản nợ nào cần thanh toán.',
-              style: TextStyle(
-                color: kTextSecondary,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: kTextSecondary, fontSize: 12),
             ),
           ],
         ),
@@ -105,27 +104,6 @@ class GroupWalletDebtsCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 4),
-          GestureDetector(
-            onTap: () {},
-            child: Row(
-              children: [
-                Text(
-                  'Xem tất cả',
-                  style: TextStyle(
-                    color: kCyan.withValues(alpha: 0.8),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(width: 2),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: kCyan.withValues(alpha: 0.8),
-                  size: 10,
-                ),
-              ],
-            ),
-          ),
           const SizedBox(height: 12),
 
           // Total
@@ -150,11 +128,13 @@ class GroupWalletDebtsCard extends StatelessWidget {
           const SizedBox(height: 14),
 
           // Debt items
-          ...debts.map((d) => _DebtItem(
-                debt: d,
-                walletName: walletNames[d.walletId] ?? d.walletId,
-                onSettleTap: () => onSettleDebt(d),
-              )),
+          ...debts.map(
+            (d) => _DebtItem(
+              debt: d,
+              walletName: walletNames[d.walletId] ?? d.walletId,
+              onTap: () => onNavigateToDebts(d.walletId),
+            ),
+          ),
         ],
       ),
     );
@@ -178,88 +158,101 @@ class _DebtItem extends StatelessWidget {
   const _DebtItem({
     required this.debt,
     required this.walletName,
-    required this.onSettleTap,
+    required this.onTap,
   });
 
   final DebtEntity debt;
   final String walletName;
-  final VoidCallback onSettleTap;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final formattedAmount = '${_formatCurrency(debt.amount)} đ';
-    final dateStr = debt.createdAt != null ? DateFormat('dd/MM/yyyy').format(debt.createdAt!) : '--/--/----';
+    final dateStr = debt.createdAt != null
+        ? DateFormat('dd/MM/yyyy').format(debt.createdAt!)
+        : '--/--/----';
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text(
-                '🏠', // Fallback emoji for wallet
-                style: TextStyle(fontSize: 14),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  walletName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: kTextPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: kCyan.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text(
+                  '🏠', // Fallback emoji for wallet
+                  style: TextStyle(fontSize: 14),
                 ),
-              ),
-              Text(
-                formattedAmount,
-                style: const TextStyle(
-                  color: kTextPrimary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              const SizedBox(width: 22),
-              Text(
-                'Tạo ngày $dateStr',
-                style: TextStyle(
-                  color: kTextSecondary.withValues(alpha: 0.6),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const Spacer(),
-              // "Trả ngay" button
-              GestureDetector(
-                onTap: onSettleTap,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: kRose.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                const SizedBox(width: 6),
+                Expanded(
                   child: Text(
-                    'Trả ngay',
-                    style: TextStyle(
-                      color: kRose,
-                      fontSize: 10,
+                    walletName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: kTextPrimary,
+                      fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                Text(
+                  formattedAmount,
+                  style: const TextStyle(
+                    color: kTextPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const SizedBox(width: 22),
+                Text(
+                  'Tạo ngày $dateStr',
+                  style: TextStyle(
+                    color: kTextSecondary.withValues(alpha: 0.6),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const Spacer(),
+                // "Trả ngay" button
+                GestureDetector(
+                  onTap: onTap,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: kRose.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      'Trả ngay',
+                      style: TextStyle(
+                        color: kRose,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

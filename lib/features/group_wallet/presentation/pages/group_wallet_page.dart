@@ -205,8 +205,17 @@ class _GroupWalletView extends StatelessWidget {
                   GroupWalletDebtsCard(
                     debts: loaded.myUnsettledDebts,
                     walletNames: walletNames,
-                    onSettleDebt: (debt) =>
-                        context.read<GroupWalletCubit>().settleDebt(debt.id),
+                    onNavigateToDebts: (walletId) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => BlocProvider.value(
+                            value: context.read<GroupWalletCubit>(),
+                            child: GroupWalletDetailPage(walletId: walletId),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 120),
                 ],

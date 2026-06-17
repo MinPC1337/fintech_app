@@ -57,7 +57,7 @@ dependencies:
   flutter_local_notifications: ^21.0.0
   google_generative_ai: ^0.4.6
   flutter_dotenv: ^5.0.4
-  fl_chart: ^0.68.0
+  fl_chart: ^1.2.0
 
 dev_dependencies:
   flutter_test:
