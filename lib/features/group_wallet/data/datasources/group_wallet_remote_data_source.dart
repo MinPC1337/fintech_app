@@ -458,11 +458,66 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
       transaction.update(walletRef, {
         'members': FieldValue.arrayUnion([userId]),
       });
+
+      final walletName = inviteSnap.data()?['walletName'] as String? ?? 'Ví nhóm';
+      final senderId = inviteSnap.data()!['senderId'] as String;
+
+      // Notify sender
+      final notifRef = firestore.collection('notifications').doc();
+      transaction.set(notifRef, {
+        'id': notifRef.id,
+        'userId': senderId,
+        'title': 'Chấp nhận lời mời',
+        'body': 'Một người dùng đã chấp nhận lời mời tham gia "$walletName".',
+        'timestamp': FieldValue.serverTimestamp(),
+        'isRead': false,
+        'type': 'invitation_accepted',
+        'walletId': walletId,
+      });
+
+      pushApiClient.sendPush(
+        userId: senderId,
+        title: 'Chấp nhận lời mời',
+        body: 'Một người dùng đã chấp nhận lời mời tham gia "$walletName".',
+        type: 'invitation_accepted',
+        walletId: walletId,
+        notificationId: notifRef.id,
+      ).catchError((_) {});
     });
   }
 
   @override
   Future<void> rejectInvitation(String invitationId) async {
+    final inviteDoc = await firestore.collection('invitations').doc(invitationId).get();
+    if (inviteDoc.exists) {
+      final senderId = inviteDoc.data()?['senderId'] as String?;
+      final walletName = inviteDoc.data()?['walletName'] as String? ?? 'Ví nhóm';
+      final walletId = inviteDoc.data()?['walletId'] as String?;
+      
+      if (senderId != null) {
+        final notifRef = firestore.collection('notifications').doc();
+        await notifRef.set({
+          'id': notifRef.id,
+          'userId': senderId,
+          'title': 'Từ chối lời mời',
+          'body': 'Một người dùng đã từ chối lời mời tham gia "$walletName".',
+          'timestamp': FieldValue.serverTimestamp(),
+          'isRead': false,
+          'type': 'invitation_rejected',
+          'walletId': walletId,
+        });
+
+        pushApiClient.sendPush(
+          userId: senderId,
+          title: 'Từ chối lời mời',
+          body: 'Một người dùng đã từ chối lời mời tham gia "$walletName".',
+          type: 'invitation_rejected',
+          walletId: walletId,
+          notificationId: notifRef.id,
+        ).catchError((_) {});
+      }
+    }
+
     await firestore.collection('invitations').doc(invitationId).update({
       'status': 'rejected',
     });
@@ -486,6 +541,28 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
     await firestore.collection('wallets').doc(walletId).update({
       'members': FieldValue.arrayRemove([memberId]),
     });
+
+    final walletName = walletDoc.data()?['name'] ?? 'Ví nhóm';
+    final notifRef = firestore.collection('notifications').doc();
+    await notifRef.set({
+      'id': notifRef.id,
+      'userId': memberId,
+      'title': 'Bị xóa khỏi nhóm',
+      'body': 'Bạn đã bị xóa khỏi ví nhóm "$walletName".',
+      'timestamp': FieldValue.serverTimestamp(),
+      'isRead': false,
+      'type': 'member_removed',
+      'walletId': walletId,
+    });
+
+    pushApiClient.sendPush(
+      userId: memberId,
+      title: 'Bị xóa khỏi nhóm',
+      body: 'Bạn đã bị xóa khỏi ví nhóm "$walletName".',
+      type: 'member_removed',
+      walletId: walletId,
+      notificationId: notifRef.id,
+    ).catchError((_) {});
   }
 
   @override
@@ -815,7 +892,17 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
           'timestamp': FieldValue.serverTimestamp(),
           'isRead': false,
           'type': 'debt',
+          'walletId': walletId,
         });
+
+        pushApiClient.sendPush(
+          userId: participantId,
+          title: 'Chia tiền nhóm',
+          body: '$payerName chia tiền: bạn cần trả ${sharePerPerson.toStringAsFixed(0)} VNĐ',
+          type: 'debt',
+          walletId: walletId,
+          notificationId: notifRef.id,
+        ).catchError((_) {});
       }
     });
   }
@@ -942,6 +1029,14 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
         'type': 'transaction',
       });
 
+      pushApiClient.sendPush(
+        userId: borrowerId,
+        title: 'Thanh toán nợ thành công',
+        body: 'Đã thanh toán ${amount.toStringAsFixed(0)} VNĐ cho $lenderName.',
+        type: 'transaction',
+        notificationId: borrowerNotif.id,
+      ).catchError((_) {});
+
       final lenderNotif = firestore.collection('notifications').doc();
       transaction.set(lenderNotif, {
         'id': lenderNotif.id,
@@ -952,6 +1047,14 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
         'isRead': false,
         'type': 'transaction',
       });
+
+      pushApiClient.sendPush(
+        userId: lenderId,
+        title: 'Nhận thanh toán nợ',
+        body: '$borrowerName đã thanh toán ${amount.toStringAsFixed(0)} VNĐ.',
+        type: 'transaction',
+        notificationId: lenderNotif.id,
+      ).catchError((_) {});
     });
   }
 
