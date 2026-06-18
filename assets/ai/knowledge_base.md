@@ -1,8 +1,8 @@
-# Smart Finance — Tài liệu & Hướng dẫn Đầy đủ
+# Fintech Wallet — Tài liệu & Hướng dẫn Đầy đủ
 
 ## TỔNG QUAN ỨNG DỤNG
 
-Smart Finance là ứng dụng quản lý tài chính cá nhân và nhóm dành cho người dùng Việt Nam.
+Fintech Wallet là ứng dụng quản lý tài chính cá nhân và nhóm dành cho người dùng Việt Nam.
 
 Các tính năng chính:
 - Quản lý ví cá nhân (nạp, rút, chuyển tiền)
@@ -22,20 +22,20 @@ Các tính năng chính:
 - Cập nhật real-time sau mỗi giao dịch
 
 **Nạp tiền (deposit):**
-- Chuyển tiền từ ví MoMo vào Smart Finance
+- Chuyển tiền từ ví MoMo vào Fintech Wallet
 - Cần nhập: Số điện thoại MoMo nguồn + Số tiền muốn nạp
 - Tiền vào ví ngay sau khi giao dịch thành công
 - Nhận thông báo xác nhận
 
 **Rút tiền (transfer):**
-- Chuyển tiền từ Smart Finance ra ví MoMo
+- Chuyển tiền từ Fintech Wallet ra ví MoMo
 - Cần nhập: Số điện thoại MoMo đích + Số tiền muốn rút
 - Kiểm tra số dư trước khi thực hiện
 - Nhận thông báo xác nhận
 
 **Chuyển tiền nội bộ (send_money):**
-- Chuyển tiền cho người dùng khác trong app Smart Finance
-- Cần nhập: Số tài khoản Smart Finance của người nhận + Số tiền
+- Chuyển tiền cho người dùng khác trong app Fintech Wallet
+- Cần nhập: Số tài khoản Fintech Wallet của người nhận + Số tiền
 - Nhận tiền ngay lập tức, cả hai bên nhận thông báo
 - Không mất phí giao dịch
 
@@ -153,7 +153,7 @@ Hiển thị:
 ### 6. CÀI ĐẶT & HỒ SƠ
 
 **Hồ sơ cá nhân (profile):**
-- Xem thông tin: tên, email, số tài khoản Smart Finance, ảnh đại diện
+- Xem thông tin: tên, email, số tài khoản Fintech Wallet, ảnh đại diện
 - Cập nhật tên hiển thị
 - Thay đổi ảnh đại diện
 
@@ -168,7 +168,7 @@ Hiển thị:
 ### Q: Tôi quên mật khẩu, phải làm sao?
 A: Trên màn hình đăng nhập, bấm "Quên mật khẩu" → Nhập email đã đăng ký → Hệ thống gửi email khôi phục mật khẩu.
 
-### Q: Số tài khoản Smart Finance của tôi là gì?
+### Q: Số tài khoản Fintech Wallet của tôi là gì?
 A: Vào trang Hồ sơ (Profile) → Số tài khoản hiển thị ngay trên màn hình. Đây là mã dùng để người khác chuyển tiền vào ví của bạn.
 
 ### Q: Tôi có thể nạp bao nhiêu tiền vào ví?
@@ -202,7 +202,7 @@ A: Vào Hồ sơ (Profile) → Bấm nút chỉnh sửa → Thay đổi tên →
 A: Tôi có thể kiểm tra số dư thực tế của bạn ngay bây giờ. Ngoài ra, số dư luôn hiển thị trên trang chủ (Home).
 
 ### Q: Ứng dụng có an toàn không?
-A: Smart Finance sử dụng Firebase Authentication (xác thực email/mật khẩu) và Firestore Security Rules để bảo vệ dữ liệu. Mỗi người dùng chỉ có thể truy cập dữ liệu của chính mình.
+A: Fintech Wallet sử dụng Firebase Authentication (xác thực email/mật khẩu) và Firestore Security Rules để bảo vệ dữ liệu. Mỗi người dùng chỉ có thể truy cập dữ liệu của chính mình.
 
 ---
 
@@ -214,8 +214,8 @@ A: Smart Finance sử dụng Firebase Authentication (xác thực email/mật kh
 | budget | Quản lý ngân sách theo danh mục |
 | group_wallet | Danh sách ví nhóm |
 | settings | Cài đặt tài khoản |
-| deposit | Nạp tiền từ MoMo vào Smart Finance |
-| transfer | Rút tiền từ Smart Finance ra MoMo |
+| deposit | Nạp tiền từ MoMo vào Fintech Wallet |
+| transfer | Rút tiền từ Fintech Wallet ra MoMo |
 | send_money | Chuyển tiền nội bộ cho user khác |
 | profile | Hồ sơ cá nhân |
 | notifications | Trung tâm thông báo |

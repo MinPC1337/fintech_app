@@ -316,7 +316,7 @@ class _LoginPageState extends State<LoginPage> {
             end: Alignment.bottomRight,
           ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
           child: const Text(
-            "SMART FINANCE",
+            "FINTECH WALLET",
             style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,

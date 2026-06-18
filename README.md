@@ -1,6 +1,6 @@
-# Smart Finance
+# Fintech Wallet
 
-Smart Finance là ứng dụng quản lý tài chính cá nhân và nhóm thông minh dành cho người dùng Việt Nam, được phát triển trên nền tảng Flutter. 
+Fintech Wallet là ứng dụng quản lý tài chính cá nhân và nhóm thông minh dành cho người dùng Việt Nam, được phát triển trên nền tảng Flutter. 
 Ứng dụng giúp bạn dễ dàng theo dõi chi tiêu, quản lý ngân sách hiệu quả, và đặc biệt hỗ trợ quản lý quỹ nhóm, chia sẻ chi phí một cách minh bạch. Đặc biệt, ứng dụng tích hợp **Trợ lý AI thông minh** (Google Gemini) giúp tra cứu, tư vấn tài chính trực tiếp dựa trên dữ liệu thật của bạn.
 
 ## 🌟 Tính năng chính

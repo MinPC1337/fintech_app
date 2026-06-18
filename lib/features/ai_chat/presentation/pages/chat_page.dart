@@ -316,7 +316,7 @@ class _ChatPageState extends State<ChatPage> {
                             ),
                           ),
                           const Text(
-                            'Smart Finance AI Assistant',
+                            'Fintech Wallet AI Assistant',
                             style: TextStyle(
                               color: kTextSecondary,
                               fontSize: 12,
