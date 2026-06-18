@@ -283,22 +283,29 @@ class _TransferPageState extends State<TransferPage> {
               ),
               const SizedBox(height: 8),
               StreamBuilder(
-                stream: sl<GetPrimaryWalletStreamUseCase>().call(currentUser!.uid),
+                stream: sl<GetPrimaryWalletStreamUseCase>().call(
+                  currentUser!.uid,
+                ),
                 builder: (context, primarySnapshot) {
                   WalletEntity? primaryWallet;
                   if (primarySnapshot.hasData) {
-                    (primarySnapshot.data as dynamic).fold(
-                      (failure) => null,
-                      (wallet) {
-                        primaryWallet = wallet;
-                      },
-                    );
+                    (primarySnapshot.data as dynamic).fold((failure) => null, (
+                      wallet,
+                    ) {
+                      primaryWallet = wallet;
+                    });
                   }
                   return StreamBuilder<List<WalletEntity>>(
-                    stream: sl<WatchGroupWalletsUseCase>().call(currentUser!.uid),
+                    stream: sl<WatchGroupWalletsUseCase>().call(
+                      currentUser!.uid,
+                    ),
                     builder: (context, groupSnapshot) {
                       final groupWallets = (groupSnapshot.data ?? [])
-                          .where((w) => w.ownerId == currentUser!.uid && w.status != 'closed')
+                          .where(
+                            (w) =>
+                                w.ownerId == currentUser!.uid &&
+                                w.status != 'closed',
+                          )
                           .toList();
 
                       return SingleChildScrollView(
@@ -504,26 +511,6 @@ class _TransferPageState extends State<TransferPage> {
               ),
 
               const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: kSurface,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: kBorder),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.info_outline, color: kNeonCyan, size: 20),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Tính năng giả lập Rút tiền/Chi hộ. Tiền sẽ được trừ vào ví Firebase hiện tại.',
-                        style: TextStyle(color: kTextSecondary, fontSize: 12),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
@@ -538,8 +525,8 @@ class _TransferPageState extends State<TransferPage> {
     required IconData icon,
     required bool isSelected,
   }) {
-    final balanceStr = balance != null 
-        ? '${NumberFormat.decimalPattern('vi_VN').format(balance)} đ' 
+    final balanceStr = balance != null
+        ? '${NumberFormat.decimalPattern('vi_VN').format(balance)} đ'
         : '...';
 
     return Padding(
@@ -577,7 +564,9 @@ class _TransferPageState extends State<TransferPage> {
                     name,
                     style: TextStyle(
                       color: isSelected ? kElectricBlue : kTextPrimary,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                       fontSize: 14,
                     ),
                   ),

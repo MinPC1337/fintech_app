@@ -32,51 +32,59 @@ class QuickActionsRow extends StatelessWidget {
             children: [
               _buildActionItem(
                 context: context,
-                icon: Icons.send_rounded,
+                emoji: '💸',
                 color: const Color(0xFF7C3AED), // Tím
                 label: 'Chuyển tiền',
-                onTap: () => Future.microtask(() => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SendToUserPage()),
-                )),
+                onTap: () => Future.microtask(
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SendToUserPage()),
+                  ),
+                ),
               ),
               const SizedBox(width: 16),
               _buildActionItem(
                 context: context,
-                icon: Icons.qr_code_scanner_rounded,
+                emoji: '💰',
                 color: const Color(0xFF0EA5E9), // Xanh dương
                 label: 'Nhận tiền',
-                onTap: () => Future.microtask(() => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ReceiveMoneyPage()),
-                )),
+                onTap: () => Future.microtask(
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ReceiveMoneyPage()),
+                  ),
+                ),
               ),
               const SizedBox(width: 16),
               _buildActionItem(
                 context: context,
-                icon: Icons.account_balance_wallet_rounded,
+                emoji: '📥',
                 color: const Color(0xFFD946EF), // Hồng MoMo
-                label: 'Nạp MoMo',
-                onTap: () => Future.microtask(() => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const MomoDepositPage()),
-                )),
+                label: 'Nạp Tiền',
+                onTap: () => Future.microtask(
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const MomoDepositPage()),
+                  ),
+                ),
               ),
               const SizedBox(width: 16),
               _buildActionItem(
                 context: context,
-                icon: Icons.send_to_mobile_rounded,
+                emoji: '📤',
                 color: const Color(0xFFF43F5E), // Đỏ / Hồng đậm
-                label: 'Rút MoMo',
-                onTap: () => Future.microtask(() => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const TransferPage()),
-                )),
+                label: 'Rút Tiền',
+                onTap: () => Future.microtask(
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TransferPage()),
+                  ),
+                ),
               ),
               const SizedBox(width: 16),
               _buildActionItem(
                 context: context,
-                icon: Icons.pie_chart_rounded,
+                emoji: '📊',
                 color: const Color(0xFFF59E0B), // Cam
                 label: 'Ngân sách',
                 onTap: () {
@@ -86,7 +94,7 @@ class QuickActionsRow extends StatelessWidget {
               const SizedBox(width: 16),
               _buildActionItem(
                 context: context,
-                icon: Icons.group_rounded,
+                emoji: '👥',
                 color: const Color(0xFF10B981), // Xanh lá
                 label: 'Ví nhóm',
                 onTap: () {
@@ -102,7 +110,7 @@ class QuickActionsRow extends StatelessWidget {
 
   Widget _buildActionItem({
     required BuildContext context,
-    required IconData icon,
+    required String emoji,
     required Color color,
     required String label,
     required VoidCallback onTap,
@@ -126,10 +134,11 @@ class QuickActionsRow extends StatelessWidget {
                   width: 1.5,
                 ),
               ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 30, // Icon to ra
+              child: Center(
+                child: Text(
+                  emoji,
+                  style: const TextStyle(fontSize: 30), // Emoji to ra
+                ),
               ),
             ),
             const SizedBox(height: 10),

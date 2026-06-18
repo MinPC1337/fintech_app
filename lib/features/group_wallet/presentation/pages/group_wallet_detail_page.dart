@@ -211,26 +211,26 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           _QuickActionIcon(
-                            icon: Icons.arrow_downward_rounded,
+                            emoji: '📥',
                             label: 'Nạp quỹ',
                             color: kEmerald,
                             onTap: () => _showContributeSheet(context, wallet!.id),
                           ),
                           if (isOwner)
                             _QuickActionIcon(
-                              icon: Icons.arrow_upward_rounded,
+                              emoji: '📤',
                               label: 'Rút tiền',
                               color: kRose,
                               onTap: () => _showWithdrawSheet(context, wallet!.id),
                             ),
                           _QuickActionIcon(
-                            icon: Icons.account_balance_outlined,
+                            emoji: '🧮',
                             label: 'Chia tiền',
                             color: kPurple,
                             onTap: () => _showSplitExpenseSheet(context, wallet!),
                           ),
                           _QuickActionIcon(
-                            icon: Icons.history_rounded,
+                            emoji: '🕒',
                             label: 'Lịch sử',
                             color: kCyan,
                             onTap: () {
@@ -246,7 +246,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                             },
                           ),
                           _QuickActionIcon(
-                            icon: Icons.receipt_long_rounded,
+                            emoji: '🧾',
                             label: 'Nợ',
                             color: const Color(0xFFF59E0B),
                             onTap: () {
@@ -966,13 +966,13 @@ class _SplitExpenseSheetState extends State<_SplitExpenseSheet> {
 
 class _QuickActionIcon extends StatelessWidget {
   const _QuickActionIcon({
-    required this.icon,
+    required this.emoji,
     required this.label,
     required this.color,
     required this.onTap,
   });
 
-  final IconData icon;
+  final String emoji;
   final String label;
   final Color color;
   final VoidCallback onTap;
@@ -992,7 +992,12 @@ class _QuickActionIcon extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: color.withValues(alpha: 0.3)),
             ),
-            child: Icon(icon, color: color, size: 24),
+            child: Center(
+              child: Text(
+                emoji,
+                style: const TextStyle(fontSize: 24),
+              ),
+            ),
           ),
           const SizedBox(height: 8),
           Text(

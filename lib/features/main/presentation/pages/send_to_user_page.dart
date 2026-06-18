@@ -254,10 +254,9 @@ class _SendToUserPageState extends State<SendToUserPage> {
                             shape: BoxShape.circle,
                             boxShadow: [AppGlows.purple],
                           ),
-                          child: const Icon(
-                            Icons.send_rounded,
-                            color: kPurple,
-                            size: 28,
+                          child: const Text(
+                            '💸',
+                            style: TextStyle(fontSize: 28),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -293,22 +292,29 @@ class _SendToUserPageState extends State<SendToUserPage> {
               _buildLabel('Nguồn tiền'),
               const SizedBox(height: 8),
               StreamBuilder(
-                stream: sl<GetPrimaryWalletStreamUseCase>().call(currentUser!.uid),
+                stream: sl<GetPrimaryWalletStreamUseCase>().call(
+                  currentUser!.uid,
+                ),
                 builder: (context, primarySnapshot) {
                   WalletEntity? primaryWallet;
                   if (primarySnapshot.hasData) {
-                    (primarySnapshot.data as dynamic).fold(
-                      (failure) => null,
-                      (wallet) {
-                        primaryWallet = wallet;
-                      },
-                    );
+                    (primarySnapshot.data as dynamic).fold((failure) => null, (
+                      wallet,
+                    ) {
+                      primaryWallet = wallet;
+                    });
                   }
                   return StreamBuilder<List<WalletEntity>>(
-                    stream: sl<WatchGroupWalletsUseCase>().call(currentUser!.uid),
+                    stream: sl<WatchGroupWalletsUseCase>().call(
+                      currentUser!.uid,
+                    ),
                     builder: (context, groupSnapshot) {
                       final groupWallets = (groupSnapshot.data ?? [])
-                          .where((w) => w.ownerId == currentUser!.uid && w.status != 'closed')
+                          .where(
+                            (w) =>
+                                w.ownerId == currentUser!.uid &&
+                                w.status != 'closed',
+                          )
                           .toList();
 
                       return SingleChildScrollView(
@@ -493,33 +499,6 @@ class _SendToUserPageState extends State<SendToUserPage> {
               ),
 
               const SizedBox(height: 16),
-
-              // Cảnh báo
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: kThemeSurfaceSecondary,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: kThemeBorderDefault),
-                ),
-                child: const Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.info_outline, color: kCyan, size: 16),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Giao dịch được xử lý nguyên tử — tiền trừ và cộng đồng thời, không thể hoàn tác sau khi xác nhận.',
-                        style: TextStyle(
-                          color: kTextSecondary,
-                          fontSize: 12,
-                          height: 1.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
@@ -583,8 +562,8 @@ class _SendToUserPageState extends State<SendToUserPage> {
     required IconData icon,
     required bool isSelected,
   }) {
-    final balanceStr = balance != null 
-        ? '${NumberFormat.decimalPattern('vi_VN').format(balance)} đ' 
+    final balanceStr = balance != null
+        ? '${NumberFormat.decimalPattern('vi_VN').format(balance)} đ'
         : '...';
 
     return Padding(
@@ -599,7 +578,9 @@ class _SendToUserPageState extends State<SendToUserPage> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? kPurple.withValues(alpha: 0.1) : kThemeSurfaceSecondary,
+            color: isSelected
+                ? kPurple.withValues(alpha: 0.1)
+                : kThemeSurfaceSecondary,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected ? kPurple : kThemeBorderDefault,
@@ -622,7 +603,9 @@ class _SendToUserPageState extends State<SendToUserPage> {
                     name,
                     style: TextStyle(
                       color: isSelected ? kPurple : kTextPrimary,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                       fontSize: 14,
                     ),
                   ),
