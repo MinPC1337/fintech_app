@@ -10,12 +10,12 @@ import 'package:fintech_app/features/main/domain/entities/wallet_entity.dart';
 import 'package:fintech_app/core/utils/dialog_utils.dart';
 import 'group_wallet_transactions_page.dart';
 import 'group_wallet_debts_page.dart';
-import '../widgets/group_wallet_bar_chart.dart';
-import '../widgets/group_wallet_sheets.dart';
-import '../widgets/wallet_card.dart';
-import '../widgets/quick_action_icon.dart';
-import '../widgets/member_avatar_tile.dart';
-import '../widgets/invitation_tile.dart';
+import '../widgets/group_wallet_page/group_wallet_bar_chart.dart';
+import '../widgets/group_wallet_detail_page/group_wallet_sheets.dart';
+import '../widgets/group_wallet_detail_page/wallet_card.dart';
+import '../widgets/group_wallet_detail_page/quick_action_icon.dart';
+import '../widgets/group_wallet_detail_page/member_avatar_tile.dart';
+import '../widgets/group_wallet_detail_page/invitation_tile.dart';
 import 'group_wallet_members_page.dart';
 
 class GroupWalletDetailPage extends StatefulWidget {

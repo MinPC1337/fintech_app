@@ -97,8 +97,9 @@ class GroupWalletBarChart extends StatelessWidget {
                       showTitles: true,
                       reservedSize: 42,
                       getTitlesWidget: (value, meta) {
-                        if (value == 0 || value == maxY)
+                        if (value == 0 || value == maxY) {
                           return const SizedBox.shrink();
+                        }
 
                         String text = '';
                         if (value >= 1000000000) {
