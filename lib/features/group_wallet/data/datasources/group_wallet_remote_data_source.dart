@@ -19,6 +19,8 @@ abstract class GroupWalletRemoteDataSource {
   Stream<List<WalletModel>> watchGroupWallets(String userId);
   Stream<WalletModel?> watchGroupWalletById(String walletId);
   Future<void> closeGroupWallet(String walletId, String requesterId);
+  Future<void> approveCloseGroupWallet(String walletId, String userId);
+  Future<void> rejectCloseGroupWallet(String walletId, String userId);
 
   Future<void> inviteMember(
     String walletId,
@@ -188,11 +190,132 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
   Future<void> closeGroupWallet(String walletId, String requesterId) async {
     final doc = await firestore.collection('wallets').doc(walletId).get();
     if (!doc.exists) throw Exception('Ví nhóm không tồn tại');
-    if (doc.data()?['ownerId'] != requesterId) {
-      throw Exception('Chỉ trưởng nhóm mới có thể đóng ví nhóm');
+    final data = doc.data();
+    if (data?['ownerId'] != requesterId) {
+      throw Exception('Chỉ trưởng nhóm mới có thể yêu cầu đóng ví nhóm');
     }
-    await firestore.collection('wallets').doc(walletId).update({
-      'status': 'closed',
+
+    final members = List<String>.from(data?['members'] ?? []);
+    final walletName = data?['name'] ?? 'Ví nhóm';
+
+    if (members.length <= 1) {
+      // Chỉ có 1 thành viên (trưởng nhóm), đóng ngay lập tức
+      await firestore.collection('wallets').doc(walletId).update({
+        'status': 'closed',
+        'closeApprovals': [requesterId],
+      });
+    } else {
+      // Có nhiều thành viên, gửi yêu cầu đóng
+      await firestore.collection('wallets').doc(walletId).update({
+        'closeApprovals': [requesterId],
+      });
+
+      // Tạo notification cho các thành viên khác
+      final batch = firestore.batch();
+      for (final memberId in members) {
+        if (memberId != requesterId) {
+          final notifRef = firestore.collection('notifications').doc();
+          batch.set(notifRef, {
+            'id': notifRef.id,
+            'userId': memberId,
+            'title': 'Yêu cầu đóng ví nhóm',
+            'body': 'Trưởng nhóm yêu cầu đóng ví "$walletName". Vui lòng xác nhận.',
+            'timestamp': FieldValue.serverTimestamp(),
+            'isRead': false,
+            'type': 'close_request',
+            'walletId': walletId,
+          });
+        }
+      }
+      await batch.commit();
+    }
+  }
+
+  @override
+  Future<void> approveCloseGroupWallet(String walletId, String userId) async {
+    await firestore.runTransaction((transaction) async {
+      final docRef = firestore.collection('wallets').doc(walletId);
+      final docSnap = await transaction.get(docRef);
+
+      if (!docSnap.exists) throw Exception('Ví nhóm không tồn tại');
+      final data = docSnap.data();
+      if (data?['status'] == 'closed') throw Exception('Ví nhóm đã đóng');
+
+      final members = List<String>.from(data?['members'] ?? []);
+      if (!members.contains(userId)) throw Exception('Bạn không phải thành viên ví này');
+
+      final closeApprovals = List<String>.from(data?['closeApprovals'] ?? []);
+      if (!closeApprovals.contains(userId)) {
+        closeApprovals.add(userId);
+      }
+
+      final walletName = data?['name'] ?? 'Ví nhóm';
+      final isAllApproved = members.every((m) => closeApprovals.contains(m));
+
+      if (isAllApproved) {
+        transaction.update(docRef, {
+          'status': 'closed',
+          'closeApprovals': closeApprovals,
+        });
+
+        // Tạo thông báo ví đã đóng cho tất cả thành viên
+        for (final memberId in members) {
+          final notifRef = firestore.collection('notifications').doc();
+          transaction.set(notifRef, {
+            'id': notifRef.id,
+            'userId': memberId,
+            'title': 'Ví nhóm đã đóng',
+            'body': 'Ví nhóm "$walletName" đã được đóng do tất cả thành viên đồng ý.',
+            'timestamp': FieldValue.serverTimestamp(),
+            'isRead': false,
+            'type': 'wallet_closed',
+            'walletId': walletId,
+          });
+        }
+      } else {
+        transaction.update(docRef, {
+          'closeApprovals': closeApprovals,
+        });
+      }
+    });
+  }
+
+  @override
+  Future<void> rejectCloseGroupWallet(String walletId, String userId) async {
+    await firestore.runTransaction((transaction) async {
+      final docRef = firestore.collection('wallets').doc(walletId);
+      final docSnap = await transaction.get(docRef);
+
+      if (!docSnap.exists) throw Exception('Ví nhóm không tồn tại');
+      final data = docSnap.data();
+      if (data?['status'] == 'closed') throw Exception('Ví nhóm đã đóng');
+
+      final members = List<String>.from(data?['members'] ?? []);
+      if (!members.contains(userId)) throw Exception('Bạn không phải thành viên ví này');
+
+      final userDoc = await transaction.get(firestore.collection('users').doc(userId));
+      final userName = userDoc.data()?['fullName'] ?? 'Một thành viên';
+      final walletName = data?['name'] ?? 'Ví nhóm';
+
+      // Hủy bỏ yêu cầu đóng
+      transaction.update(docRef, {
+        'closeApprovals': [],
+      });
+
+      // Tạo thông báo từ chối cho tất cả thành viên
+      for (final memberId in members) {
+        final notifRef = firestore.collection('notifications').doc();
+        transaction.set(notifRef, {
+          'id': notifRef.id,
+          'userId': memberId,
+          'title': 'Từ chối đóng ví nhóm',
+          'body': 'Thành viên $userName đã từ chối đóng ví "$walletName".',
+          'timestamp': FieldValue.serverTimestamp(),
+          'isRead': false,
+          'type': 'close_rejected',
+          'walletId': walletId,
+        });
+      }
     });
   }
 

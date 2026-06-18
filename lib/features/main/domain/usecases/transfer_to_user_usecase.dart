@@ -11,10 +11,17 @@ class TransferToUserUseCase {
     String senderUid,
     String receiverUid,
     double amount,
-    String categoryId,
-  ) async {
+    String categoryId, {
+    String? fromWalletId,
+  }) async {
     try {
-      await repository.transferToUser(senderUid, receiverUid, amount, categoryId);
+      await repository.transferToUser(
+        senderUid,
+        receiverUid,
+        amount,
+        categoryId,
+        fromWalletId: fromWalletId,
+      );
       return const Right(null);
     } catch (e) {
       return Left(ServerFailure(e.toString().replaceFirst('Exception: ', '')));

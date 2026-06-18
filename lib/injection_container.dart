@@ -51,6 +51,8 @@ import 'features/group_wallet/domain/usecases/watch_group_wallet_detail_usecase.
 import 'features/group_wallet/domain/usecases/watch_group_wallets_usecase.dart';
 import 'features/group_wallet/domain/usecases/watch_pending_invitations_usecase.dart';
 import 'features/group_wallet/domain/usecases/withdraw_from_group_usecase.dart';
+import 'features/group_wallet/domain/usecases/approve_close_group_wallet_usecase.dart';
+import 'features/group_wallet/domain/usecases/reject_close_group_wallet_usecase.dart';
 import 'features/group_wallet/domain/usecases/watch_all_group_transactions_usecase.dart';
 import 'features/group_wallet/domain/usecases/watch_my_unsettled_debts_usecase.dart';
 import 'features/group_wallet/presentation/cubit/group_wallet_cubit.dart';
@@ -140,6 +142,12 @@ Future<void> init() async {
   sl.registerLazySingleton<CloseGroupWalletUseCase>(
     () => CloseGroupWalletUseCase(sl()),
   );
+  sl.registerLazySingleton<ApproveCloseGroupWalletUseCase>(
+    () => ApproveCloseGroupWalletUseCase(sl()),
+  );
+  sl.registerLazySingleton<RejectCloseGroupWalletUseCase>(
+    () => RejectCloseGroupWalletUseCase(sl()),
+  );
   sl.registerLazySingleton<InviteMemberUseCase>(
     () => InviteMemberUseCase(sl()),
   );
@@ -215,6 +223,8 @@ Future<void> init() async {
       watchGroupWalletsUseCase: sl(),
       watchGroupWalletDetailUseCase: sl(),
       closeGroupWalletUseCase: sl(),
+      approveCloseGroupWalletUseCase: sl(),
+      rejectCloseGroupWalletUseCase: sl(),
       inviteMemberUseCase: sl(),
       acceptInvitationUseCase: sl(),
       rejectInvitationUseCase: sl(),

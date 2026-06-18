@@ -12,8 +12,9 @@ abstract class WalletRemoteDataSource {
     String senderUid,
     double amount,
     String targetPhone,
-    String categoryId,
-  );
+    String categoryId, {
+    String? fromWalletId,
+  });
   Stream<List<TransactionModel>> getTransactionsStream(String userId);
 
   /// Chuyển tiền nội bộ từ user này sang user khác trong app
@@ -21,8 +22,9 @@ abstract class WalletRemoteDataSource {
     String senderUid,
     String receiverUid,
     double amount,
-    String categoryId,
-  );
+    String categoryId, {
+    String? fromWalletId,
+  });
 }
 
 class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
@@ -160,17 +162,29 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
     String senderUid,
     double amount,
     String targetPhone,
-    String categoryId,
-  ) async {
-    // 1. Tìm ví chính của user
-    final walletDoc = await _getPrimaryWalletDoc(senderUid);
-    if (walletDoc == null) {
-      throw Exception('Không tìm thấy ví cá nhân của người dùng này');
+    String categoryId, {
+    String? fromWalletId,
+  }) async {
+    // 1. Tìm ví chính hoặc ví được chỉ định
+    DocumentSnapshot<Map<String, dynamic>>? walletDoc;
+    if (fromWalletId != null) {
+      walletDoc = await firestore.collection('wallets').doc(fromWalletId).get();
+      if (!walletDoc.exists) {
+        throw Exception('Ví nguồn không tồn tại');
+      }
+      if (walletDoc.data()?['ownerId'] != senderUid) {
+        throw Exception('Chỉ trưởng nhóm mới có quyền thực hiện giao dịch này');
+      }
+    } else {
+      walletDoc = await _getPrimaryWalletDoc(senderUid);
+      if (walletDoc == null) {
+        throw Exception('Không tìm thấy ví cá nhân của người dùng này');
+      }
     }
 
     // 2. Chạy Transaction đảm bảo tính nguyên tử
     await firestore.runTransaction((transaction) async {
-      final snapshot = await transaction.get(walletDoc.reference);
+      final snapshot = await transaction.get(walletDoc!.reference);
 
       if (!snapshot.exists) {
         throw Exception('Ví không tồn tại');
@@ -201,6 +215,7 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
         'timestamp': FieldValue.serverTimestamp(),
         'type': 'Expense',
         'note': 'Chuyển khoản đến MoMo $targetPhone',
+        'walletId': walletDoc.id,
       };
       transaction.set(txRef, txData);
 
@@ -262,8 +277,9 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
     String senderUid,
     String targetAccountNumber,
     double amount,
-    String categoryId,
-  ) async {
+    String categoryId, {
+    String? fromWalletId,
+  }) async {
     // 1. Tìm receiverUid dựa trên Số tài khoản
     final userQuery = await firestore
         .collection('users')
@@ -280,10 +296,21 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
       throw Exception('Không thể chuyển tiền cho chính mình');
     }
 
-    // 2. Tìm ví chính của sender và receiver
-    final senderWalletDoc = await _getPrimaryWalletDoc(senderUid);
-    if (senderWalletDoc == null) {
-      throw Exception('Không tìm thấy ví cá nhân của bạn');
+    // 2. Tìm ví nguồn và ví đích
+    DocumentSnapshot<Map<String, dynamic>>? senderWalletDoc;
+    if (fromWalletId != null) {
+      senderWalletDoc = await firestore.collection('wallets').doc(fromWalletId).get();
+      if (!senderWalletDoc.exists) {
+        throw Exception('Ví nguồn không tồn tại');
+      }
+      if (senderWalletDoc.data()?['ownerId'] != senderUid) {
+        throw Exception('Chỉ trưởng nhóm mới có quyền thực hiện giao dịch này');
+      }
+    } else {
+      senderWalletDoc = await _getPrimaryWalletDoc(senderUid);
+      if (senderWalletDoc == null) {
+        throw Exception('Không tìm thấy ví cá nhân của bạn');
+      }
     }
 
     final receiverWalletDoc = await _getPrimaryWalletDoc(receiverUid);
@@ -300,7 +327,7 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
     );
     await firestore
         .runTransaction((transaction) async {
-          final senderSnap = await transaction.get(senderWalletDoc.reference);
+          final senderSnap = await transaction.get(senderWalletDoc!.reference);
           final receiverSnap = await transaction.get(
             receiverWalletDoc.reference,
           );
@@ -339,6 +366,7 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
             'timestamp': FieldValue.serverTimestamp(),
             'type': 'Expense',
             'note': 'Chuyển tiền đến $receiverName',
+            'walletId': senderWalletDoc.id,
           });
 
           // Ghi giao dịch Income cho receiver (userId = receiverUid)
@@ -355,6 +383,7 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
             'timestamp': FieldValue.serverTimestamp(),
             'type': 'Income',
             'note': 'Nhận tiền từ $senderName',
+            'walletId': receiverWalletDoc.id,
           });
 
           // 4. Tạo thông báo cho cả hai bên

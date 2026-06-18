@@ -406,24 +406,119 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                         ),
 
                       const SizedBox(height: 40),
-                      if (isOwner && wallet.status != 'closed')
-                        Center(
-                          child: TextButton.icon(
-                            onPressed: () => _confirmCloseGroup(context, wallet!.id),
-                            icon: const Icon(Icons.lock_outline_rounded, color: kRose, size: 18),
-                            label: const Text(
-                              'Đóng nhóm',
-                              style: TextStyle(color: kRose, fontWeight: FontWeight.w700),
-                            ),
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              backgroundColor: kRose.withValues(alpha: 0.1),
-                              shape: RoundedRectangleBorder(
+                      if (wallet.status != 'closed') ...[
+                        if (wallet.closeApprovals.isNotEmpty) ...[
+                          if (isOwner)
+                            Center(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: kRose.withValues(alpha: 0.05),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: kRose.withValues(alpha: 0.2)),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(kRose),
+                                      ),
+                                    ),
+                                    SizedBox(width: 12),
+                                    Text(
+                                      'Đang chờ xác nhận đóng ví...',
+                                      style: TextStyle(color: kRose, fontWeight: FontWeight.w600),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          else if (!wallet.closeApprovals.contains(authState.user.uid))
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: kRose.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: kRose.withValues(alpha: 0.3)),
+                              ),
+                              child: Column(
+                                children: [
+                                  const Row(
+                                    children: [
+                                      Icon(Icons.warning_rounded, color: kRose, size: 24),
+                                      SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          'Trưởng nhóm yêu cầu đóng ví. Bạn có đồng ý không?',
+                                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextButton(
+                                          onPressed: () => context.read<GroupWalletCubit>().rejectCloseGroupWallet(wallet!.id),
+                                          style: TextButton.styleFrom(
+                                            backgroundColor: Colors.transparent,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                              side: BorderSide(color: kTextSecondary.withValues(alpha: 0.5)),
+                                            ),
+                                          ),
+                                          child: const Text('Từ chối', style: TextStyle(color: Colors.white)),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: TextButton(
+                                          onPressed: () => context.read<GroupWalletCubit>().approveCloseGroupWallet(wallet!.id),
+                                          style: TextButton.styleFrom(
+                                            backgroundColor: kRose,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                          child: const Text('Đồng ý', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            )
+                          else
+                            Center(
+                              child: Text(
+                                'Bạn đã đồng ý đóng ví. Đang chờ người khác...',
+                                style: TextStyle(color: kRose.withValues(alpha: 0.8), fontStyle: FontStyle.italic),
+                              ),
+                            ),
+                        ] else if (isOwner)
+                          Center(
+                            child: TextButton.icon(
+                              onPressed: () => _confirmCloseGroup(context, wallet!.id),
+                              icon: const Icon(Icons.lock_outline_rounded, color: kRose, size: 18),
+                              label: const Text(
+                                'Đóng nhóm',
+                                style: TextStyle(color: kRose, fontWeight: FontWeight.w700),
+                              ),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                backgroundColor: kRose.withValues(alpha: 0.1),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                      ],
 
                       const SizedBox(height: 80),
                     ],

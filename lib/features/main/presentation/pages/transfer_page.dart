@@ -7,6 +7,10 @@ import '../../../../injection_container.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/usecases/transfer_out_usecase.dart';
 import '../../domain/usecases/watch_out_categories_usecase.dart';
+import '../../../../features/group_wallet/domain/usecases/watch_group_wallets_usecase.dart';
+import '../../domain/usecases/get_primary_wallet_stream_usecase.dart';
+import '../../domain/entities/wallet_entity.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/services/local_notification_service.dart';
 import '../../../../core/config/push_config.dart';
 import '../widgets/category_dropdown.dart';
@@ -31,6 +35,9 @@ class _TransferPageState extends State<TransferPage> {
 
   String? _selectedCategoryId;
   String? _selectedCategoryName;
+
+  String? _selectedWalletId;
+  String _selectedWalletName = 'Ví cá nhân';
 
   bool _isTransferring = false;
 
@@ -152,6 +159,7 @@ class _TransferPageState extends State<TransferPage> {
       amount,
       phone,
       _selectedCategoryId!,
+      fromWalletId: _selectedWalletId,
     );
 
     setState(() {
@@ -196,7 +204,7 @@ class _TransferPageState extends State<TransferPage> {
             builder: (_) {
               return TransactionSuccessPage(
                 amount: amount,
-                sender: 'Ví cá nhân - $senderName',
+                sender: '$_selectedWalletName - $senderName',
                 receiver: 'Ví MoMo - $phone',
                 categoryName: _selectedCategoryName ?? 'Chưa phân loại',
                 timestamp: DateTime.now(),
@@ -268,6 +276,59 @@ class _TransferPageState extends State<TransferPage> {
                 ),
               ),
               const SizedBox(height: 32),
+
+              const Text(
+                'Nguồn tiền',
+                style: TextStyle(color: kTextSecondary, fontSize: 14),
+              ),
+              const SizedBox(height: 8),
+              StreamBuilder(
+                stream: sl<GetPrimaryWalletStreamUseCase>().call(currentUser!.uid),
+                builder: (context, primarySnapshot) {
+                  WalletEntity? primaryWallet;
+                  if (primarySnapshot.hasData) {
+                    (primarySnapshot.data as dynamic).fold(
+                      (failure) => null,
+                      (wallet) {
+                        primaryWallet = wallet;
+                      },
+                    );
+                  }
+                  return StreamBuilder<List<WalletEntity>>(
+                    stream: sl<WatchGroupWalletsUseCase>().call(currentUser!.uid),
+                    builder: (context, groupSnapshot) {
+                      final groupWallets = (groupSnapshot.data ?? [])
+                          .where((w) => w.ownerId == currentUser!.uid && w.status != 'closed')
+                          .toList();
+
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildWalletChip(
+                              id: null,
+                              name: 'Ví cá nhân',
+                              balance: primaryWallet?.balance,
+                              icon: Icons.account_balance_wallet,
+                              isSelected: _selectedWalletId == null,
+                            ),
+                            ...groupWallets.map(
+                              (w) => _buildWalletChip(
+                                id: w.id,
+                                name: w.name,
+                                balance: w.balance,
+                                icon: Icons.group,
+                                isSelected: _selectedWalletId == w.id,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
 
               const Text(
                 'Số điện thoại nhận (MoMo)',
@@ -462,6 +523,74 @@ class _TransferPageState extends State<TransferPage> {
                     ),
                   ],
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWalletChip({
+    required String? id,
+    required String name,
+    required double? balance,
+    required IconData icon,
+    required bool isSelected,
+  }) {
+    final balanceStr = balance != null 
+        ? '${NumberFormat.decimalPattern('vi_VN').format(balance)} đ' 
+        : '...';
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 12.0),
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedWalletId = id;
+            _selectedWalletName = name;
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? kElectricBlue.withValues(alpha: 0.1) : kSurface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected ? kElectricBlue : kBorder,
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                color: isSelected ? kElectricBlue : kTextSecondary,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    name,
+                    style: TextStyle(
+                      color: isSelected ? kElectricBlue : kTextPrimary,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    balanceStr,
+                    style: TextStyle(
+                      color: isSelected ? kElectricBlue : kTextSecondary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

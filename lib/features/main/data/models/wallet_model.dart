@@ -11,6 +11,7 @@ class WalletModel extends WalletEntity {
     super.accentArgb,
     super.createdAt,
     super.status,
+    super.closeApprovals,
     super.imageUrl,
     super.emoji,
   });
@@ -30,6 +31,7 @@ class WalletModel extends WalletEntity {
               : DateTime.tryParse(json['createdAt'].toString()))
           : null,
       status: json['status'] ?? 'active',
+      closeApprovals: List<String>.from(json['closeApprovals'] ?? []),
       imageUrl: json['imageUrl'] as String?,
       emoji: json['emoji'] as String?,
     );
@@ -46,6 +48,7 @@ class WalletModel extends WalletEntity {
       if (accentArgb != null) 'accentArgb': accentArgb,
       if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
       'status': status,
+      'closeApprovals': closeApprovals,
       if (imageUrl != null) 'imageUrl': imageUrl,
       if (emoji != null) 'emoji': emoji,
     };

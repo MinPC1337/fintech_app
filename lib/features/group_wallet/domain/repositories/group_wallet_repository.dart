@@ -16,6 +16,8 @@ abstract class GroupWalletRepository {
   Stream<List<WalletEntity>> watchGroupWallets(String userId);
   Stream<WalletEntity?> watchGroupWalletById(String walletId);
   Future<void> closeGroupWallet(String walletId, String requesterId);
+  Future<void> approveCloseGroupWallet(String walletId, String userId);
+  Future<void> rejectCloseGroupWallet(String walletId, String userId);
 
   // Thành viên
   Future<void> inviteMember(String walletId, String senderId, String receiverEmail);

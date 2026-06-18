@@ -23,8 +23,20 @@ class WalletRepositoryImpl implements WalletRepository {
   }
 
   @override
-  Future<void> transferOut(String senderUid, double amount, String targetPhone, String categoryId) async {
-    await remoteDataSource.transferOut(senderUid, amount, targetPhone, categoryId);
+  Future<void> transferOut(
+    String senderUid,
+    double amount,
+    String targetPhone,
+    String categoryId, {
+    String? fromWalletId,
+  }) async {
+    await remoteDataSource.transferOut(
+      senderUid,
+      amount,
+      targetPhone,
+      categoryId,
+      fromWalletId: fromWalletId,
+    );
   }
 
   @override
@@ -33,7 +45,19 @@ class WalletRepositoryImpl implements WalletRepository {
   }
 
   @override
-  Future<void> transferToUser(String senderUid, String receiverUid, double amount, String categoryId) async {
-    await remoteDataSource.transferToUser(senderUid, receiverUid, amount, categoryId);
+  Future<void> transferToUser(
+    String senderUid,
+    String receiverUid,
+    double amount,
+    String categoryId, {
+    String? fromWalletId,
+  }) async {
+    await remoteDataSource.transferToUser(
+      senderUid,
+      receiverUid,
+      amount,
+      categoryId,
+      fromWalletId: fromWalletId,
+    );
   }
 }

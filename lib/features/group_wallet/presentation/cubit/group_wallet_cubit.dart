@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:fintech_app/features/group_wallet/domain/usecases/accept_invitation_usecase.dart';
 import 'package:fintech_app/features/group_wallet/domain/usecases/close_group_wallet_usecase.dart';
+import 'package:fintech_app/features/group_wallet/domain/usecases/approve_close_group_wallet_usecase.dart';
+import 'package:fintech_app/features/group_wallet/domain/usecases/reject_close_group_wallet_usecase.dart';
 import 'package:fintech_app/features/group_wallet/domain/usecases/contribute_to_group_usecase.dart';
 import 'package:fintech_app/features/group_wallet/domain/usecases/create_group_wallet_usecase.dart';
 import 'package:fintech_app/features/group_wallet/domain/usecases/invite_member_usecase.dart';
@@ -33,6 +35,8 @@ class GroupWalletCubit extends Cubit<GroupWalletState> {
     required this.watchGroupWalletsUseCase,
     required this.watchGroupWalletDetailUseCase,
     required this.closeGroupWalletUseCase,
+    required this.approveCloseGroupWalletUseCase,
+    required this.rejectCloseGroupWalletUseCase,
     required this.inviteMemberUseCase,
     required this.acceptInvitationUseCase,
     required this.rejectInvitationUseCase,
@@ -54,6 +58,8 @@ class GroupWalletCubit extends Cubit<GroupWalletState> {
   final WatchGroupWalletsUseCase watchGroupWalletsUseCase;
   final WatchGroupWalletDetailUseCase watchGroupWalletDetailUseCase;
   final CloseGroupWalletUseCase closeGroupWalletUseCase;
+  final ApproveCloseGroupWalletUseCase approveCloseGroupWalletUseCase;
+  final RejectCloseGroupWalletUseCase rejectCloseGroupWalletUseCase;
   final InviteMemberUseCase inviteMemberUseCase;
   final AcceptInvitationUseCase acceptInvitationUseCase;
   final RejectInvitationUseCase rejectInvitationUseCase;
@@ -402,7 +408,41 @@ class GroupWalletCubit extends Cubit<GroupWalletState> {
         return false;
       },
       (_) {
-        _setMessage('Đã đóng ví nhóm');
+        _setMessage('Đã gửi yêu cầu đóng ví nhóm (hoặc đã đóng nếu chỉ có 1 người)');
+        return true;
+      },
+    );
+  }
+
+  Future<bool> approveCloseGroupWallet(String walletId) async {
+    if (_userId == null) return false;
+    _setActionInProgress(true);
+    final result = await approveCloseGroupWalletUseCase(walletId, _userId!);
+    _setActionInProgress(false);
+    return result.fold(
+      (failure) {
+        _setMessage(failure.message);
+        return false;
+      },
+      (_) {
+        _setMessage('Đã đồng ý đóng ví nhóm');
+        return true;
+      },
+    );
+  }
+
+  Future<bool> rejectCloseGroupWallet(String walletId) async {
+    if (_userId == null) return false;
+    _setActionInProgress(true);
+    final result = await rejectCloseGroupWalletUseCase(walletId, _userId!);
+    _setActionInProgress(false);
+    return result.fold(
+      (failure) {
+        _setMessage(failure.message);
+        return false;
+      },
+      (_) {
+        _setMessage('Đã từ chối đóng ví nhóm');
         return true;
       },
     );

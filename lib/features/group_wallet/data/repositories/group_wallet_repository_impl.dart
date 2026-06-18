@@ -28,6 +28,16 @@ class GroupWalletRepositoryImpl implements GroupWalletRepository {
   }
 
   @override
+  Future<void> approveCloseGroupWallet(String walletId, String userId) async {
+    await remoteDataSource.approveCloseGroupWallet(walletId, userId);
+  }
+
+  @override
+  Future<void> rejectCloseGroupWallet(String walletId, String userId) async {
+    await remoteDataSource.rejectCloseGroupWallet(walletId, userId);
+  }
+
+  @override
   Future<void> contributeToGroup(
     String walletId,
     String senderId,
