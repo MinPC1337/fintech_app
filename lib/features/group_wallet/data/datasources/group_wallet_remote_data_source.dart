@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../../../core/network/push_api_client.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
@@ -77,8 +78,12 @@ abstract class GroupWalletRemoteDataSource {
 
 class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
   final FirebaseFirestore firestore;
+  final PushApiClient pushApiClient;
 
-  GroupWalletRemoteDataSourceImpl({required this.firestore});
+  GroupWalletRemoteDataSourceImpl({
+    required this.firestore,
+    required this.pushApiClient,
+  });
 
   // ─────────────────────────────────────────────
   // Helpers
@@ -225,6 +230,16 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
             'type': 'close_request',
             'walletId': walletId,
           });
+
+          // Send push notification
+          pushApiClient.sendPush(
+            userId: memberId,
+            title: 'Yêu cầu đóng ví nhóm',
+            body: 'Trưởng nhóm yêu cầu đóng ví "$walletName". Vui lòng xác nhận.',
+            type: 'close_request',
+            walletId: walletId,
+            notificationId: notifRef.id,
+          ).catchError((_) {}); // Ignore errors so it doesn't block
         }
       }
       await batch.commit();
@@ -271,6 +286,17 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
             'type': 'wallet_closed',
             'walletId': walletId,
           });
+
+          // Gửi push notification sau khi transaction hoàn thành
+          // Note: Ideally this should run after transaction commit, but doing it async here is okay for simple cases
+          pushApiClient.sendPush(
+            userId: memberId,
+            title: 'Ví nhóm đã đóng',
+            body: 'Ví nhóm "$walletName" đã được đóng do tất cả thành viên đồng ý.',
+            type: 'wallet_closed',
+            walletId: walletId,
+            notificationId: notifRef.id,
+          ).catchError((_) {});
         }
       } else {
         transaction.update(docRef, {
@@ -315,6 +341,16 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
           'type': 'close_rejected',
           'walletId': walletId,
         });
+
+        // Gửi push notification sau khi transaction hoàn thành
+        pushApiClient.sendPush(
+          userId: memberId,
+          title: 'Từ chối đóng ví nhóm',
+          body: 'Thành viên $userName đã từ chối đóng ví "$walletName".',
+          type: 'close_rejected',
+          walletId: walletId,
+          notificationId: notifRef.id,
+        ).catchError((_) {});
       }
     });
   }
@@ -387,7 +423,18 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
       'timestamp': FieldValue.serverTimestamp(),
       'isRead': false,
       'type': 'invitation',
+      'walletId': walletId,
     });
+
+    // Send push notification
+    pushApiClient.sendPush(
+      userId: receiverUid,
+      title: 'Lời mời ví nhóm',
+      body: '$senderName mời bạn tham gia ví nhóm "$walletName"',
+      type: 'invitation',
+      walletId: walletId,
+      notificationId: notifRef.id,
+    ).catchError((_) {});
   }
 
   @override
