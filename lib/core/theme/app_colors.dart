@@ -89,4 +89,6 @@ class AppGlows {
   );
   static const purple = BoxShadow(color: Color(0x66C084FC), blurRadius: 20);
   static const profit = BoxShadow(color: Color(0x6634D399), blurRadius: 15);
+  static const emerald = BoxShadow(color: Color(0x6634D399), blurRadius: 15);
+  static const rose = BoxShadow(color: Color(0x66FB7185), blurRadius: 15);
 }

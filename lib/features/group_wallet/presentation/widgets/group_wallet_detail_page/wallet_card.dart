@@ -103,21 +103,10 @@ class _WalletCardState extends State<WalletCard> {
     );
   }
 
-  String _formatAccountNumber(String acc) {
-    if (acc.length == 10) {
-      return '${acc.substring(0, 4)}${acc.substring(4, 7)}${acc.substring(7)}';
-    }
-    return acc;
-  }
+
 
   @override
   Widget build(BuildContext context) {
-    String rawAcc = widget.wallet.id.hashCode
-        .abs()
-        .toString()
-        .padLeft(10, '0')
-        .substring(0, 10);
-    String formattedAcc = _formatAccountNumber(rawAcc);
 
     return Container(
       decoration: BoxDecoration(
@@ -204,16 +193,34 @@ class _WalletCardState extends State<WalletCard> {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(6),
+                            width: 28,
+                            height: 28,
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
+                              image: (widget.wallet.imageUrl != null &&
+                                      widget.wallet.imageUrl!.isNotEmpty)
+                                  ? DecorationImage(
+                                      image: NetworkImage(widget.wallet.imageUrl!),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
                             ),
-                            child: const Icon(
-                              Icons.group_rounded,
-                              color: Colors.white,
-                              size: 16,
-                            ),
+                            alignment: Alignment.center,
+                            child: (widget.wallet.imageUrl != null &&
+                                    widget.wallet.imageUrl!.isNotEmpty)
+                                ? null
+                                : (widget.wallet.emoji != null &&
+                                        widget.wallet.emoji!.isNotEmpty)
+                                    ? Text(
+                                        widget.wallet.emoji!,
+                                        style: const TextStyle(fontSize: 16),
+                                      )
+                                    : const Icon(
+                                        Icons.group_rounded,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -242,51 +249,31 @@ class _WalletCardState extends State<WalletCard> {
 
                   const SizedBox(height: 20),
 
-                  // Số tài khoản
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        formattedAcc,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 22,
-                          fontFamily: 'monospace',
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 3.0,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withValues(alpha: 0.5),
-                              offset: const Offset(0, 2),
-                              blurRadius: 2,
-                            ),
-                          ],
+                  if (widget.wallet.status == 'closed')
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: kRose.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: kRose.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: const Text(
+                          'ĐÃ ĐÓNG',
+                          style: TextStyle(
+                            color: kRose,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                      if (widget.wallet.status == 'closed')
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: kRose.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: kRose.withValues(alpha: 0.5),
-                            ),
-                          ),
-                          child: const Text(
-                            'ĐÃ ĐÓNG',
-                            style: TextStyle(
-                              color: kRose,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+                    ),
 
                   const SizedBox(height: 16),
 

@@ -7,12 +7,12 @@ class ContributeToGroupUseCase {
 
   ContributeToGroupUseCase(this.repository);
 
-  Future<Either<Failure, void>> call(String walletId, String senderId, double amount) async {
+  Future<Either<Failure, void>> call(String walletId, String senderId, double amount, String note) async {
     if (amount <= 0) {
       return const Left(ValidationFailure('Số tiền nạp phải lớn hơn 0'));
     }
     try {
-      await repository.contributeToGroup(walletId, senderId, amount);
+      await repository.contributeToGroup(walletId, senderId, amount, note);
       return const Right(null);
     } catch (e) {
       return Left(ServerFailure(e.toString()));

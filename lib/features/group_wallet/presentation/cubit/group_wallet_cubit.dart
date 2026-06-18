@@ -289,10 +289,10 @@ class GroupWalletCubit extends Cubit<GroupWalletState> {
     );
   }
 
-  Future<bool> contributeToGroup(String walletId, double amount) async {
+  Future<bool> contributeToGroup(String walletId, double amount, String note) async {
     if (_userId == null) return false;
     _setActionInProgress(true);
-    final result = await contributeToGroupUseCase(walletId, _userId!, amount);
+    final result = await contributeToGroupUseCase(walletId, _userId!, amount, note);
     _setActionInProgress(false);
     return result.fold(
       (failure) {

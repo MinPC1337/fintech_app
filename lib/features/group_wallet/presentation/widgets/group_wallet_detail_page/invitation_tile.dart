@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fintech_app/core/theme/app_colors.dart';
 import 'package:fintech_app/features/main/domain/entities/invitation_entity.dart';
-import 'group_wallet_sheets.dart';
+
 
 class InvitationTile extends StatelessWidget {
   const InvitationTile({
@@ -57,7 +57,7 @@ class InvitationTile extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: SheetButton(
+                child: _InvitationButton(
                   label: 'Chấp nhận',
                   color: kEmerald,
                   onTap: onAccept,
@@ -65,7 +65,7 @@ class InvitationTile extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: SheetButton(
+                child: _InvitationButton(
                   label: 'Từ chối',
                   color: kRose,
                   onTap: onReject,
@@ -74,6 +74,43 @@ class InvitationTile extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _InvitationButton extends StatelessWidget {
+  const _InvitationButton({
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.22)),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -41,6 +41,7 @@ abstract class GroupWalletRemoteDataSource {
     String walletId,
     String senderId,
     double amount,
+    String note,
   );
   Future<void> withdrawFromGroup(
     String walletId,
@@ -607,6 +608,7 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
     String walletId,
     String senderId,
     double amount,
+    String note,
   ) async {
     final senderWalletDoc = await _getPrimaryWalletDoc(senderId);
     if (senderWalletDoc == null) {
@@ -652,8 +654,8 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
         'categoryId': 'group_contribute',
         'timestamp': FieldValue.serverTimestamp(),
         'type': 'Expense',
-        'note': 'Nạp vào quỹ nhóm "$groupName"',
-        'walletId': walletId,
+        'note': note.isNotEmpty ? note : 'Nạp vào quỹ nhóm "$groupName"',
+        'walletId': senderWalletDoc.id,
       });
 
       // Ghi giao dịch Income cho ví nhóm
@@ -663,12 +665,12 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
         'fromWalletId': senderWalletDoc.id,
         'toWalletId': walletId,
         'senderId': senderId,
-        'userId': senderId,
+        'userId': walletId,
         'amount': amount,
         'categoryId': 'group_contribute',
         'timestamp': FieldValue.serverTimestamp(),
         'type': 'Income',
-        'note': '$senderName nạp vào quỹ',
+        'note': note.isNotEmpty ? note : '$senderName nạp vào quỹ',
         'walletId': walletId,
       });
 
@@ -857,7 +859,7 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
       transaction.set(txRef, {
         'id': txRef.id,
         'senderId': payerId,
-        'userId': payerId,
+        'userId': walletId,
         'amount': totalAmount,
         'categoryId': 'group_split',
         'timestamp': FieldValue.serverTimestamp(),

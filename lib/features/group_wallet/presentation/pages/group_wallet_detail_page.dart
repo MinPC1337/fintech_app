@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
+
 import 'package:fintech_app/core/theme/app_colors.dart';
 import 'package:fintech_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:fintech_app/features/auth/presentation/cubit/auth_state.dart';
@@ -11,12 +11,14 @@ import 'package:fintech_app/core/utils/dialog_utils.dart';
 import 'group_wallet_transactions_page.dart';
 import 'group_wallet_debts_page.dart';
 import '../widgets/group_wallet_page/group_wallet_bar_chart.dart';
-import '../widgets/group_wallet_detail_page/group_wallet_sheets.dart';
 import '../widgets/group_wallet_detail_page/wallet_card.dart';
 import '../widgets/group_wallet_detail_page/quick_action_icon.dart';
 import '../widgets/group_wallet_detail_page/member_avatar_tile.dart';
 import '../widgets/group_wallet_detail_page/invitation_tile.dart';
 import 'group_wallet_members_page.dart';
+import 'group_wallet_contribute_page.dart';
+import 'group_wallet_withdraw_page.dart';
+import 'group_wallet_split_expense_page.dart';
 
 class GroupWalletDetailPage extends StatefulWidget {
   const GroupWalletDetailPage({super.key, required this.walletId});
@@ -256,23 +258,56 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                               emoji: '📥',
                               label: 'Nạp quỹ',
                               color: kEmerald,
-                              onTap: () =>
-                                  _showContributeSheet(context, wallet!.id),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => BlocProvider.value(
+                                      value: context.read<GroupWalletCubit>(),
+                                      child: GroupWalletContributePage(
+                                        walletId: wallet!.id,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                             if (isOwner)
                               QuickActionIcon(
                                 emoji: '💸',
                                 label: 'Chuyển tiền',
                                 color: kRose,
-                                onTap: () =>
-                                    _showWithdrawSheet(context, wallet!.id),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => BlocProvider.value(
+                                        value: context.read<GroupWalletCubit>(),
+                                        child: GroupWalletWithdrawPage(
+                                          walletId: wallet!.id,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
                             QuickActionIcon(
                               emoji: '🧮',
                               label: 'Chia tiền',
                               color: kPurple,
-                              onTap: () =>
-                                  _showSplitExpenseSheet(context, wallet!),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => BlocProvider.value(
+                                      value: context.read<GroupWalletCubit>(),
+                                      child: GroupWalletSplitExpensePage(
+                                        wallet: wallet!,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ],
                           QuickActionIcon(
@@ -361,7 +396,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                             if (wallet!.status != 'closed' && index == 0) {
                               return GestureDetector(
                                 onTap: () =>
-                                    _showInviteMemberSheet(context, wallet!.id),
+                                    _showInviteMemberDialog(context, wallet!.id),
                                 child: SizedBox(
                                   width: 72,
                                   child: Column(
@@ -653,57 +688,68 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
     );
   }
 
-  Future<void> _showInviteMemberSheet(BuildContext context, String walletId) {
+  void _showInviteMemberDialog(BuildContext context, String walletId) {
     final cubit = context.read<GroupWalletCubit>();
-    return showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => BlocProvider.value(
-        value: cubit,
-        child: InviteMemberSheet(walletId: walletId),
-      ),
-    );
-  }
+    final TextEditingController emailController = TextEditingController();
 
-  Future<void> _showContributeSheet(BuildContext context, String walletId) {
-    final cubit = context.read<GroupWalletCubit>();
-    return showModalBottomSheet(
+    showDialog(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => BlocProvider.value(
+      builder: (dialogContext) => BlocProvider.value(
         value: cubit,
-        child: ContributeSheet(walletId: walletId),
-      ),
-    );
-  }
-
-  Future<void> _showWithdrawSheet(BuildContext context, String walletId) {
-    final cubit = context.read<GroupWalletCubit>();
-    return showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => BlocProvider.value(
-        value: cubit,
-        child: WithdrawSheet(walletId: walletId),
-      ),
-    );
-  }
-
-  Future<void> _showSplitExpenseSheet(
-    BuildContext context,
-    WalletEntity wallet,
-  ) {
-    final cubit = context.read<GroupWalletCubit>();
-    return showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => BlocProvider.value(
-        value: cubit,
-        child: SplitExpenseSheet(wallet: wallet),
+        child: AlertDialog(
+          backgroundColor: kThemeSurfaceSecondary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: kThemeBorderDefault),
+          ),
+          title: const Text(
+            'Mời thành viên',
+            style: TextStyle(color: kTextPrimary, fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: emailController,
+                style: const TextStyle(color: kTextPrimary),
+                decoration: InputDecoration(
+                  hintText: 'Email người nhận',
+                  hintStyle: const TextStyle(color: kTextSecondary),
+                  prefixIcon: const Icon(Icons.email_rounded, color: kCyan),
+                  filled: true,
+                  fillColor: Colors.white.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Hủy', style: TextStyle(color: kTextSecondary)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final email = emailController.text.trim();
+                if (email.isEmpty) return;
+                final success = await cubit.inviteMember(walletId, email);
+                if (success && dialogContext.mounted) {
+                  Navigator.pop(dialogContext);
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kCyan,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text('Gửi lời mời', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -743,853 +789,5 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
     if (confirm == true) {
       await groupCubit.closeGroupWallet(walletId);
     }
-  }
-}
-
-class _InviteMemberSheet extends StatefulWidget {
-  final String walletId;
-  const _InviteMemberSheet({required this.walletId});
-
-  @override
-  State<_InviteMemberSheet> createState() => _InviteMemberSheetState();
-}
-
-class _InviteMemberSheetState extends State<_InviteMemberSheet> {
-  late final TextEditingController _emailController;
-
-  @override
-  void initState() {
-    super.initState();
-    _emailController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: _SheetContainer(
-        title: 'Mời thành viên',
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _NeoField(
-              controller: _emailController,
-              hint: 'Email người nhận',
-              prefix: const Icon(Icons.email_rounded, color: kCyan, size: 18),
-            ),
-            const SizedBox(height: 16),
-            _SheetButton(
-              label: 'Gửi lời mời',
-              color: kCyan,
-              onTap: () async {
-                final email = _emailController.text.trim();
-                if (email.isEmpty) return;
-                final cubit = context.read<GroupWalletCubit>();
-                final success = await cubit.inviteMember(
-                  widget.walletId,
-                  email,
-                );
-                if (!mounted) return;
-                if (success) Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ContributeSheet extends StatefulWidget {
-  final String walletId;
-  const _ContributeSheet({required this.walletId});
-
-  @override
-  State<_ContributeSheet> createState() => _ContributeSheetState();
-}
-
-class _ContributeSheetState extends State<_ContributeSheet> {
-  late final TextEditingController _amountController;
-
-  @override
-  void initState() {
-    super.initState();
-    _amountController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _amountController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: _SheetContainer(
-        title: 'Nạp quỹ nhóm',
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _NeoField(
-              controller: _amountController,
-              hint: 'Số tiền (VNĐ)',
-              prefix: const Icon(
-                Icons.monetization_on_rounded,
-                color: kEmerald,
-                size: 18,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _SheetButton(
-              label: 'Nạp',
-              color: kEmerald,
-              onTap: () async {
-                final amount =
-                    double.tryParse(
-                      _amountController.text.replaceAll(',', ''),
-                    ) ??
-                    0;
-                if (amount <= 0) return;
-                final cubit = context.read<GroupWalletCubit>();
-                final success = await cubit.contributeToGroup(
-                  widget.walletId,
-                  amount,
-                );
-                if (!mounted) return;
-                if (success) Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _WithdrawSheet extends StatefulWidget {
-  final String walletId;
-  const _WithdrawSheet({required this.walletId});
-
-  @override
-  State<_WithdrawSheet> createState() => _WithdrawSheetState();
-}
-
-class _WithdrawSheetState extends State<_WithdrawSheet> {
-  late final TextEditingController _amountController;
-  late final TextEditingController _noteController;
-
-  @override
-  void initState() {
-    super.initState();
-    _amountController = TextEditingController();
-    _noteController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _amountController.dispose();
-    _noteController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: _SheetContainer(
-        title: 'Rút tiền ví nhóm',
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _NeoField(
-              controller: _amountController,
-              hint: 'Số tiền (VNĐ)',
-              prefix: const Icon(
-                Icons.money_off_rounded,
-                color: kRose,
-                size: 18,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _NeoField(
-              controller: _noteController,
-              hint: 'Ghi chú (tùy chọn)',
-              prefix: const Icon(
-                Icons.note_alt_rounded,
-                color: kTextSecondary,
-                size: 18,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _SheetButton(
-              label: 'Rút',
-              color: kRose,
-              onTap: () async {
-                final amount =
-                    double.tryParse(
-                      _amountController.text.replaceAll(',', ''),
-                    ) ??
-                    0;
-                if (amount <= 0) return;
-                final cubit = context.read<GroupWalletCubit>();
-                final success = await cubit.withdrawFromGroup(
-                  widget.walletId,
-                  amount,
-                  _noteController.text.trim(),
-                );
-                if (!mounted) return;
-                if (success) Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SplitExpenseSheet extends StatefulWidget {
-  final WalletEntity wallet;
-  const _SplitExpenseSheet({required this.wallet});
-
-  @override
-  State<_SplitExpenseSheet> createState() => _SplitExpenseSheetState();
-}
-
-class _SplitExpenseSheetState extends State<_SplitExpenseSheet> {
-  late final TextEditingController _amountController;
-  late final TextEditingController _noteController;
-  late final Set<String> _selectedMembers;
-  String? _currentUserId;
-
-  @override
-  void initState() {
-    super.initState();
-    _amountController = TextEditingController();
-    _noteController = TextEditingController();
-    final authState = context.read<AuthCubit>().state;
-    if (authState is AuthSuccess) {
-      _currentUserId = authState.user.uid;
-      _selectedMembers = {_currentUserId!};
-    } else {
-      _selectedMembers = {};
-    }
-  }
-
-  @override
-  void dispose() {
-    _amountController.dispose();
-    _noteController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: _SheetContainer(
-        title: 'Chia tiền nhóm',
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _NeoField(
-              controller: _amountController,
-              hint: 'Tổng số tiền (VNĐ)',
-              prefix: const Icon(
-                Icons.calculate_rounded,
-                color: kPurple,
-                size: 18,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _NeoField(
-              controller: _noteController,
-              hint: 'Ghi chú',
-              prefix: const Icon(
-                Icons.description_rounded,
-                color: kTextSecondary,
-                size: 18,
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Thành viên tham gia',
-              style: TextStyle(
-                color: kTextPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 10),
-            ...widget.wallet.members.map((memberId) {
-              final isCurrent = memberId == _currentUserId;
-              return CheckboxListTile(
-                value: _selectedMembers.contains(memberId),
-                title: Text(memberId),
-                subtitle: isCurrent ? const Text('Bạn') : null,
-                activeColor: kPurple,
-                onChanged: isCurrent
-                    ? null
-                    : (value) {
-                        setState(() {
-                          if (value == true) {
-                            _selectedMembers.add(memberId);
-                          } else {
-                            _selectedMembers.remove(memberId);
-                          }
-                        });
-                      },
-              );
-            }),
-            const SizedBox(height: 8),
-            _SheetButton(
-              label: 'Chia',
-              color: kPurple,
-              onTap: () async {
-                final amount =
-                    double.tryParse(
-                      _amountController.text.replaceAll(',', ''),
-                    ) ??
-                    0;
-                final participantIds = _selectedMembers.toList();
-                if (amount <= 0 || participantIds.length < 2) return;
-                final cubit = context.read<GroupWalletCubit>();
-                final success = await cubit.splitExpense(
-                  widget.wallet.id,
-                  amount,
-                  _noteController.text.trim(),
-                  participantIds,
-                );
-                if (!mounted) return;
-                if (success) Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _WalletCard extends StatefulWidget {
-  final WalletEntity wallet;
-  final bool isOwner;
-  final double balance;
-
-  const _WalletCard({
-    required this.wallet,
-    required this.isOwner,
-    required this.balance,
-  });
-
-  @override
-  State<_WalletCard> createState() => _WalletCardState();
-}
-
-class _WalletCardState extends State<_WalletCard> {
-  bool _isBalanceHidden = false;
-  final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
-
-  Widget _buildCardChip() {
-    return Container(
-      width: 42,
-      height: 32,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(6),
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFFE5C07B),
-            Color(0xFFF3E5AB),
-            Color(0xFFD4AF37),
-            Color(0xFFB8860B),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 3,
-            offset: const Offset(1, 1),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Center(
-            child: Container(
-              width: 18,
-              height: 22,
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  width: 0.5,
-                ),
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 10,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 0.5,
-              color: Colors.black.withValues(alpha: 0.2),
-            ),
-          ),
-          Positioned(
-            bottom: 10,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 0.5,
-              color: Colors.black.withValues(alpha: 0.2),
-            ),
-          ),
-          Positioned(
-            top: 0,
-            bottom: 0,
-            left: 14,
-            child: Container(
-              width: 0.5,
-              color: Colors.black.withValues(alpha: 0.2),
-            ),
-          ),
-          Positioned(
-            top: 0,
-            bottom: 0,
-            right: 14,
-            child: Container(
-              width: 0.5,
-              color: Colors.black.withValues(alpha: 0.2),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatAccountNumber(String acc) {
-    if (acc.length == 10) {
-      return '${acc.substring(0, 4)}${acc.substring(4, 7)}${acc.substring(7)}';
-    }
-    return acc;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    String rawAcc = widget.wallet.id.hashCode
-        .abs()
-        .toString()
-        .padLeft(10, '0')
-        .substring(0, 10);
-    String formattedAcc = _formatAccountNumber(rawAcc);
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF1E3A8A), // Deep vibrant blue
-            Color(0xFF0F172A), // Dark slate
-            Color(0xFF020617), // Very dark slate
-          ],
-          stops: [0.0, 0.6, 1.0],
-        ),
-        border: Border.all(color: kCyan.withValues(alpha: 0.15), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-          BoxShadow(
-            color: kCyan.withValues(alpha: 0.05),
-            blurRadius: 24,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Stack(
-          children: [
-            // Background Elements (Holographic / Glassmorphism)
-            Positioned(
-              right: -60,
-              top: -60,
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [kCyan.withValues(alpha: 0.15), Colors.transparent],
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              left: -40,
-              bottom: -40,
-              child: Container(
-                width: 150,
-                height: 150,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      kEmerald.withValues(alpha: 0.1),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              right: 20,
-              bottom: 20,
-              child: Icon(
-                Icons.language_rounded,
-                size: 150,
-                color: Colors.white.withValues(alpha: 0.03),
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header (Logo + Contactless)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.group_rounded,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            widget.wallet.name.toUpperCase(),
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Icon(
-                        Icons.contactless_rounded,
-                        color: Colors.white.withValues(alpha: 0.7),
-                        size: 24,
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Chip
-                  _buildCardChip(),
-
-                  const SizedBox(height: 20),
-
-                  // Số tài khoản
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        formattedAcc,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 22,
-                          fontFamily: 'monospace',
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 3.0,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withValues(alpha: 0.5),
-                              offset: const Offset(0, 2),
-                              blurRadius: 2,
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (widget.wallet.status == 'closed')
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: kRose.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: kRose.withValues(alpha: 0.5),
-                            ),
-                          ),
-                          child: const Text(
-                            'ĐÃ ĐÓNG',
-                            style: TextStyle(
-                              color: kRose,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Footer: Tên + Balance
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'SỐ DƯ VÍ NHÓM',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.5),
-                              fontSize: 10,
-                              letterSpacing: 1.0,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.baseline,
-                            textBaseline: TextBaseline.alphabetic,
-                            children: [
-                              Text(
-                                _isBalanceHidden
-                                    ? '******'
-                                    : currencyFormatter
-                                          .format(widget.balance)
-                                          .replaceAll('đ', '')
-                                          .trim(),
-                                style: const TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Text(
-                                'đ',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-
-                      // Nút ẩn hiện + Logo
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _isBalanceHidden = !_isBalanceHidden;
-                              });
-                            },
-                            child: Icon(
-                              _isBalanceHidden
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined,
-                              color: Colors.white.withValues(alpha: 0.5),
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          // Premium Logo
-                          Text(
-                            widget.isOwner ? 'CHỦ NHÓM' : 'THÀNH VIÊN',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w900,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SheetContainer extends StatelessWidget {
-  const _SheetContainer({required this.title, required this.child});
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: kThemeSurfaceSecondary,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border.all(color: kThemeBorderDefault),
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 42,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: const TextStyle(
-                color: kTextPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 14),
-            child,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NeoField extends StatelessWidget {
-  const _NeoField({required this.controller, required this.hint, this.prefix});
-
-  final TextEditingController controller;
-  final String hint;
-  final Widget? prefix;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: TextField(
-        controller: controller,
-        style: const TextStyle(
-          color: kTextPrimary,
-          fontWeight: FontWeight.w700,
-        ),
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          hintText: hint,
-          hintStyle: TextStyle(color: kTextSecondary.withValues(alpha: 0.7)),
-          prefixIconConstraints: const BoxConstraints(minWidth: 40),
-          prefixIcon: prefix,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
-          isDense: true,
-        ),
-      ),
-    );
-  }
-}
-
-class _SheetButton extends StatelessWidget {
-  const _SheetButton({
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.22)),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.3,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

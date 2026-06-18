@@ -42,8 +42,9 @@ class GroupWalletRepositoryImpl implements GroupWalletRepository {
     String walletId,
     String senderId,
     double amount,
+    String note,
   ) async {
-    await remoteDataSource.contributeToGroup(walletId, senderId, amount);
+    await remoteDataSource.contributeToGroup(walletId, senderId, amount, note);
   }
 
   @override

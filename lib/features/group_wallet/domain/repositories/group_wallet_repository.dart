@@ -27,7 +27,7 @@ abstract class GroupWalletRepository {
   Stream<List<InvitationEntity>> watchPendingInvitations(String userId);
 
   // Giao dịch ví nhóm
-  Future<void> contributeToGroup(String walletId, String senderId, double amount);
+  Future<void> contributeToGroup(String walletId, String senderId, double amount, String note);
   Future<void> withdrawFromGroup(String walletId, String requesterId, double amount, String note);
   Stream<List<TransactionEntity>> watchGroupTransactions(String walletId);
 

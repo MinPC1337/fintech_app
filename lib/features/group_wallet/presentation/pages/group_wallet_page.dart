@@ -13,10 +13,10 @@ import 'package:fintech_app/features/group_wallet/presentation/pages/create_grou
 import 'package:fintech_app/features/main/domain/entities/wallet_entity.dart';
 import 'package:fintech_app/core/utils/dialog_utils.dart';
 
-import '../widgets/group_wallet_header.dart';
-import '../widgets/group_wallet_card_carousel.dart';
-import '../widgets/group_wallet_overview_stats.dart';
-import '../widgets/group_wallet_debts_card.dart';
+import '../widgets/group_wallet_page/group_wallet_header.dart';
+import '../widgets/group_wallet_page/group_wallet_card_carousel.dart';
+import '../widgets/group_wallet_page/group_wallet_overview_stats.dart';
+import '../widgets/group_wallet_page/group_wallet_debts_card.dart';
 
 class GroupWalletPage extends StatelessWidget {
   const GroupWalletPage({super.key});

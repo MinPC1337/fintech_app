@@ -14,6 +14,8 @@ class TransactionSuccessPage extends StatelessWidget {
   final String note;
   final bool isInternal;
   final bool isViewOnly;
+  final String? customButtonText;
+  final void Function(BuildContext context)? onCustomButtonPressed;
 
   const TransactionSuccessPage({
     super.key,
@@ -25,6 +27,8 @@ class TransactionSuccessPage extends StatelessWidget {
     required this.note,
     this.isInternal = true,
     this.isViewOnly = false,
+    this.customButtonText,
+    this.onCustomButtonPressed,
   });
 
   String get _displayCategoryName {
@@ -187,12 +191,14 @@ class TransactionSuccessPage extends StatelessWidget {
               // Action Buttons
               if (!isViewOnly)
                 ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const MainPage()),
-                      (route) => false,
-                    );
-                  },
+                  onPressed: onCustomButtonPressed != null 
+                      ? () => onCustomButtonPressed!(context) 
+                      : () {
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(builder: (_) => const MainPage()),
+                            (route) => false,
+                          );
+                        },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kCyan,
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -201,9 +207,9 @@ class TransactionSuccessPage extends StatelessWidget {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Về trang chủ',
-                    style: TextStyle(
+                  child: Text(
+                    customButtonText ?? 'Về trang chủ',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
