@@ -593,19 +593,20 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: kThemeSurfaceSecondary,
-          title: const Text('Đóng ví nhóm'),
+          backgroundColor: kThemeSurfaceSecondary.withOpacity(0.9),
+          title: const Text('Đóng ví nhóm', style: TextStyle(color: kTextPrimary)),
           content: const Text(
             'Bạn có chắc muốn đóng ví nhóm này? Sau khi đóng, ví sẽ không còn hoạt động nữa.',
+            style: TextStyle(color: kTextSecondary),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Hủy'),
+              child: const Text('Hủy', style: TextStyle(color: kTextSecondary)),
             ),
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Đồng ý'),
+              child: const Text('Đồng ý', style: TextStyle(color: kRose, fontWeight: FontWeight.bold)),
             ),
           ],
         );

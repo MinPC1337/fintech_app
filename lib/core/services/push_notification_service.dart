@@ -23,6 +23,20 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     'FCM background message',
     'title=${message.notification?.title} data=${message.data}',
   );
+
+  final title = message.notification?.title ?? message.data['title'] as String?;
+  final body = message.notification?.body ?? message.data['body'] as String?;
+
+  if (title != null && title.isNotEmpty) {
+    final localNotif = LocalNotificationService();
+    await localNotif.init();
+    await localNotif.showNotification(
+      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      title: title,
+      body: body ?? '',
+      payload: message.data['walletId'] as String?,
+    );
+  }
 }
 
 class PushNotificationService {
@@ -131,8 +145,8 @@ class PushNotificationService {
       'FCM foreground',
       'title=${message.notification?.title} data=${message.data}',
     );
-    final title = message.notification?.title ?? 'Thông báo';
-    final body = message.notification?.body ?? '';
+    final title = message.notification?.title ?? message.data['title'] as String? ?? 'Thông báo';
+    final body = message.notification?.body ?? message.data['body'] as String? ?? '';
     await _localNotificationService.showNotification(
       id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
       title: title,

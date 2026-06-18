@@ -96,8 +96,18 @@ async function handleSend(request, env) {
         return json({ error: 'Debt already settled' }, 400);
       }
 
-    } else if (type === 'transaction') {
-      // Cho phép gửi thông báo giao dịch (biến động số dư)
+    } else if (
+      type === 'transaction' ||
+      type === 'invitation' ||
+      type === 'invitation_accepted' ||
+      type === 'invitation_rejected' ||
+      type === 'close_request' ||
+      type === 'wallet_closed' ||
+      type === 'close_rejected' ||
+      type === 'member_removed' ||
+      type === 'debt'
+    ) {
+      // Cho phép gửi thông báo giao dịch và các sự kiện ví nhóm
     } else {
       return json({ error: 'Unsupported notification type' }, 400);
     }
