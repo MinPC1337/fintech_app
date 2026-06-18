@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
-import '../../../main/domain/entities/wallet_entity.dart';
+import '../../../../../core/theme/app_colors.dart';
+import '../../../../main/domain/entities/wallet_entity.dart';
 
 /// Section "Ví nhóm của bạn" — horizontal scrollable wallet cards.
 /// Now uses real WalletEntity data from Cubit.
@@ -119,15 +119,9 @@ class _WalletMiniCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            accent.withValues(alpha: 0.18),
-            const Color(0xFF11182B),
-          ],
+          colors: [accent.withValues(alpha: 0.18), const Color(0xFF11182B)],
         ),
-        border: Border.all(
-          color: accent.withValues(alpha: 0.2),
-          width: 1,
-        ),
+        border: Border.all(color: accent.withValues(alpha: 0.2), width: 1),
         boxShadow: [
           BoxShadow(
             color: accent.withValues(alpha: 0.1),
@@ -165,22 +159,17 @@ class _WalletMiniCard extends StatelessWidget {
                           ),
                         )
                       : wallet.emoji != null && wallet.emoji!.isNotEmpty
-                          ? Text(
-                              wallet.emoji!,
-                              style: const TextStyle(fontSize: 16),
-                            )
-                          : Icon(
-                              Icons.group_rounded,
-                              color: accent,
-                              size: 18,
-                            ),
+                      ? Text(
+                          wallet.emoji!,
+                          style: const TextStyle(fontSize: 16),
+                        )
+                      : Icon(Icons.group_rounded, color: accent, size: 18),
                 ),
               ),
               const SizedBox(width: 8),
               // Members badge
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
@@ -220,11 +209,7 @@ class _WalletMiniCard extends StatelessWidget {
           Row(
             children: [
               if (wallet.status == 'closed') ...[
-                const Icon(
-                  Icons.lock_rounded,
-                  size: 14,
-                  color: kTextSecondary,
-                ),
+                const Icon(Icons.lock_rounded, size: 14, color: kTextSecondary),
                 const SizedBox(width: 4),
               ],
               Expanded(
@@ -329,9 +314,7 @@ class _MemberAvatarRow extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white.withValues(alpha: 0.1),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.2),
-                ),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
               ),
               child: Center(
                 child: Text(

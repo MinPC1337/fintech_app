@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../../core/theme/app_colors.dart';
 
 class GroupWalletHeader extends StatelessWidget {
-  const GroupWalletHeader({
-    super.key,
-    required this.onCreateWallet,
-  });
+  const GroupWalletHeader({super.key, required this.onCreateWallet});
 
   final VoidCallback onCreateWallet;
 
@@ -49,8 +46,10 @@ class GroupWalletHeader extends StatelessWidget {
             GestureDetector(
               onTap: onCreateWallet,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: kCyan.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(24),

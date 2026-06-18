@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:fintech_app/core/theme/app_colors.dart';
-import 'package:fintech_app/features/auth/data/models/user_model.dart';
 import 'package:fintech_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:fintech_app/features/auth/presentation/cubit/auth_state.dart';
 import 'package:fintech_app/features/group_wallet/presentation/cubit/group_wallet_cubit.dart';
 import 'package:fintech_app/features/group_wallet/presentation/cubit/group_wallet_state.dart';
-import 'package:fintech_app/features/main/domain/entities/invitation_entity.dart';
 import 'package:fintech_app/features/main/domain/entities/wallet_entity.dart';
 import 'package:fintech_app/core/utils/dialog_utils.dart';
 import 'group_wallet_transactions_page.dart';
 import 'group_wallet_debts_page.dart';
 import '../widgets/group_wallet_bar_chart.dart';
+import '../widgets/group_wallet_sheets.dart';
+import '../widgets/wallet_card.dart';
+import '../widgets/quick_action_icon.dart';
+import '../widgets/member_avatar_tile.dart';
+import '../widgets/invitation_tile.dart';
+import 'group_wallet_members_page.dart';
 
 class GroupWalletDetailPage extends StatefulWidget {
   const GroupWalletDetailPage({super.key, required this.walletId});
@@ -201,7 +204,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _WalletCard(
+                      WalletCard(
                         wallet: wallet,
                         isOwner: isOwner,
                         balance: wallet.balance,
@@ -249,7 +252,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                             : MainAxisAlignment.spaceBetween,
                         children: [
                           if (wallet.status != 'closed') ...[
-                            _QuickActionIcon(
+                            QuickActionIcon(
                               emoji: '📥',
                               label: 'Nạp quỹ',
                               color: kEmerald,
@@ -257,14 +260,14 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                                   _showContributeSheet(context, wallet!.id),
                             ),
                             if (isOwner)
-                              _QuickActionIcon(
+                              QuickActionIcon(
                                 emoji: '💸',
                                 label: 'Chuyển tiền',
                                 color: kRose,
                                 onTap: () =>
                                     _showWithdrawSheet(context, wallet!.id),
                               ),
-                            _QuickActionIcon(
+                            QuickActionIcon(
                               emoji: '🧮',
                               label: 'Chia tiền',
                               color: kPurple,
@@ -272,7 +275,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                                   _showSplitExpenseSheet(context, wallet!),
                             ),
                           ],
-                          _QuickActionIcon(
+                          QuickActionIcon(
                             emoji: '🕒',
                             label: 'Lịch sử',
                             color: kCyan,
@@ -290,7 +293,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                               );
                             },
                           ),
-                          _QuickActionIcon(
+                          QuickActionIcon(
                             emoji: '🧾',
                             label: 'Nợ',
                             color: const Color(0xFFF59E0B),
@@ -326,7 +329,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                             onPressed: () => Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => _GroupWalletMembersPage(
+                                builder: (_) => GroupWalletMembersPage(
                                   members: members,
                                   ownerId: wallet!.ownerId,
                                 ),
@@ -401,13 +404,13 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                             final memberIndex = wallet.status != 'closed'
                                 ? index - 1
                                 : index;
-                            return _MemberAvatarTile(
+                            return MemberAvatarTile(
                               memberId: members[memberIndex],
                               isOwner: members[memberIndex] == wallet.ownerId,
                               onTap: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => _GroupWalletMemberDetailPage(
+                                  builder: (_) => GroupWalletMemberDetailPage(
                                     memberId: members[memberIndex],
                                     ownerId: wallet!.ownerId,
                                   ),
@@ -434,7 +437,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                         ),
                         const SizedBox(height: 12),
                         ...walletInvitations.map(
-                          (invite) => _InvitationTile(
+                          (invite) => InvitationTile(
                             invitation: invite,
                             walletName: wallet!.name,
                             onAccept: () => context
@@ -658,7 +661,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
       isScrollControlled: true,
       builder: (_) => BlocProvider.value(
         value: cubit,
-        child: _InviteMemberSheet(walletId: walletId),
+        child: InviteMemberSheet(walletId: walletId),
       ),
     );
   }
@@ -671,7 +674,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
       isScrollControlled: true,
       builder: (_) => BlocProvider.value(
         value: cubit,
-        child: _ContributeSheet(walletId: walletId),
+        child: ContributeSheet(walletId: walletId),
       ),
     );
   }
@@ -684,7 +687,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
       isScrollControlled: true,
       builder: (_) => BlocProvider.value(
         value: cubit,
-        child: _WithdrawSheet(walletId: walletId),
+        child: WithdrawSheet(walletId: walletId),
       ),
     );
   }
@@ -700,7 +703,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
       isScrollControlled: true,
       builder: (_) => BlocProvider.value(
         value: cubit,
-        child: _SplitExpenseSheet(wallet: wallet),
+        child: SplitExpenseSheet(wallet: wallet),
       ),
     );
   }
@@ -1083,53 +1086,6 @@ class _SplitExpenseSheetState extends State<_SplitExpenseSheet> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _QuickActionIcon extends StatelessWidget {
-  const _QuickActionIcon({
-    required this.emoji,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  final String emoji;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-              border: Border.all(color: color.withValues(alpha: 0.3)),
-            ),
-            child: Center(
-              child: Text(emoji, style: const TextStyle(fontSize: 24)),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              color: kTextPrimary,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1601,489 +1557,6 @@ class _NeoField extends StatelessWidget {
   }
 }
 
-class _GroupWalletMembersPage extends StatelessWidget {
-  const _GroupWalletMembersPage({required this.members, required this.ownerId});
-
-  final List<String> members;
-  final String ownerId;
-
-  Future<List<UserModel>> _loadMemberUsers() async {
-    final firestore = FirebaseFirestore.instance;
-    final users = await Future.wait(
-      members.map((memberId) async {
-        try {
-          final doc = await firestore.collection('users').doc(memberId).get();
-          if (!doc.exists || doc.data() == null) return null;
-          return UserModel.fromJson(doc.data()!);
-        } catch (_) {
-          return null;
-        }
-      }),
-    );
-    return users.whereType<UserModel>().toList();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: kBgColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
-          'Tất cả thành viên',
-          style: TextStyle(color: Colors.white),
-        ),
-      ),
-      body: FutureBuilder<List<UserModel>>(
-        future: _loadMemberUsers(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator(color: kCyan));
-          }
-          final users = snapshot.data ?? [];
-          if (users.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  'Không có thông tin thành viên nào.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: kTextSecondary.withValues(alpha: 0.85),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            );
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
-            itemCount: users.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final user = users[index];
-              return _MemberListTile(
-                user: user,
-                isOwner: user.uid == ownerId,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => _GroupWalletMemberDetailPage(
-                      memberId: user.uid,
-                      ownerId: ownerId,
-                    ),
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _GroupWalletMemberDetailPage extends StatelessWidget {
-  const _GroupWalletMemberDetailPage({
-    required this.memberId,
-    required this.ownerId,
-  });
-
-  final String memberId;
-  final String ownerId;
-
-  Future<UserModel?> _fetchMember() async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(memberId)
-          .get();
-      if (!doc.exists || doc.data() == null) return null;
-      return UserModel.fromJson(doc.data()!);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: kBgColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
-          'Thông tin thành viên',
-          style: TextStyle(color: Colors.white),
-        ),
-      ),
-      body: FutureBuilder<UserModel?>(
-        future: _fetchMember(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator(color: kCyan));
-          }
-          final member = snapshot.data;
-          if (member == null) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  'Không thể tải thông tin thành viên.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: kTextSecondary.withValues(alpha: 0.85),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            );
-          }
-          return SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: _MemberAvatarCircle(
-                    avatarUrl: member.avatarUrl,
-                    initials: _memberInitials(member.fullName, member.uid),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Center(
-                  child: Text(
-                    member.fullName.isNotEmpty ? member.fullName : 'Thành viên',
-                    style: const TextStyle(
-                      color: kTextPrimary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Center(
-                  child: Text(
-                    member.uid == ownerId ? 'Chủ nhóm' : 'Thành viên',
-                    style: TextStyle(
-                      color: kTextSecondary.withValues(alpha: 0.8),
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                _DetailRow(
-                  label: 'Email',
-                  value: member.email.isNotEmpty ? member.email : 'Chưa có',
-                ),
-                const SizedBox(height: 12),
-                _DetailRow(
-                  label: 'Tên hiển thị',
-                  value: member.fullName.isNotEmpty
-                      ? member.fullName
-                      : 'Chưa có',
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  String _memberInitials(String fullName, String uid) {
-    final parts = fullName.trim().split(RegExp(r'\s+'));
-    if (parts.length >= 2) {
-      return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
-    }
-    if (fullName.isNotEmpty) return fullName[0].toUpperCase();
-    return uid.substring(0, uid.length.clamp(1, 2)).toUpperCase();
-  }
-}
-
-class _MemberListTile extends StatelessWidget {
-  const _MemberListTile({
-    required this.user,
-    required this.isOwner,
-    required this.onTap,
-  });
-
-  final UserModel user;
-  final bool isOwner;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: kThemeSurfaceSecondary,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              _MemberAvatarCircle(
-                avatarUrl: user.avatarUrl,
-                initials: _memberInitials(user.fullName, user.uid),
-                borderColor: isOwner ? kPurple : null,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user.fullName.isNotEmpty ? user.fullName : 'Thành viên',
-                      style: const TextStyle(
-                        color: kTextPrimary,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      user.email.isNotEmpty ? user.email : user.uid,
-                      style: TextStyle(
-                        color: kTextSecondary.withValues(alpha: 0.8),
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (isOwner)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: kPurple.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Text(
-                    'Chủ',
-                    style: TextStyle(
-                      color: kPurple,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _memberInitials(String fullName, String uid) {
-    final parts = fullName.trim().split(RegExp(r'\s+'));
-    if (parts.length >= 2) {
-      return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
-    }
-    if (fullName.isNotEmpty) return fullName[0].toUpperCase();
-    return uid.substring(0, uid.length.clamp(1, 2)).toUpperCase();
-  }
-}
-
-class _MemberAvatarTile extends StatelessWidget {
-  const _MemberAvatarTile({
-    required this.memberId,
-    required this.onTap,
-    this.isOwner = false,
-  });
-
-  final String memberId;
-  final VoidCallback onTap;
-  final bool isOwner;
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(memberId)
-          .snapshots(),
-      builder: (context, snapshot) {
-        final user =
-            snapshot.hasData &&
-                snapshot.data!.exists &&
-                snapshot.data!.data() != null
-            ? UserModel.fromJson(snapshot.data!.data()!)
-            : null;
-        final initials = _memberInitials(user?.fullName ?? '', memberId);
-        final displayName = user?.fullName.isNotEmpty == true
-            ? user!.fullName
-            : memberId;
-        return GestureDetector(
-          onTap: onTap,
-          child: SizedBox(
-            width: 72,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 58,
-                  height: 58,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isOwner ? kPurple : Colors.transparent,
-                      width: 2,
-                    ),
-                  ),
-                  child: ClipOval(
-                    child: user != null && user.avatarUrl.isNotEmpty
-                        ? Image.network(
-                            user.avatarUrl,
-                            width: 58,
-                            height: 58,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                _fallbackAvatar(initials),
-                          )
-                        : _fallbackAvatar(initials),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  displayName,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: kTextPrimary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _fallbackAvatar(String initials) {
-    return Container(
-      color: kCyan.withValues(alpha: 0.12),
-      alignment: Alignment.center,
-      child: Text(
-        initials,
-        style: const TextStyle(color: kCyan, fontWeight: FontWeight.w900),
-      ),
-    );
-  }
-
-  String _memberInitials(String fullName, String uid) {
-    final parts = fullName.trim().split(RegExp(r'\s+'));
-    if (parts.length >= 2) {
-      return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
-    }
-    if (fullName.isNotEmpty) return fullName[0].toUpperCase();
-    return uid.substring(0, uid.length.clamp(1, 2)).toUpperCase();
-  }
-}
-
-class _MemberAvatarCircle extends StatelessWidget {
-  const _MemberAvatarCircle({
-    required this.avatarUrl,
-    required this.initials,
-    this.borderColor,
-  });
-
-  final String avatarUrl;
-  final String initials;
-  final Color? borderColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 110,
-      height: 110,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: borderColor ?? Colors.transparent,
-          width: borderColor != null ? 2 : 0,
-        ),
-      ),
-      child: ClipOval(
-        child: avatarUrl.isNotEmpty
-            ? Image.network(
-                avatarUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    _fallbackCircle(initials),
-              )
-            : _fallbackCircle(initials),
-      ),
-    );
-  }
-
-  Widget _fallbackCircle(String initials) {
-    return Container(
-      color: kCyan.withValues(alpha: 0.14),
-      alignment: Alignment.center,
-      child: Text(
-        initials,
-        style: const TextStyle(
-          color: kCyan,
-          fontSize: 30,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(
-        color: kThemeSurfaceSecondary,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: kThemeBorderDefault),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '$label:',
-            style: TextStyle(
-              color: kTextSecondary.withValues(alpha: 0.85),
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                color: kTextPrimary.withValues(alpha: 0.95),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _SheetButton extends StatelessWidget {
   const _SheetButton({
     required this.label,
@@ -2116,81 +1589,6 @@ class _SheetButton extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _InvitationTile extends StatelessWidget {
-  const _InvitationTile({
-    required this.invitation,
-    required this.walletName,
-    required this.onAccept,
-    required this.onReject,
-  });
-
-  final InvitationEntity invitation;
-  final String walletName;
-  final VoidCallback onAccept;
-  final VoidCallback onReject;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: kThemeSurfaceSecondary,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: kThemeBorderDefault),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Lời mời tham gia nhóm "$walletName"',
-            style: const TextStyle(
-              color: kTextPrimary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Từ: ${invitation.senderEmail}',
-            style: TextStyle(
-              color: kTextSecondary.withValues(alpha: 0.85),
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Email nhận: ${invitation.receiverEmail}',
-            style: TextStyle(
-              color: kTextSecondary.withValues(alpha: 0.85),
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _SheetButton(
-                  label: 'Chấp nhận',
-                  color: kEmerald,
-                  onTap: onAccept,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _SheetButton(
-                  label: 'Từ chối',
-                  color: kRose,
-                  onTap: onReject,
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

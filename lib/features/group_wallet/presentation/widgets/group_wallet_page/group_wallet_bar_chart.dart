@@ -2,8 +2,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/theme/app_colors.dart';
-import '../../../../features/main/domain/entities/transaction_entity.dart';
+import '../../../../../core/theme/app_colors.dart';
+import '../../../../main/domain/entities/transaction_entity.dart';
 
 class GroupWalletBarChart extends StatelessWidget {
   final List<TransactionEntity> transactions;
@@ -24,9 +24,11 @@ class GroupWalletBarChart extends StatelessWidget {
       final difference = now.difference(tx.timestamp).inDays;
       if (difference >= 0 && difference < 7) {
         if (tx.type == 'Income' || tx.categoryId == 'group_contribute') {
-          groupedData[difference]!['income'] = (groupedData[difference]!['income'] ?? 0) + tx.amount;
+          groupedData[difference]!['income'] =
+              (groupedData[difference]!['income'] ?? 0) + tx.amount;
         } else if (tx.type == 'Expense' || tx.categoryId == 'group_withdraw') {
-          groupedData[difference]!['expense'] = (groupedData[difference]!['expense'] ?? 0) + tx.amount;
+          groupedData[difference]!['expense'] =
+              (groupedData[difference]!['expense'] ?? 0) + tx.amount;
         }
       }
     }
@@ -95,19 +97,23 @@ class GroupWalletBarChart extends StatelessWidget {
                       showTitles: true,
                       reservedSize: 42,
                       getTitlesWidget: (value, meta) {
-                        if (value == 0 || value == maxY) return const SizedBox.shrink();
+                        if (value == 0 || value == maxY)
+                          return const SizedBox.shrink();
 
                         String text = '';
                         if (value >= 1000000000) {
-                          text = '${(value / 1000000000).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')}B';
+                          text =
+                              '${(value / 1000000000).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')}B';
                         } else if (value >= 1000000) {
-                          text = '${(value / 1000000).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')}M';
+                          text =
+                              '${(value / 1000000).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')}M';
                         } else if (value >= 1000) {
-                          text = '${(value / 1000).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')}k';
+                          text =
+                              '${(value / 1000).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')}k';
                         } else {
                           text = value.toInt().toString();
                         }
-                        
+
                         return SideTitleWidget(
                           meta: meta,
                           child: Text(
@@ -142,7 +148,7 @@ class GroupWalletBarChart extends StatelessWidget {
                   final indexInMap = 6 - i;
                   final income = groupedData[indexInMap]?['income'] ?? 0;
                   final expense = groupedData[indexInMap]?['expense'] ?? 0;
-                  
+
                   return BarChartGroupData(
                     x: i,
                     barRods: [
@@ -184,10 +190,7 @@ class GroupWalletBarChart extends StatelessWidget {
         Container(
           width: 10,
           height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
         Text(

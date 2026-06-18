@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../../core/theme/app_colors.dart';
 
 class GroupWalletGlassCard extends StatelessWidget {
   const GroupWalletGlassCard({
@@ -24,10 +24,7 @@ class GroupWalletGlassCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF1E284A),
-            Color(0xFF11182B),
-          ],
+          colors: [Color(0xFF1E284A), Color(0xFF11182B)],
         ),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.1),

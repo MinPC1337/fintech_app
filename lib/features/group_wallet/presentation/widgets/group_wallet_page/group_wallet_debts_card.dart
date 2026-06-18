@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/theme/app_colors.dart';
-import '../../../main/domain/entities/debt_entity.dart';
+import '../../../../../core/theme/app_colors.dart';
+import '../../../../main/domain/entities/debt_entity.dart';
 import 'group_wallet_glass_card.dart';
 
 /// Section "Bạn cần trả" — compact card showing real debts.
