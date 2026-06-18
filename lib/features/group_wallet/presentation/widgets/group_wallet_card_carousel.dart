@@ -217,15 +217,29 @@ class _WalletMiniCard extends StatelessWidget {
           const Spacer(),
 
           // Wallet name
-          Text(
-            wallet.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: kTextPrimary,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
+          Row(
+            children: [
+              if (wallet.status == 'closed') ...[
+                const Icon(
+                  Icons.lock_rounded,
+                  size: 14,
+                  color: kTextSecondary,
+                ),
+                const SizedBox(width: 4),
+              ],
+              Expanded(
+                child: Text(
+                  wallet.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: kTextPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 6),
 

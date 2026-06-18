@@ -39,6 +39,11 @@ class GroupWalletDebtsPage extends StatelessWidget {
             return const Center(child: CircularProgressIndicator(color: kCyan));
           }
 
+          final wallet = state.selectedWallet?.id == walletId
+              ? state.selectedWallet
+              : state.wallets.firstWhere((w) => w.id == walletId);
+          final isClosed = wallet?.status == 'closed';
+
           final walletDebts = state.debts
               .where((debt) => debt.walletId == walletId)
               .toList();
@@ -71,10 +76,10 @@ class GroupWalletDebtsPage extends StatelessWidget {
                 formatMoney: _formatMoney,
                 memberNames: state.memberNames,
                 memberAvatars: state.memberAvatars,
-                onSettle: debt.borrowerId == currentUserId && !debt.isSettled
+                onSettle: !isClosed && debt.borrowerId == currentUserId && !debt.isSettled
                     ? () => context.read<GroupWalletCubit>().settleDebt(debt.id)
                     : null,
-                onRemind: debt.lenderId == currentUserId && !debt.isSettled
+                onRemind: !isClosed && debt.lenderId == currentUserId && !debt.isSettled
                     ? () => context.read<GroupWalletCubit>().remindDebt(debt.id)
                     : null,
               );

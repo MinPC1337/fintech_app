@@ -14,6 +14,8 @@ class WalletEntity extends Equatable {
   final String? imageUrl;
   final String? emoji;
 
+  final DateTime? scheduledDeletionTime;
+
   const WalletEntity({
     required this.id,
     required this.name,
@@ -27,6 +29,7 @@ class WalletEntity extends Equatable {
     this.closeApprovals = const [],
     this.imageUrl,
     this.emoji,
+    this.scheduledDeletionTime,
   });
 
   @override
@@ -43,5 +46,6 @@ class WalletEntity extends Equatable {
         closeApprovals,
         imageUrl,
         emoji,
+        scheduledDeletionTime,
       ];
 }

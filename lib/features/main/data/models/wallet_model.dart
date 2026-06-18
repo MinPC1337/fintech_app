@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fintech_app/features/main/domain/entities/wallet_entity.dart';
 
 class WalletModel extends WalletEntity {
@@ -14,6 +15,7 @@ class WalletModel extends WalletEntity {
     super.closeApprovals,
     super.imageUrl,
     super.emoji,
+    super.scheduledDeletionTime,
   });
 
   factory WalletModel.fromJson(Map<String, dynamic> json) {
@@ -34,6 +36,13 @@ class WalletModel extends WalletEntity {
       closeApprovals: List<String>.from(json['closeApprovals'] ?? []),
       imageUrl: json['imageUrl'] as String?,
       emoji: json['emoji'] as String?,
+      scheduledDeletionTime: json['scheduledDeletionTime'] != null
+          ? (json['scheduledDeletionTime'] is DateTime
+              ? json['scheduledDeletionTime'] as DateTime
+              : (json['scheduledDeletionTime'] is Timestamp
+                  ? (json['scheduledDeletionTime'] as Timestamp).toDate()
+                  : DateTime.tryParse(json['scheduledDeletionTime'].toString())))
+          : null,
     );
   }
 
@@ -51,6 +60,8 @@ class WalletModel extends WalletEntity {
       'closeApprovals': closeApprovals,
       if (imageUrl != null) 'imageUrl': imageUrl,
       if (emoji != null) 'emoji': emoji,
+      if (scheduledDeletionTime != null)
+        'scheduledDeletionTime': scheduledDeletionTime!.toIso8601String(),
     };
   }
 }

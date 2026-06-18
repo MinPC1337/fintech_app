@@ -208,6 +208,7 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
       await firestore.collection('wallets').doc(walletId).update({
         'status': 'closed',
         'closeApprovals': [requesterId],
+        'scheduledDeletionTime': Timestamp.fromDate(DateTime.now().add(const Duration(days: 3))),
       });
     } else {
       // Có nhiều thành viên, gửi yêu cầu đóng
@@ -271,6 +272,7 @@ class GroupWalletRemoteDataSourceImpl implements GroupWalletRemoteDataSource {
         transaction.update(docRef, {
           'status': 'closed',
           'closeApprovals': closeApprovals,
+          'scheduledDeletionTime': Timestamp.fromDate(DateTime.now().add(const Duration(days: 3))),
         });
 
         // Tạo thông báo ví đã đóng cho tất cả thành viên
