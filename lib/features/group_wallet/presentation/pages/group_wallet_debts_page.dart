@@ -171,7 +171,37 @@ class GroupWalletDebtsPage extends StatelessWidget {
               );
             };
           } else if (debt.lenderId == currentUserId && !debt.isSettled) {
-            onRemind = () => context.read<GroupWalletCubit>().remindDebt(debt.id);
+            onRemind = () async {
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (_) => const Center(child: CircularProgressIndicator(color: kCyan)),
+              );
+              final success = await context.read<GroupWalletCubit>().remindDebt(debt.id);
+              if (context.mounted) {
+                Navigator.of(context).pop(); // dismiss loading
+                if (success) {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: kThemeSurfaceSecondary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      title: const Text('Thành công', style: TextStyle(color: kTextPrimary)),
+                      content: const Text(
+                        'Đã gửi thông báo nhắc nợ thành công!',
+                        style: TextStyle(color: kTextSecondary),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          child: const Text('Đóng', style: TextStyle(color: kEmerald)),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+              }
+            };
           }
         }
 

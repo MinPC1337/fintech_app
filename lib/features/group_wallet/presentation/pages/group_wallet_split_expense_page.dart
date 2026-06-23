@@ -8,7 +8,6 @@ import 'package:fintech_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:fintech_app/features/auth/presentation/cubit/auth_state.dart';
 import 'package:fintech_app/features/group_wallet/presentation/cubit/group_wallet_cubit.dart';
 import 'package:fintech_app/features/main/domain/entities/wallet_entity.dart';
-import 'package:fintech_app/features/main/presentation/pages/transaction_success_page.dart';
 
 class GroupWalletSplitExpensePage extends StatefulWidget {
   final WalletEntity wallet;
@@ -95,24 +94,7 @@ class _GroupWalletSplitExpensePageState
     setState(() => _isSubmitting = false);
 
     if (success) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => TransactionSuccessPage(
-            amount: amount,
-            receiver: 'Các thành viên tham gia',
-            sender: widget.wallet.name,
-            categoryName: 'Chia tiền nhóm',
-            timestamp: DateTime.now(),
-            note: _noteController.text.trim().isNotEmpty ? _noteController.text.trim() : 'Chia tiền nhóm',
-            isInternal: true,
-            isViewOnly: false,
-            customButtonText: 'Xác nhận',
-            onCustomButtonPressed: (ctx) {
-              Navigator.of(ctx).pop();
-            },
-          ),
-        ),
-      );
+      Navigator.of(context).pop();
     }
   }
 
@@ -265,10 +247,8 @@ class _GroupWalletSplitExpensePageState
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: users.length,
-                      separatorBuilder: (_, _) => Divider(
-                        height: 1,
-                        color: kThemeBorderDefault,
-                      ),
+                      separatorBuilder: (_, _) =>
+                          Divider(height: 1, color: kThemeBorderDefault),
                       itemBuilder: (context, index) {
                         final user = users[index];
                         final isCurrent = user.uid == _currentUserId;
@@ -300,8 +280,7 @@ class _GroupWalletSplitExpensePageState
                             children: [
                               CircleAvatar(
                                 radius: 20,
-                                backgroundColor:
-                                    kPurple.withValues(alpha: 0.2),
+                                backgroundColor: kPurple.withValues(alpha: 0.2),
                                 backgroundImage: user.avatarUrl.isNotEmpty
                                     ? NetworkImage(user.avatarUrl)
                                     : null,
@@ -356,7 +335,7 @@ class _GroupWalletSplitExpensePageState
                                               ),
                                             ),
                                           ),
-                                        ]
+                                        ],
                                       ],
                                     ),
                                     const SizedBox(height: 2),
