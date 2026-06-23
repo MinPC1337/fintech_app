@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/category_model.dart';
 import '../models/transaction_model.dart';
+import '../../domain/entities/category_entity.dart';
 
 abstract class BudgetRemoteDataSource {
   Stream<List<CategoryModel>> watchBudgetCategories(
@@ -55,6 +56,39 @@ class BudgetRemoteDataSourceImpl implements BudgetRemoteDataSource {
             }),
           )
           .toList();
+
+      if (!list.any((c) => c.id == 'group_contribute')) {
+        list.add(
+          CategoryModel(
+            id: 'group_contribute',
+            walletId: walletId,
+            name: 'Nạp quỹ nhóm',
+            budgetLimit: 0,
+            currentSpent: 0,
+            type: CategoryType.outType,
+            emoji: '🤝',
+            month: month,
+            year: year,
+          ),
+        );
+      }
+
+      if (!list.any((c) => c.id == 'debt_settle')) {
+        list.add(
+          CategoryModel(
+            id: 'debt_settle',
+            walletId: walletId,
+            name: 'Thanh toán nợ',
+            budgetLimit: 0,
+            currentSpent: 0,
+            type: CategoryType.outType,
+            emoji: '💳',
+            month: month,
+            year: year,
+          ),
+        );
+      }
+
       list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       return list;
     });
