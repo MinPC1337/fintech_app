@@ -16,7 +16,8 @@ import '../../../ai_chat/presentation/pages/chat_page.dart';
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
 
-  static MainPageState? of(BuildContext context) => context.findAncestorStateOfType<MainPageState>();
+  static MainPageState? of(BuildContext context) =>
+      context.findAncestorStateOfType<MainPageState>();
 
   @override
   State<MainPage> createState() => MainPageState();
@@ -132,13 +133,13 @@ class MainPageState extends State<MainPage> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildNavItem(0, Icons.home_outlined, 'Home'),
-                        _buildNavItem(1, Icons.pie_chart_outline, 'Stats'),
+                        _buildNavItem(0, Icons.home_outlined, 'Trang chủ'),
+                        _buildNavItem(1, Icons.pie_chart_outline, 'Ngân sách'),
                         const SizedBox(
                           width: 64,
                         ), // Không gian trống cho nút Scan ở giữa
-                        _buildNavItem(2, Icons.group_outlined, 'Group'),
-                        _buildNavItem(3, Icons.settings_outlined, 'Settings'),
+                        _buildNavItem(2, Icons.group_outlined, 'Nhóm'),
+                        _buildNavItem(3, Icons.settings_outlined, 'Cài đặt'),
                       ],
                     ),
                   ),
@@ -169,17 +170,39 @@ class MainPageState extends State<MainPage> {
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(12),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          // Squircle mô phỏng Force Field
           color: isSelected ? kCyan.withValues(alpha: 0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Icon(
-          icon,
-          size: 28,
-          // Active: Sáng rực Cyan | Inactive: Trắng đục mờ 40%
-          color: isSelected ? kCyan : Colors.white.withValues(alpha: 0.4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 26,
+              color: isSelected ? kCyan : Colors.white.withValues(alpha: 0.4),
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              child: isSelected
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 3),
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          color: kCyan,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
         ),
       ),
     );

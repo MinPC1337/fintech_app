@@ -229,7 +229,7 @@ class _TransferPageState extends State<TransferPage> {
       appBar: AppBar(
         backgroundColor: kBgColor,
         title: const Text(
-          'Chuyển khoản (Rút tiền)',
+          'Rút tiền ra MoMo',
           style: TextStyle(color: kTextPrimary),
         ),
         iconTheme: const IconThemeData(color: kTextPrimary),
@@ -401,7 +401,53 @@ class _TransferPageState extends State<TransferPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
+              // —— Quick Amount Chips ——
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Row(
+                  children: [50000, 100000, 200000, 500000, 1000000].map((amount) {
+                    final label = amount >= 1000000
+                        ? '${amount ~/ 1000000}M'
+                        : '${amount ~/ 1000}K';
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: GestureDetector(
+                        onTap: () => setState(() {
+                          _amountController.text = amount.toString();
+                        }),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: _amountController.text == amount.toString()
+                                ? kElectricBlue.withValues(alpha: 0.2)
+                                : kSurface,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: _amountController.text == amount.toString()
+                                  ? kElectricBlue
+                                  : kBorder,
+                              width: 1.2,
+                            ),
+                          ),
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              color: _amountController.text == amount.toString()
+                                  ? kElectricBlue
+                                  : kTextSecondary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
 
               const Text(
                 'Ghi chú (tuỳ chọn)',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/chat_message.dart';
 import '../utils/navigation_command_handler.dart';
@@ -55,14 +56,91 @@ class MessageBubble extends StatelessWidget {
                         ? null
                         : Border.all(color: kThemeBorderDefault),
                   ),
-                  child: Text(
-                    message.content,
-                    style: TextStyle(
-                      color: isUser ? Colors.white : kTextPrimary,
-                      fontSize: 15,
-                      height: 1.4,
-                    ),
-                  ),
+                  child: isUser
+                      ? Text(
+                          message.content,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            height: 1.4,
+                          ),
+                        )
+                      : MarkdownBody(
+                          data: message.content,
+                          styleSheet: MarkdownStyleSheet(
+                            p: const TextStyle(
+                              color: kTextPrimary,
+                              fontSize: 15,
+                              height: 1.5,
+                            ),
+                            strong: const TextStyle(
+                              color: kTextPrimary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            em: TextStyle(
+                              color: kTextPrimary.withValues(alpha: 0.9),
+                              fontSize: 15,
+                              fontStyle: FontStyle.italic,
+                            ),
+                            h1: const TextStyle(
+                              color: kCyan,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            h2: const TextStyle(
+                              color: kCyan,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            h3: const TextStyle(
+                              color: kTextPrimary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            listBullet: const TextStyle(
+                              color: kCyan,
+                              fontSize: 15,
+                            ),
+                            code: const TextStyle(
+                              color: kCyan,
+                              fontSize: 13,
+                              fontFamily: 'monospace',
+                            ),
+                            codeblockDecoration: BoxDecoration(
+                              color: kBgColor,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: kCyan.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            blockquoteDecoration: BoxDecoration(
+                              color: kPurple.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border(
+                                left: BorderSide(
+                                  color: kPurple,
+                                  width: 3,
+                                ),
+                              ),
+                            ),
+                            blockquote: TextStyle(
+                              color: kTextPrimary.withValues(alpha: 0.85),
+                              fontSize: 14,
+                              fontStyle: FontStyle.italic,
+                            ),
+                            horizontalRuleDecoration: BoxDecoration(
+                              border: Border(
+                                top: BorderSide(
+                                  color: kThemeBorderDefault,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                          ),
+                          softLineBreak: true,
+                          shrinkWrap: true,
+                        ),
                 ),
               ),
               if (isUser) ...[

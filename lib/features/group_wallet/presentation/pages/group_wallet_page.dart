@@ -133,6 +133,154 @@ class _GroupWalletView extends StatelessWidget {
             ? (context.read<AuthCubit>().state as AuthSuccess).user.uid
             : '';
 
+        // ── Empty state khi chưa có ví nhóm nào ──
+        if (loaded.wallets.isEmpty) {
+          return Scaffold(
+            backgroundColor: kBgColor,
+            body: SafeArea(
+              bottom: false,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Header vẫn hiển thị (có nút tạo ví)
+                    GroupWalletHeader(
+                      onCreateWallet: () => _openCreatePage(context),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Invitation banner nếu có lời mời
+                    if (loaded.pendingInvitations.isNotEmpty) ...[
+                      _InvitationBanner(
+                        count: loaded.pendingInvitations.length,
+                        onTap: () => _openPendingInvitationsPage(context),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+
+                    // Empty state content
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.62,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Glow icon
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: kPurple.withValues(alpha: 0.08),
+                              border: Border.all(
+                                color: kPurple.withValues(alpha: 0.25),
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: kPurple.withValues(alpha: 0.15),
+                                  blurRadius: 40,
+                                  spreadRadius: 8,
+                                ),
+                              ],
+                            ),
+                            child: const Center(
+                              child: Text('👥', style: TextStyle(fontSize: 48)),
+                            ),
+                          ),
+                          const SizedBox(height: 28),
+
+                          // Title
+                          const Text(
+                            'Chưa có ví nhóm nào',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: kTextPrimary,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Subtitle
+                          Text(
+                            'Tạo ví nhóm để quản lý chi phí\nchung với bạn bè, gia đình hay đồng nghiệp.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: kTextSecondary.withValues(alpha: 0.85),
+                              fontSize: 14,
+                              height: 1.6,
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+
+                          // Feature pills
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _FeaturePill(icon: '⚖️', label: 'Chia tiền'),
+                              const SizedBox(width: 8),
+                              _FeaturePill(icon: '📊', label: 'Theo dõi'),
+                              const SizedBox(width: 8),
+                              _FeaturePill(icon: '🔔', label: 'Nhắc nhở'),
+                            ],
+                          ),
+                          const SizedBox(height: 32),
+
+                          // CTA Button
+                          GestureDetector(
+                            onTap: () => _openCreatePage(context),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32,
+                                vertical: 16,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [kPurple, kCyan],
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: kPurple.withValues(alpha: 0.35),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.add_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Tạo ví nhóm đầu tiên',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
         // Tích luỹ aggregates
         double totalBalance = 0;
         final uniqueMembers = <String>{};
@@ -332,6 +480,41 @@ class _InvitationBanner extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Feature pill nhỏ dùng trong empty state
+class _FeaturePill extends StatelessWidget {
+  final String icon;
+  final String label;
+
+  const _FeaturePill({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: kPurple.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: kPurple.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 14)),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: kTextSecondary.withValues(alpha: 0.9),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -174,6 +174,95 @@ class _BudgetScaffold extends StatelessWidget {
         }
 
         final loaded = state;
+
+        // Empty state khi chưa có danh mục ngân sách nào
+        if (loaded.items.isEmpty) {
+          return Scaffold(
+            backgroundColor: kBgColor,
+            body: SafeArea(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(40),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: kCyan.withValues(alpha: 0.08),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: kCyan.withValues(alpha: 0.2)),
+                        ),
+                        child: const Text('📊', style: TextStyle(fontSize: 48)),
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Chưa có ngân sách',
+                        style: TextStyle(
+                          color: kTextPrimary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Tạo danh mục ngân sách để theo dõi\nchi tiêu và đạt mục tiêu tài chính.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: kTextSecondary.withValues(alpha: 0.85),
+                          fontSize: 14,
+                          height: 1.6,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      GestureDetector(
+                        onTap: () => _navigateToBudgetForm(
+                          context,
+                          walletId: loaded.walletId,
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 28,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [kCyan, kPurple],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: kCyan.withValues(alpha: 0.3),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.add_rounded, color: Colors.white, size: 20),
+                              SizedBox(width: 8),
+                              Text(
+                                'Tạo ngân sách đầu tiên',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
         final totalLimit = loaded.totalLimit;
         final totalSpent = loaded.totalSpent;
         final remaining = (totalLimit - totalSpent)

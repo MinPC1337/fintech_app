@@ -191,9 +191,10 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 iconTheme: const IconThemeData(color: Colors.white),
-                title: const Text(
-                  'Chi tiết ví nhóm',
-                  style: TextStyle(color: kTextPrimary),
+                title: Text(
+                  wallet.name,
+                  style: const TextStyle(color: kTextPrimary),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               body: SafeArea(
@@ -694,6 +695,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (dialogContext) => BlocProvider.value(
         value: cubit,
         child: AlertDialog(

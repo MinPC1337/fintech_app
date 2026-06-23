@@ -169,7 +169,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                           // Changed red to TextPrimary for negative for elegance, but the user might want a subtle red or just white. Let's use kTextPrimary or kThemeTextPrimary. Actually, a neutral white for negative is very modern. Or maybe kRose. I will stick to kTextPrimary for negative (modern minimalist). Wait, let's use a subtle color for negative, maybe kThemeTextPrimary.
                           final amountColor = isIncrease
                               ? kEmerald
-                              : kTextPrimary;
+                              : kRose;
                           final emoji = getCategoryEmoji(
                             tx.categoryId,
                             walletCategories,

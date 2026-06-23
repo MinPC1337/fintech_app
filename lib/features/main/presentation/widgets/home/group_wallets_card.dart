@@ -74,16 +74,42 @@ class _GroupWalletsCardState extends State<GroupWalletsCard> {
 
               final wallets = snapshot.data ?? [];
               if (wallets.isEmpty) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                return GestureDetector(
+                  onTap: () => MainPage.of(context)?.changeTab(2),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
                     child: Column(
                       children: [
-                        Icon(Icons.group_off_rounded, color: Colors.white.withValues(alpha: 0.2), size: 48),
-                        const SizedBox(height: 8),
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: kPurple.withValues(alpha: 0.08),
+                            border: Border.all(
+                              color: kPurple.withValues(alpha: 0.2),
+                            ),
+                          ),
+                          child: const Center(
+                            child: Text('👥', style: TextStyle(fontSize: 24)),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
                         Text(
-                          'Chưa tham gia ví nhóm nào',
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+                          'Chưa có ví nhóm nào',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Nhấn để tạo ví nhóm →',
+                          style: TextStyle(
+                            color: kPurple.withValues(alpha: 0.8),
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),

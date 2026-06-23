@@ -115,35 +115,75 @@ class QuickActionsRow extends StatelessWidget {
     required String label,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return _QuickActionItem(
+      emoji: emoji,
+      color: color,
+      label: label,
       onTap: onTap,
+    );
+  }
+}
+
+// StatefulWidget riêng để có AnimatedScale feedback khi tap
+class _QuickActionItem extends StatefulWidget {
+  final String emoji;
+  final Color color;
+  final String label;
+  final VoidCallback onTap;
+
+  const _QuickActionItem({
+    required this.emoji,
+    required this.color,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  State<_QuickActionItem> createState() => _QuickActionItemState();
+}
+
+class _QuickActionItemState extends State<_QuickActionItem> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 72, // Đủ rộng để chữ hiển thị tốt
+        width: 72,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 64, // To ra
-              height: 64,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20), // Bo tròn mềm mại hơn
-                border: Border.all(
-                  color: color.withValues(alpha: 0.3),
-                  width: 1.5,
+            AnimatedScale(
+              scale: _isPressed ? 0.88 : 1.0,
+              duration: const Duration(milliseconds: 100),
+              curve: Curves.easeOut,
+              child: Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: widget.color.withValues(alpha: _isPressed ? 0.25 : 0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: widget.color.withValues(alpha: _isPressed ? 0.5 : 0.3),
+                    width: 1.5,
+                  ),
                 ),
-              ),
-              child: Center(
-                child: Text(
-                  emoji,
-                  style: const TextStyle(fontSize: 30), // Emoji to ra
+                child: Center(
+                  child: Text(
+                    widget.emoji,
+                    style: const TextStyle(fontSize: 30),
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 10),
             Text(
-              label,
+              widget.label,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white,

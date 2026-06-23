@@ -36,6 +36,31 @@ class _SettingsPageState extends State<SettingsPage>
     super.dispose();
   }
 
+  void _showComingSoonSnackBar(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+        backgroundColor: kThemeSurfaceSecondary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
+        ),
+        content: const Row(
+          children: [
+            Icon(Icons.construction_rounded, color: Color(0xFFF59E0B), size: 18),
+            SizedBox(width: 10),
+            Text(
+              'Tính năng đang phát triển, sắp ra mắt!',
+              style: TextStyle(color: kTextPrimary, fontSize: 13),
+            ),
+          ],
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   void _showPasswordResetDialog(BuildContext context, AuthState authState) {
     if (authState is! AuthSuccess) return;
 
@@ -298,13 +323,15 @@ class _SettingsPageState extends State<SettingsPage>
                             icon: Icons.palette_outlined,
                             color: kEmerald,
                             text: 'Tùy chỉnh chủ đề',
-                            onTap: () {},
+                            isComingSoon: true,
+                            onTap: () => _showComingSoonSnackBar(context),
                           ),
                           _SettingsListItem(
                             icon: Icons.translate_outlined,
                             color: kRose,
                             text: 'Ngôn ngữ',
-                            onTap: () {},
+                            isComingSoon: true,
+                            onTap: () => _showComingSoonSnackBar(context),
                           ),
                         ],
                       ),
@@ -538,12 +565,14 @@ class _SettingsListItem extends StatelessWidget {
   final Color color;
   final String text;
   final VoidCallback onTap;
+  final bool isComingSoon;
 
   const _SettingsListItem({
     required this.icon,
     required this.color,
     required this.text,
     required this.onTap,
+    this.isComingSoon = false,
   });
 
   @override
@@ -564,19 +593,48 @@ class _SettingsListItem extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
+                  color: color.withValues(alpha: isComingSoon ? 0.06 : 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: color, size: 24),
+                child: Icon(
+                  icon,
+                  color: isComingSoon ? color.withValues(alpha: 0.5) : color,
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Text(
                   text,
-                  style: const TextStyle(color: kTextPrimary, fontSize: 16),
+                  style: TextStyle(
+                    color: isComingSoon
+                        ? kTextPrimary.withValues(alpha: 0.5)
+                        : kTextPrimary,
+                    fontSize: 16,
+                  ),
                 ),
               ),
-              Icon(Icons.chevron_right, color: kTextSecondary),
+              if (isComingSoon)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: const Text(
+                    'Sắp có',
+                    style: TextStyle(
+                      color: Color(0xFFF59E0B),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                )
+              else
+                Icon(Icons.chevron_right, color: kTextSecondary),
             ],
           ),
         ),

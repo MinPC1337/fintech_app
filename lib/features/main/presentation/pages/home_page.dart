@@ -38,40 +38,65 @@ class _HomePageState extends State<HomePage> {
 
         return Scaffold(
           backgroundColor: kBgColor,
-          body: SafeArea(
-            bottom: false,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20.0,
-                vertical: 16.0,
+          body: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // Collapsible Header với HomeHeader
+              SliverAppBar(
+                backgroundColor: kBgColor,
+                pinned: false,
+                floating: true,
+                snap: true,
+                expandedHeight: 72,
+                toolbarHeight: 72,
+                elevation: 0,
+                flexibleSpace: FlexibleSpaceBar(
+                  collapseMode: CollapseMode.parallax,
+                  background: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 8,
+                      ),
+                      child: HomeHeader(currentUser: currentUser),
+                    ),
+                  ),
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // 1. Header
-                  HomeHeader(currentUser: currentUser),
-                  const SizedBox(height: 24),
 
-                  // 2. Total Assets Card
-                  TotalAssetsCard(userId: currentUser.uid, isActive: widget.isActive),
-                  const SizedBox(height: 24),
+              // Body content
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    const SizedBox(height: 8),
 
-                  // 3. Quick Actions
-                  const QuickActionsRow(),
-                  const SizedBox(height: 24),
+                    // 2. Total Assets Card
+                    TotalAssetsCard(
+                      userId: currentUser.uid,
+                      isActive: widget.isActive,
+                    ),
+                    const SizedBox(height: 24),
 
-                  // 4. Monthly Overview Section (Tổng quan & Picker)
-                  MonthlyOverviewSection(userId: currentUser.uid, isActive: widget.isActive),
-                  const SizedBox(height: 16),
+                    // 3. Quick Actions
+                    const QuickActionsRow(),
+                    const SizedBox(height: 24),
 
-                  GroupWalletsCard(userId: currentUser.uid),
-                  const SizedBox(height: 16),
+                    // 4. Monthly Overview Section
+                    MonthlyOverviewSection(
+                      userId: currentUser.uid,
+                      isActive: widget.isActive,
+                    ),
+                    const SizedBox(height: 16),
 
-                  // Bottom Spacing for bottom navigation bar
-                  const SizedBox(height: 120),
-                ],
+                    GroupWalletsCard(userId: currentUser.uid),
+
+                    // Bottom Spacing for bottom navigation bar
+                    const SizedBox(height: 120),
+                  ]),
+                ),
               ),
-            ),
+            ],
           ),
         );
       },
