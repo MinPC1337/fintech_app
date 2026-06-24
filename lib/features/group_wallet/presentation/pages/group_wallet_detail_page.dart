@@ -256,7 +256,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                         children: [
                           if (wallet.status != 'closed') ...[
                             QuickActionIcon(
-                              emoji: '📥',
+                              iconPath: 'assets/icon_quickrow/money_frmm.png',
                               label: 'Nạp quỹ',
                               color: kEmerald,
                               onTap: () {
@@ -275,7 +275,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                             ),
                             if (isOwner)
                               QuickActionIcon(
-                                emoji: '💸',
+                                iconPath: 'assets/icon_quickrow/spending.png',
                                 label: 'Chuyển tiền',
                                 color: kRose,
                                 onTap: () {
@@ -293,7 +293,8 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                                 },
                               ),
                             QuickActionIcon(
-                              emoji: '🧮',
+                              iconPath:
+                                  'assets/icon_quickrow/profit-sharing.png',
                               label: 'Chia tiền',
                               color: kPurple,
                               onTap: () {
@@ -312,7 +313,7 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                             ),
                           ],
                           QuickActionIcon(
-                            emoji: '🕒',
+                            iconPath: 'assets/icon_quickrow/cloak.png',
                             label: 'Lịch sử',
                             color: kCyan,
                             onTap: () {
@@ -330,7 +331,8 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                             },
                           ),
                           QuickActionIcon(
-                            emoji: '🧾',
+                            iconPath:
+                                'assets/icon_quickrow/debt-consolidation.png',
                             label: 'Nợ',
                             color: const Color(0xFFF59E0B),
                             onTap: () {
@@ -396,8 +398,10 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                           itemBuilder: (context, index) {
                             if (wallet!.status != 'closed' && index == 0) {
                               return GestureDetector(
-                                onTap: () =>
-                                    _showInviteMemberDialog(context, wallet!.id),
+                                onTap: () => _showInviteMemberDialog(
+                                  context,
+                                  wallet!.id,
+                                ),
                                 child: SizedBox(
                                   width: 72,
                                   child: Column(
@@ -748,7 +752,10 @@ class _GroupWalletDetailPageState extends State<GroupWalletDetailPage> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: const Text('Gửi lời mời', style: TextStyle(color: Colors.white)),
+              child: const Text(
+                'Gửi lời mời',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),

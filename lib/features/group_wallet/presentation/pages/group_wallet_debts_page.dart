@@ -171,36 +171,116 @@ class GroupWalletDebtsPage extends StatelessWidget {
               );
             };
           } else if (debt.lenderId == currentUserId && !debt.isSettled) {
-            onRemind = () async {
+            onRemind = () {
+              final groupWalletCubit = context.read<GroupWalletCubit>();
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+
               showDialog(
                 context: context,
                 barrierDismissible: false,
-                builder: (_) => const Center(child: CircularProgressIndicator(color: kCyan)),
-              );
-              final success = await context.read<GroupWalletCubit>().remindDebt(debt.id);
-              if (context.mounted) {
-                Navigator.of(context).pop(); // dismiss loading
-                if (success) {
-                  showDialog(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      backgroundColor: kThemeSurfaceSecondary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      title: const Text('Thành công', style: TextStyle(color: kTextPrimary)),
-                      content: const Text(
-                        'Đã gửi thông báo nhắc nợ thành công!',
-                        style: TextStyle(color: kTextSecondary),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(ctx).pop(),
-                          child: const Text('Đóng', style: TextStyle(color: kEmerald)),
+                builder: (BuildContext dialogContext) {
+                  bool isLoading = true;
+                  bool isSuccess = false;
+                  bool apiCalled = false;
+
+                  return StatefulBuilder(
+                    builder: (statefulContext, setState) {
+                      if (!apiCalled) {
+                        apiCalled = true;
+                        groupWalletCubit.remindDebt(debt.id).then((success) {
+                          if (dialogContext.mounted) {
+                            if (success) {
+                              setState(() {
+                                isLoading = false;
+                                isSuccess = true;
+                              });
+                              Future.delayed(const Duration(milliseconds: 1500), () {
+                                if (dialogContext.mounted) {
+                                  Navigator.of(dialogContext).pop();
+                                }
+                              });
+                            } else {
+                              Navigator.of(dialogContext).pop();
+                              scaffoldMessenger.showSnackBar(
+                                const SnackBar(content: Text('Có lỗi xảy ra khi nhắc nợ')),
+                              );
+                            }
+                          }
+                        });
+                      }
+
+                      return Dialog(
+                        backgroundColor: kThemeSurfaceSecondary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
                         ),
-                      ],
-                    ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (isLoading) ...[
+                                const SizedBox(
+                                  width: 48,
+                                  height: 48,
+                                  child: CircularProgressIndicator(color: kCyan, strokeWidth: 3),
+                                ),
+                                const SizedBox(height: 24),
+                                const Text(
+                                  'Đang gửi nhắc nợ...',
+                                  style: TextStyle(
+                                    color: kTextPrimary,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Vui lòng chờ trong giây lát',
+                                  style: TextStyle(
+                                    color: kTextSecondary.withValues(alpha: 0.8),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ] else if (isSuccess) ...[
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: kEmerald.withValues(alpha: 0.15),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.check_circle_rounded,
+                                    color: kEmerald,
+                                    size: 48,
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                const Text(
+                                  'Thành công!',
+                                  style: TextStyle(
+                                    color: kTextPrimary,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Đã gửi thông báo nhắc nợ',
+                                  style: TextStyle(
+                                    color: kTextSecondary.withValues(alpha: 0.8),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ]
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   );
-                }
-              }
+                },
+              );
             };
           }
         }

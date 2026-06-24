@@ -4,13 +4,13 @@ import 'package:fintech_app/core/theme/app_colors.dart';
 class QuickActionIcon extends StatelessWidget {
   const QuickActionIcon({
     super.key,
-    required this.emoji,
+    required this.iconPath,
     required this.label,
     required this.color,
     required this.onTap,
   });
 
-  final String emoji;
+  final String iconPath;
   final String label;
   final Color color;
   final VoidCallback onTap;
@@ -31,7 +31,11 @@ class QuickActionIcon extends StatelessWidget {
               border: Border.all(color: color.withValues(alpha: 0.3)),
             ),
             child: Center(
-              child: Text(emoji, style: const TextStyle(fontSize: 24)),
+              child: Image.asset(
+                iconPath,
+                width: 28,
+                height: 28,
+              ),
             ),
           ),
           const SizedBox(height: 8),

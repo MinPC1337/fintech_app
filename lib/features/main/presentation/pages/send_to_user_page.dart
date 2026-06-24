@@ -77,11 +77,17 @@ class _SendToUserPageState extends State<SendToUserPage> {
     _uidController = TextEditingController(
       text: widget.initialReceiverUid ?? '',
     );
-    
+
     if (currentUser != null) {
-      _primaryWalletStream = sl<GetPrimaryWalletStreamUseCase>().call(currentUser!.uid);
-      _groupWalletsStream = sl<WatchGroupWalletsUseCase>().call(currentUser!.uid);
-      _outCategoriesStream = sl<WatchOutCategoriesUseCase>().call(currentUser!.uid);
+      _primaryWalletStream = sl<GetPrimaryWalletStreamUseCase>().call(
+        currentUser!.uid,
+      );
+      _groupWalletsStream = sl<WatchGroupWalletsUseCase>().call(
+        currentUser!.uid,
+      );
+      _outCategoriesStream = sl<WatchOutCategoriesUseCase>().call(
+        currentUser!.uid,
+      );
     } else {
       _primaryWalletStream = const Stream.empty();
       _groupWalletsStream = Stream.value([]);
@@ -268,9 +274,14 @@ class _SendToUserPageState extends State<SendToUserPage> {
                             shape: BoxShape.circle,
                             boxShadow: [AppGlows.purple],
                           ),
-                          child: const Text(
-                            '💸',
-                            style: TextStyle(fontSize: 28),
+                          child: SizedBox(
+                            width: 32,
+                            height: 32,
+                            child: Image.asset(
+                              'assets/icon_quickrow/money.png',
+                              width: 30,
+                              height: 30,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 16),

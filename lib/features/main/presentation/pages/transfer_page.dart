@@ -49,11 +49,17 @@ class _TransferPageState extends State<TransferPage> {
   void initState() {
     super.initState();
     _phoneController = TextEditingController(text: widget.initialPhone ?? '');
-    
+
     if (currentUser != null) {
-      _primaryWalletStream = sl<GetPrimaryWalletStreamUseCase>().call(currentUser!.uid);
-      _groupWalletsStream = sl<WatchGroupWalletsUseCase>().call(currentUser!.uid);
-      _outCategoriesStream = sl<WatchOutCategoriesUseCase>().call(currentUser!.uid);
+      _primaryWalletStream = sl<GetPrimaryWalletStreamUseCase>().call(
+        currentUser!.uid,
+      );
+      _groupWalletsStream = sl<WatchGroupWalletsUseCase>().call(
+        currentUser!.uid,
+      );
+      _outCategoriesStream = sl<WatchOutCategoriesUseCase>().call(
+        currentUser!.uid,
+      );
     } else {
       _primaryWalletStream = const Stream.empty();
       _groupWalletsStream = Stream.value([]);
@@ -265,15 +271,19 @@ class _TransferPageState extends State<TransferPage> {
                   ),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Column(
+                child: Column(
                   children: [
-                    Icon(
-                      Icons.account_balance_wallet,
-                      color: Colors.white,
-                      size: 48,
+                    SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: Image.asset(
+                        'assets/icon_quickrow/spending.png',
+                        width: 35,
+                        height: 35,
+                      ),
                     ),
-                    SizedBox(height: 12),
-                    Text(
+                    const SizedBox(height: 12),
+                    const Text(
                       'Rút tiền về MoMo',
                       style: TextStyle(
                         color: Colors.white,
@@ -281,8 +291,8 @@ class _TransferPageState extends State<TransferPage> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 8),
-                    Text(
+                    const SizedBox(height: 8),
+                    const Text(
                       'Tiền sẽ được chuyển ngay lập tức',
                       style: TextStyle(color: Colors.white70, fontSize: 14),
                     ),
@@ -417,7 +427,9 @@ class _TransferPageState extends State<TransferPage> {
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
                 child: Row(
-                  children: [50000, 100000, 200000, 500000, 1000000].map((amount) {
+                  children: [50000, 100000, 200000, 500000, 1000000].map((
+                    amount,
+                  ) {
                     final label = amount >= 1000000
                         ? '${amount ~/ 1000000}M'
                         : '${amount ~/ 1000}K';
@@ -429,7 +441,10 @@ class _TransferPageState extends State<TransferPage> {
                         }),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 7,
+                          ),
                           decoration: BoxDecoration(
                             color: _amountController.text == amount.toString()
                                 ? kElectricBlue.withValues(alpha: 0.2)
