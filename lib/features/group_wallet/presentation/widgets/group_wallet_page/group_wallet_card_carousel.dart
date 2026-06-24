@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../main/domain/entities/wallet_entity.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Section "Ví nhóm của bạn" — horizontal scrollable wallet cards.
 /// Now uses real WalletEntity data from Cubit.
@@ -151,8 +152,8 @@ class _WalletMiniCard extends StatelessWidget {
                 child: Center(
                   child: wallet.imageUrl != null && wallet.imageUrl!.isNotEmpty
                       ? ClipOval(
-                          child: Image.network(
-                            wallet.imageUrl!,
+                          child: CachedNetworkImage(
+                            imageUrl: wallet.imageUrl!,
                             width: double.infinity,
                             height: double.infinity,
                             fit: BoxFit.cover,
@@ -363,7 +364,7 @@ class _MiniAvatar extends StatelessWidget {
         border: Border.all(color: Colors.white, width: 1.5),
         image: (avatarUrl != null && avatarUrl!.isNotEmpty)
             ? DecorationImage(
-                image: NetworkImage(avatarUrl!),
+                image: CachedNetworkImageProvider(avatarUrl!),
                 fit: BoxFit.cover,
               )
             : null,

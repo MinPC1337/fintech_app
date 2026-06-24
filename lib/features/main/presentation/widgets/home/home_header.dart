@@ -6,6 +6,7 @@ import '../../../../auth/domain/entities/user.dart' as auth_entity;
 import '../../../../auth/presentation/pages/profile_page.dart';
 import '../../../data/datasources/notification_remote_data_source.dart';
 import '../../pages/notifications_page.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class HomeHeader extends StatelessWidget {
   final auth_entity.User currentUser;
@@ -72,17 +73,16 @@ class HomeHeader extends StatelessWidget {
                                 ),
                           ),
                         )
-                      : Image.network(
-                          currentUser.avatarUrl,
+                      : CachedNetworkImage(
+                          imageUrl: currentUser.avatarUrl,
                           width: 44,
                           height: 44,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Icon(
-                                Icons.person,
-                                color: Colors.white,
-                                size: 40,
-                              ),
+                          errorWidget: (context, url, error) => const Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 40,
+                          ),
                         ),
                 ),
               ),

@@ -51,7 +51,7 @@ class _HomePageState extends State<HomePage> {
                 toolbarHeight: 72,
                 elevation: 0,
                 flexibleSpace: FlexibleSpaceBar(
-                  collapseMode: CollapseMode.parallax,
+                  collapseMode: CollapseMode.pin,
                   background: SafeArea(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(

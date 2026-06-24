@@ -41,10 +41,24 @@ class _TransferPageState extends State<TransferPage> {
 
   bool _isTransferring = false;
 
+  late final Stream<dynamic> _primaryWalletStream;
+  late final Stream<List<WalletEntity>> _groupWalletsStream;
+  late final Stream<List<CategoryEntity>> _outCategoriesStream;
+
   @override
   void initState() {
     super.initState();
     _phoneController = TextEditingController(text: widget.initialPhone ?? '');
+    
+    if (currentUser != null) {
+      _primaryWalletStream = sl<GetPrimaryWalletStreamUseCase>().call(currentUser!.uid);
+      _groupWalletsStream = sl<WatchGroupWalletsUseCase>().call(currentUser!.uid);
+      _outCategoriesStream = sl<WatchOutCategoriesUseCase>().call(currentUser!.uid);
+    } else {
+      _primaryWalletStream = const Stream.empty();
+      _groupWalletsStream = Stream.value([]);
+      _outCategoriesStream = Stream.value([]);
+    }
   }
 
   /// Mở QrScannerPage, parse SĐT 10 số từ kết quả QR MoMo UAT.
@@ -283,9 +297,7 @@ class _TransferPageState extends State<TransferPage> {
               ),
               const SizedBox(height: 8),
               StreamBuilder(
-                stream: sl<GetPrimaryWalletStreamUseCase>().call(
-                  currentUser!.uid,
-                ),
+                stream: _primaryWalletStream,
                 builder: (context, primarySnapshot) {
                   WalletEntity? primaryWallet;
                   if (primarySnapshot.hasData) {
@@ -296,9 +308,7 @@ class _TransferPageState extends State<TransferPage> {
                     });
                   }
                   return StreamBuilder<List<WalletEntity>>(
-                    stream: sl<WatchGroupWalletsUseCase>().call(
-                      currentUser!.uid,
-                    ),
+                    stream: _groupWalletsStream,
                     builder: (context, groupSnapshot) {
                       final groupWallets = (groupSnapshot.data ?? [])
                           .where(
@@ -480,7 +490,7 @@ class _TransferPageState extends State<TransferPage> {
               ),
               const SizedBox(height: 8),
               StreamBuilder<List<CategoryEntity>>(
-                stream: sl<WatchOutCategoriesUseCase>().call(currentUser!.uid),
+                stream: _outCategoriesStream,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(

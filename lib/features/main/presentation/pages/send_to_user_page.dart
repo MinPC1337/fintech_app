@@ -67,12 +67,26 @@ class _SendToUserPageState extends State<SendToUserPage> {
     }
   }
 
+  late final Stream<dynamic> _primaryWalletStream;
+  late final Stream<List<WalletEntity>> _groupWalletsStream;
+  late final Stream<List<CategoryEntity>> _outCategoriesStream;
+
   @override
   void initState() {
     super.initState();
     _uidController = TextEditingController(
       text: widget.initialReceiverUid ?? '',
     );
+    
+    if (currentUser != null) {
+      _primaryWalletStream = sl<GetPrimaryWalletStreamUseCase>().call(currentUser!.uid);
+      _groupWalletsStream = sl<WatchGroupWalletsUseCase>().call(currentUser!.uid);
+      _outCategoriesStream = sl<WatchOutCategoriesUseCase>().call(currentUser!.uid);
+    } else {
+      _primaryWalletStream = const Stream.empty();
+      _groupWalletsStream = Stream.value([]);
+      _outCategoriesStream = Stream.value([]);
+    }
   }
 
   @override
@@ -292,9 +306,7 @@ class _SendToUserPageState extends State<SendToUserPage> {
               _buildLabel('Nguồn tiền'),
               const SizedBox(height: 8),
               StreamBuilder(
-                stream: sl<GetPrimaryWalletStreamUseCase>().call(
-                  currentUser!.uid,
-                ),
+                stream: _primaryWalletStream,
                 builder: (context, primarySnapshot) {
                   WalletEntity? primaryWallet;
                   if (primarySnapshot.hasData) {
@@ -305,9 +317,7 @@ class _SendToUserPageState extends State<SendToUserPage> {
                     });
                   }
                   return StreamBuilder<List<WalletEntity>>(
-                    stream: sl<WatchGroupWalletsUseCase>().call(
-                      currentUser!.uid,
-                    ),
+                    stream: _groupWalletsStream,
                     builder: (context, groupSnapshot) {
                       final groupWallets = (groupSnapshot.data ?? [])
                           .where(
@@ -406,7 +416,7 @@ class _SendToUserPageState extends State<SendToUserPage> {
               _buildLabel('Danh mục'),
               const SizedBox(height: 8),
               StreamBuilder<List<CategoryEntity>>(
-                stream: sl<WatchOutCategoriesUseCase>().call(currentUser!.uid),
+                stream: _outCategoriesStream,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(

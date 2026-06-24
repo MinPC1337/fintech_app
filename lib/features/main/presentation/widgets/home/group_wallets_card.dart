@@ -7,6 +7,7 @@ import '../../../../auth/data/models/user_model.dart';
 import '../../pages/main_page.dart';
 import '../../../../group_wallet/domain/usecases/watch_group_wallets_usecase.dart';
 import '../../../domain/entities/wallet_entity.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class GroupWalletsCard extends StatefulWidget {
   final String userId;
@@ -158,8 +159,8 @@ class _GroupWalletsCardState extends State<GroupWalletsCard> {
             child: wallet.imageUrl != null && wallet.imageUrl!.isNotEmpty
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(9),
-                    child: Image.network(
-                      wallet.imageUrl!,
+                    child: CachedNetworkImage(
+                      imageUrl: wallet.imageUrl!,
                       fit: BoxFit.cover,
                     ),
                   )
@@ -269,7 +270,7 @@ class _GroupWalletsCardState extends State<GroupWalletsCard> {
                   child: CircleAvatar(
                     radius: (avatarSize - 4) / 2,
                     backgroundColor: _getAvatarColor(memberId),
-                    backgroundImage: hasAvatar ? NetworkImage(user.avatarUrl) : null,
+                    backgroundImage: hasAvatar ? CachedNetworkImageProvider(user.avatarUrl) : null,
                     child: hasAvatar ? null : const Icon(Icons.person, size: 12, color: Colors.white),
                   ),
                 );

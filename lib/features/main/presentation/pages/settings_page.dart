@@ -9,6 +9,7 @@ import '../../../auth/presentation/pages/login_page.dart';
 import '../../../auth/presentation/pages/profile_page.dart';
 import 'notifications_page.dart';
 import '../../../../core/utils/dialog_utils.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -437,8 +438,8 @@ class _SettingsPageState extends State<SettingsPage>
                                       width: 56,
                                       height: 56,
                                     )
-                                  : Image.network(
-                                      avatarUrl,
+                                  : CachedNetworkImage(
+                                      imageUrl: avatarUrl,
                                       width: 56,
                                       height: 56,
                                       fit: BoxFit.cover,

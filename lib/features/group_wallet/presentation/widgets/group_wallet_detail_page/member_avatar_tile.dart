@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fintech_app/core/theme/app_colors.dart';
 import 'package:fintech_app/features/auth/data/models/user_model.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class MemberAvatarTile extends StatelessWidget {
   const MemberAvatarTile({
@@ -52,12 +53,12 @@ class MemberAvatarTile extends StatelessWidget {
                   ),
                   child: ClipOval(
                     child: user != null && user.avatarUrl.isNotEmpty
-                        ? Image.network(
-                            user.avatarUrl,
+                        ? CachedNetworkImage(
+                            imageUrl: user.avatarUrl,
                             width: 58,
                             height: 58,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
+                            errorWidget: (context, url, error) =>
                                 _fallbackAvatar(initials),
                           )
                         : _fallbackAvatar(initials),
@@ -130,10 +131,10 @@ class MemberAvatarCircle extends StatelessWidget {
       ),
       child: ClipOval(
         child: avatarUrl.isNotEmpty
-            ? Image.network(
-                avatarUrl,
+            ? CachedNetworkImage(
+                imageUrl: avatarUrl,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
+                errorWidget: (context, url, error) =>
                     _fallbackCircle(initials),
               )
             : _fallbackCircle(initials),

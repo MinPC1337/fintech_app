@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/imgbb_client.dart';
@@ -205,7 +206,7 @@ class _CreateGroupWalletPageState extends State<CreateGroupWalletPage> {
                                       child: CircularProgressIndicator(),
                                     )
                                   : (_imageUrl != null)
-                                  ? Image.network(_imageUrl!, fit: BoxFit.cover)
+                                  ? CachedNetworkImage(imageUrl: _imageUrl!, fit: BoxFit.cover)
                                   : (_selectedEmoji != null)
                                   ? Center(
                                       child: Text(

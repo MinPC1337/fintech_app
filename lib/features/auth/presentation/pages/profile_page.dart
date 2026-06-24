@@ -10,6 +10,7 @@ import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import '../../domain/entities/user.dart';
 import '../../../../core/utils/dialog_utils.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ProfilePage extends StatefulWidget {
   final User currentUser;
@@ -165,8 +166,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                   height: 120,
                                   fit: BoxFit.cover,
                                 )
-                              : Image.network(
-                                  _avatarUrl!,
+                              : CachedNetworkImage(
+                                  imageUrl: _avatarUrl!,
                                   width: 120,
                                   height: 120,
                                   fit: BoxFit.cover,
