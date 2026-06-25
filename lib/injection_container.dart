@@ -57,13 +57,10 @@ import 'features/group_wallet/domain/usecases/watch_all_group_transactions_useca
 import 'features/group_wallet/domain/usecases/watch_my_unsettled_debts_usecase.dart';
 import 'features/group_wallet/presentation/cubit/group_wallet_cubit.dart';
 
-import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'features/ai_chat/data/datasources/ai_function_definitions.dart';
-import 'features/ai_chat/data/datasources/ai_function_handler.dart';
+
+import 'package:http/http.dart' as http;
 import 'features/ai_chat/data/datasources/chat_history_data_source.dart';
-import 'features/ai_chat/data/datasources/gemini_remote_data_source.dart';
-import 'features/ai_chat/data/datasources/gemini_session_manager.dart';
+import 'features/ai_chat/data/datasources/rag_remote_data_source.dart';
 import 'features/ai_chat/data/datasources/user_context_builder.dart';
 import 'features/ai_chat/data/repositories/chat_repository_impl.dart';
 import 'features/ai_chat/domain/repositories/chat_repository.dart';
@@ -247,63 +244,17 @@ Future<void> init() async {
   );
 
   //! Features - AI Chatbot
-  // Gemini API key read from .env
-  final geminiApiKey = dotenv.env['GEMINI_API_KEY']?.trim();
-  if (geminiApiKey == null || geminiApiKey.isEmpty) {
-    throw Exception('GEMINI_API_KEY must be set in the .env file');
-  }
-
-  // Build system prompt từ knowledge base asset (async)
-  final systemPromptText = await GeminiRemoteDataSourceImpl.buildSystemPrompt();
-
-  // Gemini fallback chain: danh sách model theo thứ tự ưu tiên
-  // Khi model đầu bị quota/rate-limit → tự động chuyển sang model tiếp theo
-  // Function Calling tool được inject vào tất cả models để AI query dữ liệu thực tế
-  final systemInstruction = Content.system(systemPromptText);
-  final appDataTool = AiFunctionDefinitions.appDataTool;
-
-  final geminiModels = [
-    GenerativeModel(
-      model: 'gemini-1.5-flash', // Ưu tiên 1
-      apiKey: geminiApiKey,
-      systemInstruction: systemInstruction,
-      tools: [appDataTool],
-    ),
-    GenerativeModel(
-      model: 'gemini-2.0-flash', // Ưu tiên 2
-      apiKey: geminiApiKey,
-      systemInstruction: systemInstruction,
-      tools: [appDataTool],
-    ),
-    GenerativeModel(
-      model: 'gemini-2.5-flash', // Ưu tiên 3
-      apiKey: geminiApiKey,
-      systemInstruction: systemInstruction,
-      tools: [appDataTool],
-    ),
-    GenerativeModel(
-      model: 'gemini-3.5-flash', // Ưu tiên 4
-      apiKey: geminiApiKey,
-      systemInstruction: systemInstruction,
-      tools: [appDataTool],
-    ),
-  ];
-
-  // GeminiSessionManager — singleton, giữ in-memory cache + fallback chain
-  sl.registerLazySingleton(() => GeminiSessionManager(models: geminiModels));
+  // HTTP Client
+  sl.registerLazySingleton(() => http.Client());
 
   // UserContextBuilder — singleton, build context thực tế của user
   sl.registerLazySingleton(() => UserContextBuilder(firestore: sl()));
 
-  // AiFunctionHandler — thực thi Firestore queries khi AI gọi function
-  sl.registerLazySingleton(() => AiFunctionHandler(firestore: sl()));
-
   // Data Sources
-  sl.registerLazySingleton<GeminiRemoteDataSource>(
-    () => GeminiRemoteDataSourceImpl(
-      sessionManager: sl(),
+  sl.registerLazySingleton<RagRemoteDataSource>(
+    () => RagRemoteDataSourceImpl(
       userContextBuilder: sl(),
-      functionHandler: sl(),
+      client: sl(),
     ),
   );
   sl.registerLazySingleton<ChatHistoryDataSource>(
@@ -313,7 +264,7 @@ Future<void> init() async {
   // Repository
   sl.registerLazySingleton<ChatRepository>(
     () =>
-        ChatRepositoryImpl(geminiDataSource: sl(), chatHistoryDataSource: sl()),
+        ChatRepositoryImpl(ragDataSource: sl(), chatHistoryDataSource: sl()),
   );
 
   // UseCases

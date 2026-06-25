@@ -3,16 +3,16 @@ import '../../../../core/errors/failures.dart';
 import '../../domain/entities/chat_message.dart';
 import '../../domain/entities/chat_session.dart';
 import '../../domain/repositories/chat_repository.dart';
-import '../datasources/gemini_remote_data_source.dart';
+import '../datasources/rag_remote_data_source.dart';
 import '../datasources/chat_history_data_source.dart';
 import '../models/chat_message_model.dart';
 
 class ChatRepositoryImpl implements ChatRepository {
-  final GeminiRemoteDataSource geminiDataSource;
+  final RagRemoteDataSource ragDataSource;
   final ChatHistoryDataSource chatHistoryDataSource;
 
   ChatRepositoryImpl({
-    required this.geminiDataSource,
+    required this.ragDataSource,
     required this.chatHistoryDataSource,
   });
 
@@ -41,8 +41,6 @@ class ChatRepositoryImpl implements ChatRepository {
   ) async {
     try {
       await chatHistoryDataSource.deleteSession(userId, sessionId);
-      // Xóa session khỏi in-memory Gemini cache
-      geminiDataSource.removeSession(sessionId);
       return const Right(null);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
@@ -57,7 +55,6 @@ class ChatRepositoryImpl implements ChatRepository {
     String sessionId,
   ) async {
     try {
-      // Nếu là tin nhắn đầu tiên, cập nhật tiêu đề session
       if (history.isEmpty) {
         final title =
             message.length > 30 ? '${message.substring(0, 30)}...' : message;
@@ -68,7 +65,6 @@ class ChatRepositoryImpl implements ChatRepository {
         );
       }
 
-      // 1. Lưu tin nhắn của user vào Firestore
       final userMessage = ChatMessageModel(
         id: '${DateTime.now().millisecondsSinceEpoch}_u',
         content: message,
@@ -77,15 +73,14 @@ class ChatRepositoryImpl implements ChatRepository {
       );
       await chatHistoryDataSource.saveMessage(userId, sessionId, userMessage);
 
-      // 2. Gửi request đến Gemini (session manager tự quản lý context)
-      final assistantMessage = await geminiDataSource.sendMessage(
+      // Gửi request đến FastAPI backend
+      final assistantMessage = await ragDataSource.sendMessage(
         message: message,
         sessionId: sessionId,
-        history: history, // dùng để restore session nếu chưa có trong cache
-        userId: userId,   // dùng để build user context lần đầu
+        history: history,
+        userId: userId,
       );
 
-      // 3. Lưu phản hồi của AI vào Firestore
       final assistantMessageModel = ChatMessageModel.fromEntity(
         assistantMessage,
       );
@@ -116,8 +111,6 @@ class ChatRepositoryImpl implements ChatRepository {
   ) async {
     try {
       await chatHistoryDataSource.clearHistory(userId, sessionId);
-      // Reset in-memory Gemini session (xóa context tích lũy)
-      geminiDataSource.clearSession(sessionId);
       return const Right(null);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
